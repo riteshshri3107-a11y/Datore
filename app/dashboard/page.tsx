@@ -86,8 +86,8 @@ export default function Dashboard() {
                                 <div>
                                     <h3 className="font-bold text-lg">Find Trusted Professionals</h3>
                                     <p className="mt-1 text-slate-600">Search for police-verified workers nearby for affordable rates and secure guaranteed delivery.</p>
-                                    <button className="mt-4 bg-primary hover:bg-secondary text-white px-4 py-2 rounded shadow text-sm font-medium transition-colors">
-                                        Search Workers
+                                    <button onClick={() => window.location.href = '/search'} className="w-full bg-primary hover:bg-secondary text-white font-medium py-3 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+                                        <Search className="w-5 h-5" /> Search Workers
                                     </button>
                                 </div>
                             </div>

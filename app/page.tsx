@@ -18,12 +18,12 @@ export default function Home() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button className="bg-primary hover:bg-secondary text-white text-lg font-semibold px-8 py-4 rounded-full transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+                        <a href="/search" className="bg-primary hover:bg-secondary text-white text-lg font-semibold px-8 py-4 rounded-full transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 block max-w-xs mx-auto sm:mx-0">
                             Hire a Professional
-                        </button>
-                        <button className="bg-white hover:bg-slate-50 text-primary border-2 border-primary/20 text-lg font-semibold px-8 py-4 rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-1">
+                        </a>
+                        <a href="/login" className="bg-white hover:bg-slate-50 text-primary border-2 border-primary/20 text-lg font-semibold px-8 py-4 rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-1 block max-w-xs mx-auto sm:mx-0">
                             Offer Your Skills
-                        </button>
+                        </a>
                     </div>
                 </div>
             </section>
