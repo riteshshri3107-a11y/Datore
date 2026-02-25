@@ -55,7 +55,7 @@ export default function Home() {
             <section className="w-full bg-slate-900 text-white py-24 text-center">
                 <div className="max-w-3xl mx-auto px-4">
                     <h2 className="text-3xl font-bold mb-6">Ready to get started?</h2>
-                    <p className="text-lg text-slate-300 mb-8">Join thousands of users on the SkillConnect platform today.</p>
+                    <p className="text-lg text-slate-300 mb-8">Join thousands of users on the Detore platform today.</p>
                     <a href="/login" className="inline-block bg-accent hover:bg-yellow-400 text-slate-900 font-bold px-8 py-4 rounded-full transition-colors text-lg">
                         Become a Verified Professional
                     </a>

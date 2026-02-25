@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-    title: 'SkillConnect - Peer-to-Peer Skills Marketplace',
+    title: 'Detore - Peer-to-Peer Skills Marketplace',
     description: 'Find trusted, verified professionals for any job.',
 }
 
@@ -22,7 +22,7 @@ export default function RootLayout({
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16 items-center">
                             <div className="flex-shrink-0 flex items-center">
-                                <span className="text-2xl font-bold text-primary">SkillConnect</span>
+                                <span className="text-2xl font-bold text-primary">Detore</span>
                             </div>
                             <div className="hidden md:flex space-x-8 items-center">
                                 <a href="/search" className="text-slate-600 hover:text-primary transition-colors">Find a Professional</a>
@@ -43,7 +43,7 @@ export default function RootLayout({
                 {/* Footer */}
                 <footer className="bg-slate-900 text-slate-400 py-12">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <p>&copy; 2026 SkillConnect. All rights reserved.</p>
+                        <p>&copy; 2026 Detore. All rights reserved.</p>
                     </div>
                 </footer>
             </body>

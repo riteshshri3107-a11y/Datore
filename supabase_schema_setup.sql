@@ -1,5 +1,5 @@
 -- ==========================================
--- SkillConnect Supabase Database Schema
+-- Detore Supabase Database Schema
 -- ==========================================
 -- IMPORTANT: Run this entire script in your Supabase SQL Editor to set up tables and Row Level Security.
 -- This schema emphasizes Data Privacy and Security based on requested PRD.
