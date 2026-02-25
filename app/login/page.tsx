@@ -50,10 +50,10 @@ export default function Login() {
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
                 <Shield className="mx-auto h-16 w-16 text-primary" />
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-                    Sign in or Create Account
+                    Join SkillConnect Today
                 </h2>
                 <p className="mt-2 text-center text-sm text-slate-600">
-                    The safest way to find trusted professionals
+                    Join our proud community of trusted experts and satisfied customers
                 </p>
             </div>
 
@@ -85,14 +85,14 @@ export default function Login() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">I want to...</label>
+                            <label className="block text-sm font-medium text-slate-700">Choose Your Path</label>
                             <select
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-black"
+                                className="mt-1 block w-full pl-3 pr-10 py-3 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md text-slate-700 shadow-sm"
                             >
-                                <option value="customer">Hire Workers (Customer)</option>
-                                <option value="worker">Offer My Skills (Worker)</option>
+                                <option value="customer">I want to hire professionals</option>
+                                <option value="worker">I want to post my skills</option>
                             </select>
                         </div>
 

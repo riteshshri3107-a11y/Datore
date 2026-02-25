@@ -22,7 +22,7 @@ export default function Home() {
                             Hire a Professional
                         </a>
                         <a href="/login" className="bg-white hover:bg-slate-50 text-primary border-2 border-primary/20 text-lg font-semibold px-8 py-4 rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-1 block max-w-xs mx-auto sm:mx-0">
-                            Offer Your Skills
+                            Post Your Skills
                         </a>
                     </div>
                 </div>
@@ -56,9 +56,9 @@ export default function Home() {
                 <div className="max-w-3xl mx-auto px-4">
                     <h2 className="text-3xl font-bold mb-6">Ready to get started?</h2>
                     <p className="text-lg text-slate-300 mb-8">Join thousands of users on the SkillConnect platform today.</p>
-                    <button className="bg-accent hover:bg-yellow-400 text-slate-900 font-bold px-8 py-4 rounded-full transition-colors text-lg">
-                        Create Free Account
-                    </button>
+                    <a href="/login" className="inline-block bg-accent hover:bg-yellow-400 text-slate-900 font-bold px-8 py-4 rounded-full transition-colors text-lg">
+                        Become a Verified Professional
+                    </a>
                 </div>
             </section>
         </div>

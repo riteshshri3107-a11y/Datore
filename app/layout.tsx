@@ -25,8 +25,8 @@ export default function RootLayout({
                                 <span className="text-2xl font-bold text-primary">SkillConnect</span>
                             </div>
                             <div className="hidden md:flex space-x-8 items-center">
-                                <a href="/search" className="text-slate-600 hover:text-primary transition-colors">Find a Service</a>
-                                <a href="/login" className="text-slate-600 hover:text-primary transition-colors">Become a Worker</a>
+                                <a href="/search" className="text-slate-600 hover:text-primary transition-colors">Find a Professional</a>
+                                <a href="/login" className="text-slate-600 hover:text-primary transition-colors">Post Your Skills</a>
                                 <a href="/dashboard" className="bg-primary text-white px-5 py-2 rounded-full font-medium hover:bg-secondary transition-colors shadow-md hover:shadow-lg">
                                     Dashboard
                                 </a>
