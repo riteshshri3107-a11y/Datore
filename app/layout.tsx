@@ -27,9 +27,9 @@ export default function RootLayout({
                             <div className="hidden md:flex space-x-8 items-center">
                                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Find a Service</a>
                                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Become a Worker</a>
-                                <button className="bg-primary text-white px-5 py-2 rounded-full font-medium hover:bg-secondary transition-colors shadow-md hover:shadow-lg">
+                                <a href="/login" className="bg-primary text-white px-5 py-2 rounded-full font-medium hover:bg-secondary transition-colors shadow-md hover:shadow-lg">
                                     Sign In
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
