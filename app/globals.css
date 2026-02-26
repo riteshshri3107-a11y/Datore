@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Instrument+Serif:ital@0;1&display=swap');
+:root {
+  --bg-primary: #0A0A0F; --bg-secondary: #12121A; --bg-card: #1A1A26; --bg-elevated: #252536;
+  --accent: #00D4AA; --accent-dim: rgba(0,212,170,0.08); --accent-border: rgba(0,212,170,0.2);
+  --danger: #FF4D6A; --text-primary: #F0F0F5; --text-secondary: #9090A8; --text-muted: #606078;
+  --border: rgba(255,255,255,0.06); --radius: 16px; --radius-sm: 10px;
+  --font-display: 'Instrument Serif', Georgia, serif; --font-body: 'DM Sans', -apple-system, sans-serif;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-body); background: var(--bg-primary); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+::selection { background: rgba(0,212,170,0.15); color: var(--accent); }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
+input[type="range"] { accent-color: var(--accent); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes glow { 0%,100% { box-shadow: 0 0 20px rgba(0,212,170,0.1); } 50% { box-shadow: 0 0 40px rgba(0,212,170,0.25); } }
+.animate-fade-up { animation: fadeUp 0.3s ease; }
+.animate-glow { animation: glow 3s infinite; }
