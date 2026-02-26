@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export async function GET(req: NextRequest) {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const query = searchParams.get("q");
   const verified = searchParams.get("verified") === "true";
   const sort = searchParams.get("sort") || "price_asc";
-
   let q = supabase.from("workers").select("*, profiles(*)").eq("available", true);
   if (category) q = q.contains("categories", [category]);
   if (sort === "price_asc") q = q.order("hourly_rate", { ascending: true });
