@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
 import { supabase, getChatMessages, sendMessage, subscribeToChatMessages, getProfile } from "@/lib/supabase";
-
 export default function ChatPage() {
   const router = useRouter();
   const { id: roomId } = useParams();
@@ -36,7 +35,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     const sub = subscribeToChatMessages(roomId as string, (msg) => setMessages(p => [...p, msg]));
-    return () => { sub.then(s => s.unsubscribe()); };
+    return () => { supabase.removeChannel(sub); };
   }, [roomId]);
 
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
