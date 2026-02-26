@@ -1,42 +1,20 @@
-import type { Config } from 'tailwindcss'
-
+import type { Config } from "tailwindcss";
 const config: Config = {
-    content: [
-        './pages/**/*.{js,ts,jsx,tsx,mdx}',
-        './components/**/*.{js,ts,jsx,tsx,mdx}',
-        './app/**/*.{js,ts,jsx,tsx,mdx}',
-    ],
-    theme: {
-        extend: {
-            colors: {
-                primary: '#2563EB', // blue-600
-                secondary: '#1E40AF', // blue-800
-                accent: '#F59E0B', // amber-500
-            },
-            fontFamily: {
-                sans: ['var(--font-inter)'],
-            },
-            animation: {
-                blob: "blob 7s infinite",
-            },
-            keyframes: {
-                blob: {
-                    "0%": {
-                        transform: "translate(0px, 0px) scale(1)",
-                    },
-                    "33%": {
-                        transform: "translate(30px, -50px) scale(1.1)",
-                    },
-                    "66%": {
-                        transform: "translate(-20px, 20px) scale(0.9)",
-                    },
-                    "100%": {
-                        transform: "translate(0px, 0px) scale(1)",
-                    },
-                },
-            },
-        },
+  content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        bg: { DEFAULT: "#0A0A0F", secondary: "#12121A", card: "#1A1A26", elevated: "#252536", hover: "#222233" },
+        accent: { DEFAULT: "#00D4AA", glow: "rgba(0,212,170,0.15)", dim: "rgba(0,212,170,0.08)", warm: "#FFB347" },
+        danger: "#FF4D6A",
+        txt: { DEFAULT: "#F0F0F5", secondary: "#9090A8", muted: "#606078" },
+      },
+      fontFamily: {
+        display: ["Instrument Serif", "Georgia", "serif"],
+        body: ["DM Sans", "-apple-system", "sans-serif"],
+      },
     },
-    plugins: [],
-}
-export default config
+  },
+  plugins: [],
+};
+export default config;
