@@ -142,6 +142,65 @@ export function addUserListing(listing: {title:string; price:number; category:st
   try { localStorage.setItem('datore-user-listings', JSON.stringify(items)); } catch {}
 }
 
+// Friends system
+export const DEMO_FRIENDS = [
+  { id:'1', name:'Maria Santos', avatar:'MS', status:'online', mutualFriends:3, since:'Jan 2024' },
+  { id:'2', name:"James O'Brien", avatar:'JO', status:'online', mutualFriends:5, since:'Mar 2024' },
+  { id:'3', name:'Priya Sharma', avatar:'PS', status:'away', mutualFriends:2, since:'Feb 2024' },
+  { id:'5', name:'Aisha Hassan', avatar:'AH', status:'online', mutualFriends:7, since:'Jan 2024' },
+  { id:'7', name:'Rosa Martinez', avatar:'RM', status:'online', mutualFriends:4, since:'Dec 2023' },
+];
+
+export function getFriends(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-friends')||JSON.stringify(DEMO_FRIENDS.map(f=>f.id)));}catch{return[];} }
+export function toggleFriend(id:string): boolean { const f=getFriends(); const is=f.includes(id); const u=is?f.filter(x=>x!==id):[...f,id]; if(typeof window!=='undefined'){try{localStorage.setItem('datore-friends',JSON.stringify(u));}catch{}} return !is; }
+export function getBlockedUsers(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-blocked')||'[]');}catch{return[];} }
+export function toggleBlock(id:string): boolean { const b=getBlockedUsers(); const is=b.includes(id); const u=is?b.filter(x=>x!==id):[...b,id]; if(typeof window!=='undefined'){try{localStorage.setItem('datore-blocked',JSON.stringify(u));}catch{}} return !is; }
+
+// Events
+export const DEMO_EVENTS = [
+  { id:'e1', title:'GTA Community BBQ', date:'Mar 15, 2026', time:'2:00 PM', location:'High Park, Toronto', organizer:'Toronto Handyworkers', attendees:34, category:'Social', desc:'Annual community BBQ. Bring your family! Free food and networking.' },
+  { id:'e2', title:'Babysitter Safety Workshop', date:'Mar 20, 2026', time:'10:00 AM', location:'Community Center, Brampton', organizer:'GTA Babysitters', attendees:18, category:'Workshop', desc:'Learn CPR, first aid, and child safety best practices.' },
+  { id:'e3', title:'Pet Lovers Meetup', date:'Mar 22, 2026', time:'11:00 AM', location:'Trinity Bellwoods Park', organizer:'GTA Pet Lovers', attendees:52, category:'Meetup', desc:'Bring your pets! Dog-friendly meetup with games and treats.' },
+  { id:'e4', title:'Freelancer Tax Workshop', date:'Apr 1, 2026', time:'6:00 PM', location:'Online (Zoom)', organizer:'Datore Official', attendees:89, category:'Workshop', desc:'Learn how to file taxes as a freelance service provider in Canada.' },
+  { id:'e5', title:'Spring Cleaning Drive', date:'Apr 10, 2026', time:'9:00 AM', location:'Various Locations', organizer:'Toronto Cleaners Guild', attendees:23, category:'Service', desc:'Volunteer cleaning drive. Help clean local parks and community spaces.' },
+];
+
+// Enhanced notifications
+export const DEMO_NOTIFICATIONS = [
+  { id:'n1', title:'New job match!', message:'A babysitting job was posted near you in Brampton', type:'job', isRead:false, time:'5 min ago', link:'/jobplace/job/1' },
+  { id:'n2', title:'Review received', message:'Sarah gave you 5 stars! "Amazing service"', type:'review', isRead:false, time:'1 hour ago', link:'/profile' },
+  { id:'n3', title:'Payment received', message:'You earned $45 for cleaning job', type:'payment', isRead:true, time:'3 hours ago', link:'/wallet' },
+  { id:'n4', title:'Birthday: Maria Santos', message:'Your friend Maria Santos has a birthday today! Send wishes', type:'birthday', isRead:false, time:'Today', link:'/friends' },
+  { id:'n5', title:'Community Event', message:'GTA Community BBQ is happening Mar 15. RSVP now!', type:'event', isRead:false, time:'Yesterday', link:'/events' },
+  { id:'n6', title:'Safety Alert', message:'Background check completed for James O\'Brien - Verified', type:'safety', isRead:true, time:'2 days ago', link:'/safety' },
+  { id:'n7', title:'Anniversary', message:'1 year anniversary of Rosa Martinez joining Datore!', type:'anniversary', isRead:true, time:'3 days ago', link:'/worker/7' },
+  { id:'n8', title:'QR Verified', message:'You verified Mike Johnson via QR scan', type:'qr', isRead:true, time:'1 week ago', link:'/qr-verify' },
+  { id:'n9', title:'Hire Confirmed', message:'Priya Sharma accepted your cleaning job request', type:'hire', isRead:true, time:'1 week ago', link:'/chat/3' },
+  { id:'n10', title:'New Friend', message:'Aisha Hassan added you as a friend', type:'social', isRead:true, time:'2 weeks ago', link:'/friends' },
+];
+
+// QR Verification data
+export const QR_VERIFICATION_DATA: Record<string, {name:string; photo:string; rating:number; trustScore:number; policeVerified:boolean; backgroundCheck:string; behaviorBadge:string; safetyLevel:string; completedJobs:number; reviewSummary:string; joined:string}> = {
+  '1': { name:'Maria Santos', photo:'MS', rating:4.9, trustScore:92, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Excellent', safetyLevel:'High', completedJobs:52, reviewSummary:'Highly trusted babysitter. Parents love her patience and professionalism.', joined:'Jan 2024' },
+  '2': { name:"James O'Brien", photo:'JO', rating:4.7, trustScore:88, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Very Good', safetyLevel:'High', completedJobs:38, reviewSummary:'Reliable plumber and electrician. Always on time and thorough.', joined:'Mar 2024' },
+  '3': { name:'Priya Sharma', photo:'PS', rating:4.8, trustScore:95, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Excellent', safetyLevel:'High', completedJobs:71, reviewSummary:'Top-rated cleaner and cook. Exceptional attention to detail.', joined:'Feb 2024' },
+  '4': { name:'David Chen', photo:'DC', rating:4.6, trustScore:85, policeVerified:false, backgroundCheck:'Pending', behaviorBadge:'Good', safetyLevel:'Medium', completedJobs:28, reviewSummary:'Great tutor for math and science. Patient with students.', joined:'Apr 2024' },
+  '5': { name:'Aisha Hassan', photo:'AH', rating:4.9, trustScore:94, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Excellent', safetyLevel:'High', completedJobs:60, reviewSummary:'Outstanding pet care. Animals love her. Highly recommended.', joined:'Jan 2024' },
+  '6': { name:'Mike Johnson', photo:'MJ', rating:4.5, trustScore:78, policeVerified:false, backgroundCheck:'Pending', behaviorBadge:'Good', safetyLevel:'Medium', completedJobs:22, reviewSummary:'Strong and reliable mover. Gets the job done efficiently.', joined:'May 2024' },
+  '7': { name:'Rosa Martinez', photo:'RM', rating:4.8, trustScore:90, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Excellent', safetyLevel:'High', completedJobs:45, reviewSummary:'Amazing chef and event planner. Food is restaurant quality.', joined:'Dec 2023' },
+  '8': { name:'Tom Wilson', photo:'TW', rating:4.4, trustScore:82, policeVerified:true, backgroundCheck:'Clear', behaviorBadge:'Good', safetyLevel:'High', completedJobs:19, reviewSummary:'Skilled gardener and painter. Transforms spaces beautifully.', joined:'Mar 2024' },
+};
+
+// Search suggestions
+export const SEARCH_SUGGESTIONS = [
+  'Babysitter near me','Emergency plumber','Dog walker today','House cleaner this week',
+  'Math tutor for grade 8','Moving help tomorrow','Chef for party','Garden maintenance',
+  '#urgent #babysitting','#plumbing #emergency','#petcare #weekend','#cleaning #deepclean',
+  'Cheapest movers Toronto','Highest rated tutors','Verified electricians','Weekend gardener',
+];
+
+export const HASHTAGS = ['#babysitting','#plumbing','#cleaning','#tutoring','#petcare','#moving','#cooking','#gardening','#painting','#electrical','#urgent','#weekend','#verified','#affordable','#toprated','#newworker'];
+
 export function getFavorites(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-favs')||'[]');}catch{return[];} }
 export function setFavorites(ids:string[]) { if(typeof window==='undefined') return; try{localStorage.setItem('datore-favs',JSON.stringify(ids));}catch{} }
 export function toggleFavorite(id:string): boolean { const f=getFavorites(); const is=f.includes(id); if(is){setFavorites(f.filter(x=>x!==id));}else{setFavorites([...f,id]);} return !is; }

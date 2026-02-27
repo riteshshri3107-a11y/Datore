@@ -4,11 +4,11 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 
 const NAV = [
-  { label:'Home', icon:'🏠', path:'/home' },
-  { label:'Jobs', icon:'💼', path:'/jobplace' },
-  { label:'Create', icon:'✨', path:'/create' },
-  { label:'Messages', icon:'💬', path:'/inbox' },
-  { label:'Profile', icon:'👤', path:'/profile' },
+  { label:'Home', icon:'H', path:'/home' },
+  { label:'Jobs', icon:'J', path:'/jobplace' },
+  { label:'Create', icon:'+', path:'/create' },
+  { label:'Messages', icon:'C', path:'/inbox' },
+  { label:'Profile', icon:'P', path:'/profile' },
 ];
 
 export default function BottomNav() {

@@ -77,9 +77,9 @@ export const MARKETPLACE_CATEGORIES = [
 ] as const;
 
 export const URGENCY_OPTIONS = [
-  { value: 'immediate', label: '🔴 Immediate', color: '#ef4444' },
-  { value: 'today', label: '🟠 Today', color: '#f97316' },
-  { value: 'tomorrow', label: '🟡 Tomorrow', color: '#eab308' },
-  { value: 'by_date', label: '📅 By Date', color: '#3b82f6' },
-  { value: 'no_rush', label: '🟢 No Rush', color: '#22c55e' },
+  { value: 'immediate', label: 'Immediate', color: '#ef4444' },
+  { value: 'today', label: 'Today', color: '#f97316' },
+  { value: 'tomorrow', label: 'Tomorrow', color: '#eab308' },
+  { value: 'by_date', label: 'By Date', color: '#3b82f6' },
+  { value: 'no_rush', label: 'No Rush', color: '#22c55e' },
 ] as const;
