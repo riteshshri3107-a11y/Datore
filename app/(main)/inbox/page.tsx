@@ -5,7 +5,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { CHAT_CONTACTS } from '@/lib/demoData';
 
-const RECENT_CHATS = [
+const RECENT = [
   { id:'1', lastMsg:"I'm available this weekend. $22/hr.", time:'2:31 PM', unread:1 },
   { id:'2', lastMsg:"I can come take a look tomorrow.", time:'1:15 PM', unread:0 },
   { id:'5', lastMsg:"I'll take great care of your fur baby!", time:'11:20 AM', unread:2 },
@@ -18,12 +18,11 @@ export default function InboxPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-
   return (
     <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
-      <h1 className="text-xl font-bold">\ud83d\udcac Messages</h1>
+      <h1 className="text-xl font-bold">💬 Messages</h1>
       <div className="space-y-1">
-        {RECENT_CHATS.map(chat => {
+        {RECENT.map(chat => {
           const c = CHAT_CONTACTS[chat.id] || { name:'User', status:'offline', skills:'' };
           const initials = c.name.split(' ').map((n:string)=>n[0]).join('');
           return (
@@ -32,10 +31,7 @@ export default function InboxPage() {
                 {initials}
                 <div style={{ position:'absolute', bottom:-1, right:-1, width:8, height:8, borderRadius:'50%', background:c.status==='online'?'#22c55e':'#f59e0b', border:`2px solid ${isDark?'#1a1a2e':'#fff'}` }}></div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between"><p className="font-semibold text-sm">{c.name}</p><span className="text-[10px]" style={{ color:t.textMuted }}>{chat.time}</span></div>
-                <p className="text-xs truncate" style={{ color:t.textSecondary }}>{chat.lastMsg}</p>
-              </div>
+              <div className="flex-1 min-w-0"><div className="flex items-center justify-between"><p className="font-semibold text-sm">{c.name}</p><span className="text-[10px]" style={{ color:t.textMuted }}>{chat.time}</span></div><p className="text-xs truncate" style={{ color:t.textSecondary }}>{chat.lastMsg}</p></div>
               {chat.unread>0 && <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold" style={{ background:t.accent, flexShrink:0 }}>{chat.unread}</div>}
             </div>
           );

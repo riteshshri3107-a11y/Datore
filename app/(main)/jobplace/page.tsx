@@ -51,7 +51,7 @@ export default function JobPlacePage() {
         {[
           { key: 'browse', label: '🔍 Browse', path: '' },
           { key: 'providers', label: '👷 Workers', path: '/jobplace/providers' },
-          { key: 'map', label: '🗺️ Map View', path: '/jobplace/map' },
+          { key: 'map', label: '🗺 Map View', path: '/jobplace/map' },
         ].map(tb => (
           <button key={tb.key} onClick={() => tb.path ? router.push(tb.path) : setTab('browse')}
             className="glass-button px-3 py-2 rounded-xl text-xs font-medium"

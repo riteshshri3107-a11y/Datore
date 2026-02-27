@@ -98,7 +98,7 @@ export default function CreateJobPage() {
                 <button key={pt} onClick={() => update('payment_type', pt)}
                   className="glass-button flex-1 py-2.5 rounded-xl text-xs font-medium"
                   style={{ background: form.payment_type === pt ? t.accentLight : t.surface, color: form.payment_type === pt ? t.accent : t.textSecondary, borderColor: form.payment_type === pt ? `${t.accent}44` : t.cardBorder }}>
-                  {pt === 'fixed' ? '💵 Fixed' : '⏱️ Hourly'}
+                  {pt === 'fixed' ? '💵 Fixed' : '⏱ Hourly'}
                 </button>
               ))}
             </div>
@@ -116,7 +116,7 @@ export default function CreateJobPage() {
             className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={inputStyle} />
         </div>
 
-        {error && <p className="text-xs" style={{ color: t.danger }}>⚠️ {error}</p>}
+        {error && <p className="text-xs" style={{ color: t.danger }}>⚠ {error}</p>}
 
         <button onClick={handleSubmit} disabled={loading} className="btn-accent w-full py-3.5 rounded-xl font-semibold">
           {loading ? 'Posting...' : '📋 Post Job'}

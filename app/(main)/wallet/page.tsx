@@ -144,7 +144,7 @@ export default function WalletPage() {
               style={{ background: processing ? '#888' : 'linear-gradient(135deg,#22c55e,#16a34a)', opacity: processing ? 0.7 : 1 }}>
               {processing ? '⏳ Processing...' : `Withdraw ${amount ? '$'+amount : ''}`}
             </button>
-            <p className="text-[10px] text-center" style={{ color:t.textMuted }}>⏱️ 2-3 business days via e-Transfer</p>
+            <p className="text-[10px] text-center" style={{ color:t.textMuted }}>⏱ 2-3 business days via e-Transfer</p>
             {!processing && <button onClick={() => setShowWithdraw(false)} className="w-full py-2 rounded-xl text-xs" style={{ color:t.textMuted }}>Cancel</button>}
           </div>
         </div>

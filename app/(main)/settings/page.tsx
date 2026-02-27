@@ -13,7 +13,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
-      <h1 className="text-xl font-bold">⚙️ Settings</h1>
+      <h1 className="text-xl font-bold">⚙ Settings</h1>
 
       <div className="glass-card rounded-2xl p-5 space-y-5" style={{ background: t.card, borderColor: t.cardBorder }}>
         <h2 className="font-semibold">🎨 Appearance</h2>
@@ -47,7 +47,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="glass-card rounded-2xl p-5 space-y-3" style={{ background: t.card, borderColor: t.cardBorder }}>
-        {[['👤', 'Edit Profile', '/profile/edit'], ['💰', 'Wallet', '/wallet'], ['🔔', 'Notifications', '/notifications'], ['🛡️', 'Verification', '/profile']].map(([icon, label, path]) => (
+        {[['👤', 'Edit Profile', '/profile/edit'], ['💰', 'Wallet', '/wallet'], ['🔔', 'Notifications', '/notifications'], ['🛡', 'Verification', '/profile']].map(([icon, label, path]) => (
           <button key={label} onClick={() => router.push(path as string)} className="w-full flex items-center gap-3 py-2">
             <span>{icon}</span><span className="text-sm font-medium">{label}</span><span className="ml-auto" style={{ color: t.textMuted }}>→</span>
           </button>

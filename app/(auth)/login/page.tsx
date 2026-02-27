@@ -43,10 +43,10 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
-            <span className="text-2xl">🛡️</span>
+            <span className="text-2xl">🛡</span>
             <span className="font-bold text-xl" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5cf6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Datore</span>
           </div>
-          <button onClick={toggle} className="glass-button p-2 rounded-xl" style={{ background: t.surface }}>{isDark ? '☀️' : '🌙'}</button>
+          <button onClick={toggle} className="glass-button p-2 rounded-xl" style={{ background: t.surface }}>{isDark ? '☀' : '🌙'}</button>
         </div>
 
         <div className="glass-card rounded-3xl p-6" style={{ background: t.card, borderColor: t.cardBorder, boxShadow: t.shadow }}>
@@ -66,7 +66,7 @@ export default function LoginPage() {
           <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" className="glass-input w-full px-4 py-3 rounded-xl mb-4 text-sm" style={{ background: t.input, color: t.text, borderColor: t.inputBorder }}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
 
-          {error && <p className="text-xs mb-3" style={{ color: t.danger }}>⚠️ {error}</p>}
+          {error && <p className="text-xs mb-3" style={{ color: t.danger }}>⚠ {error}</p>}
 
           <button onClick={handleSubmit} disabled={loading} className="btn-accent w-full py-3 rounded-xl text-sm">
             {loading ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}

@@ -7,8 +7,8 @@ import { getTheme } from '@/lib/theme';
 
 const FEATURES = [
   { icon: '💼', title: 'JobPlace', desc: 'Post jobs or find skilled workers nearby in real-time' },
-  { icon: '🗺️', title: 'Live Map', desc: 'See available workers on the map with ratings & prices' },
-  { icon: '🛡️', title: 'QR Verify', desc: 'Scan QR codes to verify worker identity on arrival' },
+  { icon: '🗺', title: 'Live Map', desc: 'See available workers on the map with ratings & prices' },
+  { icon: '🛡', title: 'QR Verify', desc: 'Scan QR codes to verify worker identity on arrival' },
   { icon: '🤖', title: 'AI Trust', desc: 'AI-powered trust scores for every service provider' },
   { icon: '🏪', title: 'Marketplace', desc: 'Buy & sell across 18 categories locally' },
   { icon: '💰', title: 'Escrow Pay', desc: 'Secure token payments with tip controls' },
@@ -32,12 +32,12 @@ export default function Landing() {
         <div className="relative max-w-4xl mx-auto px-4 pt-8 pb-16">
           <div className="flex justify-between items-center mb-12">
             <div className="flex items-center gap-2">
-              <span className="text-3xl">🛡️</span>
+              <span className="text-3xl">🛡</span>
               <span className="font-bold text-2xl" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5cf6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Datore</span>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={toggle} className="glass-button px-3 py-2 rounded-xl text-sm" style={{ background: t.surface, color: t.text }}>
-                {isDark ? '☀️' : '🌙'}
+                {isDark ? '☀' : '🌙'}
               </button>
               <button onClick={() => router.push('/login')} className="btn-accent text-sm rounded-xl px-5 py-2.5">Get Started</button>
             </div>

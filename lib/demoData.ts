@@ -1,4 +1,4 @@
-// lib/demoData.ts — Single source of truth for all demo data
+// lib/demoData.ts - Single source of truth for all demo data
 
 export const DEMO_WORKERS = [
   { id:'1', full_name:'Maria Santos', skills:['Babysitting','Tutoring'], hourly_rate:22, fixed_rate:100, rating:4.9, review_count:47, completed_jobs:52, availability:'available', city:'Toronto', trust_score:92, is_police_verified:true, background_check:'clear', bio:'Experienced babysitter and tutor with 5+ years. First aid certified, CPR trained.', experience_years:5, certifications:['First Aid','CPR','Child Care Level 2'], email:'m****@test.com', phone:'+1 (4**) ***-**32', address:'*** Dundas St W, Toronto', joined:'Jan 2024', lat:43.6532, lng:-79.3832 },
@@ -18,7 +18,7 @@ export const DEMO_JOBS = [
   { id:'4', title:'Fix Leaky Kitchen Faucet', poster:'Benjamin Lee', posterId:'p4', category:'Plumbing', urgency:'today', payment:'fixed', amount:80, desc:'Kitchen faucet dripping constantly. Need a plumber ASAP.', location:'Toronto, ON', applicants:1 },
   { id:'5', title:'Math Tutor Grade 8', poster:'Harper Wilson', posterId:'p5', category:'Tutoring', urgency:'by_date', payment:'hourly', amount:35, desc:'Need a math tutor for my daughter. Algebra and geometry focus.', location:'Mississauga, ON', applicants:4 },
   { id:'6', title:'Deep House Cleaning', poster:'Sarah Mitchell', posterId:'p6', category:'House Cleaning', urgency:'today', payment:'fixed', amount:180, desc:'3 bedroom house needs deep cleaning. Kitchen, bathrooms, all rooms.', location:'Toronto, ON', applicants:6 },
-  { id:'7', title:'Birthday Party Photographer', poster:'Jennifer White', posterId:'p7', category:'Photography', urgency:'by_date', payment:'fixed', amount:300, desc:"Need a photographer for my son's 5th birthday party. 3 hours coverage.", location:'Toronto, ON', applicants:2 },
+  { id:'7', title:'Birthday Party Photographer', poster:'Jennifer White', posterId:'p7', category:'Photography', urgency:'by_date', payment:'fixed', amount:300, desc:"Need a photographer for my son's 5th birthday. 3 hours.", location:'Toronto, ON', applicants:2 },
   { id:'8', title:'Paint Living Room', poster:'Amanda Lewis', posterId:'p8', category:'Painting', urgency:'no_rush', payment:'fixed', amount:250, desc:'Living room walls need repainting. Approx 400 sq ft. Paint provided.', location:'Mississauga, ON', applicants:3 },
 ];
 
@@ -59,14 +59,18 @@ export const CHAT_CONTACTS: Record<string, {name:string; status:string; skills:s
   'p6': { name:'Sarah Mitchell', status:'online', skills:'Job Poster' },
   'p7': { name:'Jennifer White', status:'away', skills:'Job Poster' },
   'p8': { name:'Amanda Lewis', status:'online', skills:'Job Poster' },
+  'seller-1': { name:'Alex P.', status:'online', skills:'Seller' },
+  'seller-2': { name:'Ryan W.', status:'online', skills:'Seller' },
+  'seller-3': { name:'Lisa K.', status:'online', skills:'Seller' },
+  'seller-4': { name:'Tom H.', status:'online', skills:'Seller' },
 };
 
 export const AUTO_REPLIES: Record<string, string[]> = {
-  '1': ["Hi! I'd love to help with babysitting. What ages are your children?","I'm available this weekend. I charge $22/hr and have first aid certification.","Sounds great! I can be there at the time you mentioned. See you then! 😊"],
+  '1': ["Hi! I'd love to help with babysitting. What ages are your children?","I'm available this weekend. I charge $22/hr and have first aid certification.","Sounds great! I can be there at the time you mentioned. See you then!"],
   '2': ["Hey! What plumbing issue are you having?","I can come take a look tomorrow. For a standard faucet repair it's usually around $80 fixed.","Perfect, I'll bring all the tools needed. See you then!"],
   '3': ["Hello! I'd be happy to help with cleaning.","For a deep clean of a 3-bedroom, I usually charge $150 fixed price.","Great! I'll bring all my own supplies. Looking forward to it!"],
   '4': ["Hi there! What subject does your child need help with?","I specialize in math and science for grades 6-12. $40/hr.","I can start this week! Let me know what time works best."],
-  '5': ["Hi! I love taking care of pets! What kind of animal?","I'm very experienced with dogs. I do walks, feeding, and overnight stays.","Wonderful! I'll take great care of your fur baby! 🐕"],
+  '5': ["Hi! I love taking care of pets! What kind of animal?","I'm very experienced with dogs. I do walks, feeding, and overnight stays.","Wonderful! I'll take great care of your fur baby!"],
   '6': ["Hey! I can help with the move. How big is the load?","For a 1BR apartment, $180 flat rate including loading and unloading.","I'll bring a helper too. What time works for you?"],
   '7': ["Hi! I'd love to cook for your event!","I can do a full 3-course meal for up to 20 guests. $35/hr.","I'll send you a sample menu. What cuisine do you prefer?"],
   '8': ["Hello! I can help with your garden/painting needs.","For garden maintenance it's $25/hr. Painting depends on the area.","I'll come by for a free estimate. When works for you?"],
@@ -74,37 +78,72 @@ export const AUTO_REPLIES: Record<string, string[]> = {
 };
 
 export const URGENCY_STYLES: Record<string, {emoji:string; label:string; bg:string; color:string}> = {
-  immediate: { emoji:'🔴', label:'Immediate', bg:'rgba(239,68,68,0.12)', color:'#ef4444' },
-  today: { emoji:'🟠', label:'Today', bg:'rgba(249,115,22,0.12)', color:'#f97316' },
-  tomorrow: { emoji:'🟡', label:'Tomorrow', bg:'rgba(234,179,8,0.12)', color:'#eab308' },
-  by_date: { emoji:'📅', label:'By Date', bg:'rgba(59,130,246,0.12)', color:'#3b82f6' },
-  no_rush: { emoji:'🟢', label:'No Rush', bg:'rgba(34,197,94,0.12)', color:'#22c55e' },
+  immediate: { emoji:'!!', label:'Immediate', bg:'rgba(239,68,68,0.12)', color:'#ef4444' },
+  today: { emoji:'!', label:'Today', bg:'rgba(249,115,22,0.12)', color:'#f97316' },
+  tomorrow: { emoji:'~', label:'Tomorrow', bg:'rgba(234,179,8,0.12)', color:'#eab308' },
+  by_date: { emoji:'D', label:'By Date', bg:'rgba(59,130,246,0.12)', color:'#3b82f6' },
+  no_rush: { emoji:'o', label:'No Rush', bg:'rgba(34,197,94,0.12)', color:'#22c55e' },
 };
 
-// Helper to get/set favorites from localStorage safely
-export function getFavorites(): string[] {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem('datore-favs') || '[]'); } catch { return []; }
+export const MARKETPLACE_LISTINGS = [
+  { id:'1', title:'iPhone 15 Pro', price:999, category:'Electronics', condition:'Like New', desc:'256GB. Natural Titanium. Includes original box and accessories. Battery health 98%.', seller:'Alex P.', sellerId:'seller-1', location:'Toronto, ON', posted:'2 days ago', img:'phone' },
+  { id:'2', title:'Mountain Bike - Trek', price:450, category:'Sports', condition:'Good', desc:'21-speed Trek Marlin 7. Recently tuned up, new brake pads. Perfect for trails.', seller:'Ryan W.', sellerId:'seller-2', location:'Mississauga, ON', posted:'3 days ago', img:'bike' },
+  { id:'3', title:'IKEA Malm Dresser', price:120, category:'Furniture', condition:'Like New', desc:'6-drawer white dresser. Assembled and in perfect condition. Barely used 3 months.', seller:'Lisa K.', sellerId:'seller-3', location:'North York, ON', posted:'1 day ago', img:'furniture' },
+  { id:'4', title:'PS5 + 3 Games', price:450, category:'Electronics', condition:'Excellent', desc:'Disc edition PS5 with DualSense controller. Includes Spider-Man 2, God of War Ragnarok, and FIFA 25.', seller:'Tom H.', sellerId:'seller-4', location:'Scarborough, ON', posted:'5 hours ago', img:'gaming' },
+  { id:'5', title:'Baby Stroller - UPPAbaby', price:350, category:'Baby', condition:'Good', desc:'Vista V2 stroller in charcoal. Includes bassinet, toddler seat, and rain cover.', seller:'Emma S.', sellerId:'seller-2', location:'Brampton, ON', posted:'1 day ago', img:'baby' },
+  { id:'6', title:'KitchenAid Stand Mixer', price:200, category:'Kitchen', condition:'Like New', desc:'Artisan 5-quart stand mixer in Empire Red. Used twice for baking. All attachments included.', seller:'Diana R.', sellerId:'seller-3', location:'Toronto, ON', posted:'4 days ago', img:'kitchen' },
+  { id:'7', title:'2019 Honda Civic Parts', price:150, category:'Auto', condition:'Good', desc:'Set of 4 alloy wheels. 16 inch.', seller:'Mike J.', sellerId:'seller-1', location:'North York, ON', posted:'1 week ago', img:'auto' },
+  { id:'8', title:'Camping Tent 4-Person', price:80, category:'Sports', condition:'Good', desc:'Coleman 4-person. Weatherproof. Used 3 times.', seller:'Kate B.', sellerId:'seller-4', location:'Toronto, ON', posted:'3 days ago', img:'outdoor' },
+];
+
+export const LISTING_EMOJIS: Record<string,string> = { phone:'phone', bike:'bike', furniture:'chair', gaming:'game', baby:'baby', kitchen:'kitchen', auto:'car', outdoor:'tent' };
+export const MARKET_CATS = ['All','Electronics','Furniture','Sports','Kitchen','Baby','Auto'];
+
+export const SOCIAL_FEED = [
+  { id:'f1', user:'Maria Santos', avatar:'MS', text:'Just finished a great babysitting session! The kids were wonderful today. Love my job!', time:'2 hours ago', likes:12, comments:3, type:'text' as const },
+  { id:'f2', user:"James O'Brien", avatar:'JO', text:'Fixed a tricky pipe leak today. Before and after shots!', time:'5 hours ago', likes:24, comments:7, type:'photo' as const, media:'wrench' },
+  { id:'f3', user:'Priya Sharma', avatar:'PS', text:'New recipe mastered! South Indian dosa from scratch. Available for cooking jobs this weekend!', time:'8 hours ago', likes:31, comments:11, type:'photo' as const, media:'cooking' },
+  { id:'f4', user:'Aisha Hassan', avatar:'AH', text:'Morning walk with the most adorable golden retriever!', time:'1 day ago', likes:45, comments:8, type:'photo' as const, media:'dog' },
+  { id:'f5', user:'Rosa Martinez', avatar:'RM', text:'Catered a wedding for 100 guests last night! Thank you for trusting me with your special day!', time:'1 day ago', likes:67, comments:15, type:'video' as const, media:'party' },
+  { id:'f6', user:'Tom Wilson', avatar:'TW', text:'Spring garden transformation complete! 3 days of hard work paid off.', time:'2 days ago', likes:19, comments:4, type:'photo' as const, media:'garden' },
+];
+
+export const JOB_DISPLAY_OPTIONS = ['card', 'list', 'grid'] as const;
+export type JobDisplayPref = typeof JOB_DISPLAY_OPTIONS[number];
+
+export function getProfilePrefs(): { displayPref: JobDisplayPref; setupDone: boolean; name: string } {
+  if (typeof window === 'undefined') return { displayPref: 'card', setupDone: false, name: 'Demo User' };
+  try { const r = localStorage.getItem('datore-profile-prefs'); if (!r) return { displayPref: 'card', setupDone: false, name: 'Demo User' }; return JSON.parse(r); } catch { return { displayPref: 'card', setupDone: false, name: 'Demo User' }; }
 }
-export function setFavorites(ids: string[]) {
+export function saveProfilePrefs(prefs: { displayPref: JobDisplayPref; setupDone: boolean; name: string }) {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem('datore-favs', JSON.stringify(ids)); } catch {}
-}
-export function toggleFavorite(id: string): boolean {
-  const favs = getFavorites();
-  const isFav = favs.includes(id);
-  if (isFav) { setFavorites(favs.filter(f => f !== id)); } else { setFavorites([...favs, id]); }
-  return !isFav;
+  try { localStorage.setItem('datore-profile-prefs', JSON.stringify(prefs)); } catch {}
 }
 
-export function getJoinedCommunities(): string[] {
+export function getUserPosts(): Array<{id:string; text:string; time:string; likes:number; comments:number; type:string; media?:string}> {
   if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem('datore-joined') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem('datore-user-posts') || '[]'); } catch { return []; }
 }
-export function toggleCommunity(id: string): boolean {
-  const joined = getJoinedCommunities();
-  const isMember = joined.includes(id);
-  const updated = isMember ? joined.filter(j => j !== id) : [...joined, id];
-  if (typeof window !== 'undefined') { try { localStorage.setItem('datore-joined', JSON.stringify(updated)); } catch {} }
-  return !isMember;
+export function addUserPost(post: {text:string; type:string; media?:string}) {
+  if (typeof window === 'undefined') return;
+  const posts = getUserPosts();
+  posts.unshift({ id: 'u'+Date.now(), text: post.text, time: 'Just now', likes: 0, comments: 0, type: post.type, media: post.media });
+  try { localStorage.setItem('datore-user-posts', JSON.stringify(posts)); } catch {}
 }
+
+export function getUserListings(): Array<{id:string; title:string; price:number; category:string; condition:string; desc:string; posted:string}> {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem('datore-user-listings') || '[]'); } catch { return []; }
+}
+export function addUserListing(listing: {title:string; price:number; category:string; condition:string; desc:string}) {
+  if (typeof window === 'undefined') return;
+  const items = getUserListings();
+  items.unshift({ id: 'ul'+Date.now(), ...listing, posted: 'Just now' });
+  try { localStorage.setItem('datore-user-listings', JSON.stringify(items)); } catch {}
+}
+
+export function getFavorites(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-favs')||'[]');}catch{return[];} }
+export function setFavorites(ids:string[]) { if(typeof window==='undefined') return; try{localStorage.setItem('datore-favs',JSON.stringify(ids));}catch{} }
+export function toggleFavorite(id:string): boolean { const f=getFavorites(); const is=f.includes(id); if(is){setFavorites(f.filter(x=>x!==id));}else{setFavorites([...f,id]);} return !is; }
+export function getJoinedCommunities(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-joined')||'[]');}catch{return[];} }
+export function toggleCommunity(id:string): boolean { const j=getJoinedCommunities(); const is=j.includes(id); const u=is?j.filter(x=>x!==id):[...j,id]; if(typeof window!=='undefined'){try{localStorage.setItem('datore-joined',JSON.stringify(u));}catch{}} return !is; }
