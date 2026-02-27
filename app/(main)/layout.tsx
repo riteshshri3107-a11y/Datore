@@ -1,25 +1,18 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Home, Search, MessageCircle, LayoutGrid, User, Bot, Send, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [showBot, setShowBot] = useState(false);
-  const [botMsgs, setBotMsgs] = useState([{ from: "bot", text: "Hello! I'm Datore AI. How can I help you today?" }]);
+  const [botMsgs, setBotMsgs] = useState([{ from: "bot", text: "Hello! I'm Datore AI. How can I help?" }]);
   const [botInput, setBotInput] = useState("");
   const [botLoading, setBotLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
-      if (!data.session?.user) router.push("/login");
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null));
-    return () => listener.subscription.unsubscribe();
+    supabase.auth.getSession().then(({ data }) => { if (!data.session?.user) router.push("/login"); });
   }, [router]);
 
   const sendBot = async () => {
@@ -35,50 +28,32 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     finally { setBotLoading(false); }
   };
 
-  const NAV = [
-    { href: "/home", icon: Home, label: "Home" }, { href: "/search", icon: Search, label: "Search" },
-    { href: "/messages", icon: MessageCircle, label: "Messages" }, { href: "/dashboard", icon: LayoutGrid, label: "Dashboard" },
-    { href: "/profile", icon: User, label: "Profile" },
+  const nav = [
+    { href: "/home", icon: "🏠", label: "Home" }, { href: "/search", icon: "🔍", label: "Search" },
+    { href: "/messages", icon: "💬", label: "Messages" }, { href: "/dashboard", icon: "📊", label: "Dashboard" },
+    { href: "/profile", icon: "👤", label: "Profile" },
   ];
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
-      <main className="max-w-[480px] mx-auto min-h-screen pb-24 lg:max-w-full">{children}</main>
-
-      {/* Bottom Nav */}
+      <main style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", paddingBottom: 80 }}>{children}</main>
       <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "rgba(18,18,26,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-around", padding: "8px 0", zIndex: 100 }}>
-        {NAV.map(n => (
-          <button key={n.href} onClick={() => router.push(n.href)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 12px", background: "none", border: "none", cursor: "pointer", color: pathname === n.href ? "var(--accent)" : "var(--text-muted)", fontFamily: "var(--font-body)" }}>
-            <n.icon size={22} /><span style={{ fontSize: 10, fontWeight: 600 }}>{n.label}</span>
-          </button>
-        ))}
+        {nav.map(n => <button key={n.href} onClick={() => router.push(n.href)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 12px", background: "none", border: "none", cursor: "pointer", color: pathname === n.href ? "var(--accent)" : "var(--text-muted)", fontFamily: "var(--font-body)" }}><span style={{ fontSize: 20 }}>{n.icon}</span><span style={{ fontSize: 10, fontWeight: 600 }}>{n.label}</span></button>)}
       </nav>
-
-      {/* Chatbot FAB */}
-      <button onClick={() => setShowBot(!showBot)} className="animate-glow" style={{ position: "fixed", bottom: 80, right: 16, width: 56, height: 56, borderRadius: "50%", background: "var(--accent)", color: "#0A0A0F", border: "none", cursor: "pointer", zIndex: 90, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,212,170,0.3)" }}>
-        {showBot ? <X size={24} /> : <Bot size={24} />}
-      </button>
-
-      {/* Chatbot Panel */}
-      {showBot && (
-        <div style={{ position: "fixed", bottom: 144, right: 16, width: "calc(100% - 32px)", maxWidth: 380, height: 420, background: "var(--bg-secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", zIndex: 95, boxShadow: "0 12px 48px rgba(0,0,0,0.5)" }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}><Bot size={18} color="#0A0A0F" /></div>
-            <div><div style={{ fontWeight: 700, fontSize: 14 }}>Datore AI</div><div style={{ fontSize: 11, color: "var(--accent)" }}>Online</div></div>
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {botMsgs.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: m.from === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, fontSize: 13, lineHeight: 1.5, background: m.from === "user" ? "var(--accent)" : "var(--bg-elevated)", color: m.from === "user" ? "#0A0A0F" : "var(--text-primary)", borderBottomRightRadius: m.from === "user" ? 4 : 16, borderBottomLeftRadius: m.from === "bot" ? 4 : 16 }}>{m.text}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
-            <input value={botInput} onChange={e => setBotInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendBot()} placeholder="Ask anything..." style={{ flex: 1, padding: "10px 14px", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontSize: 13, fontFamily: "var(--font-body)", outline: "none" }} />
-            <button onClick={sendBot} style={{ padding: "10px 12px", background: "var(--accent)", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer" }}><Send size={16} color="#0A0A0F" /></button>
-          </div>
+      <button onClick={() => setShowBot(!showBot)} className="animate-glow" style={{ position: "fixed", bottom: 80, right: 16, width: 56, height: 56, borderRadius: "50%", background: "var(--accent)", color: "#0A0A0F", border: "none", cursor: "pointer", zIndex: 90, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, boxShadow: "0 4px 20px rgba(0,212,170,0.3)" }}>{showBot ? "✕" : "🤖"}</button>
+      {showBot && <div style={{ position: "fixed", bottom: 144, right: 16, width: "calc(100% - 32px)", maxWidth: 380, height: 420, background: "var(--bg-secondary)", borderRadius: "var(--radius)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", zIndex: 95, boxShadow: "0 12px 48px rgba(0,0,0,0.5)" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
+          <div><div style={{ fontWeight: 700, fontSize: 14 }}>Datore AI</div><div style={{ fontSize: 11, color: "var(--accent)" }}>Online</div></div>
         </div>
-      )}
+        <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          {botMsgs.map((m, i) => <div key={i} style={{ display: "flex", justifyContent: m.from === "user" ? "flex-end" : "flex-start" }}><div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, fontSize: 13, lineHeight: 1.5, background: m.from === "user" ? "var(--accent)" : "var(--bg-elevated)", color: m.from === "user" ? "#0A0A0F" : "var(--text-primary)" }}>{m.text}</div></div>)}
+        </div>
+        <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
+          <input value={botInput} onChange={e => setBotInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendBot()} placeholder="Ask anything..." style={{ flex: 1, padding: "10px 14px", background: "var(--bg-primary)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontSize: 13, fontFamily: "var(--font-body)", outline: "none" }} />
+          <button onClick={sendBot} style={{ padding: "10px 12px", background: "var(--accent)", border: "none", borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: 16 }}>➤</button>
+        </div>
+      </div>}
     </div>
   );
 }
