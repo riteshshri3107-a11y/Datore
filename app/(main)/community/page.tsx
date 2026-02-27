@@ -1,49 +1,64 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { getJoinedCommunities, toggleCommunity } from '@/lib/demoData';
 
-const GROUPS = [
-  { id: '1', name: 'Toronto Handyworkers', members: 2340, icon: '🔧', desc: 'Local handyman services' },
-  { id: '2', name: 'GTA Babysitters', members: 1890, icon: '👶', desc: 'Trusted babysitting community' },
-  { id: '3', name: 'Home Cleaning Pros', members: 3100, icon: '🧹', desc: 'Professional cleaners network' },
-  { id: '4', name: 'Tech Support Hub', members: 920, icon: '💻', desc: 'IT and tech assistance' },
-  { id: '5', name: 'Pet Lovers GTA', members: 4200, icon: '🐕', desc: 'Pet care and walking' },
-  { id: '6', name: 'Tutoring Network', members: 1560, icon: '📚', desc: 'Academic tutoring' },
+const COMMUNITIES = [
+  { id:'c1', name:'Toronto Handyworkers', desc:'Local handyman services', members:2340, emoji:'\ud83d\udd27', category:'Services' },
+  { id:'c2', name:'GTA Babysitters', desc:'Trusted babysitting community', members:1890, emoji:'\ud83d\udc76', category:'Childcare' },
+  { id:'c3', name:'Home Cleaning Pros', desc:'Professional cleaners network', members:3100, emoji:'\ud83e\uddf9', category:'Cleaning' },
+  { id:'c4', name:'Tech Support Hub', desc:'IT and tech assistance', members:920, emoji:'\ud83d\udcbb', category:'Tech' },
+  { id:'c5', name:'Pet Lovers GTA', desc:'Pet care and walking', members:4200, emoji:'\ud83d\udc15', category:'Pets' },
+  { id:'c6', name:'Tutoring Network', desc:'Academic tutoring', members:1560, emoji:'\ud83d\udcda', category:'Education' },
+  { id:'c7', name:'Moving Helpers TO', desc:'Reliable movers in Toronto', members:780, emoji:'\ud83d\ude9a', category:'Moving' },
+  { id:'c8', name:'GTA Cooks & Chefs', desc:'Personal chefs and catering', members:2100, emoji:'\ud83c\udf73', category:'Food' },
 ];
 
 export default function CommunityPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const [tab, setTab] = useState('discover');
+  const [tab, setTab] = useState<'discover'|'joined'|'manage'>('discover');
+  const [search, setSearch] = useState('');
+  const [joined, setJoined] = useState<string[]>([]);
+
+  useEffect(() => { setJoined(getJoinedCommunities()); }, []);
+
+  const handleToggle = (id: string) => {
+    const isMember = toggleCommunity(id);
+    setJoined(getJoinedCommunities());
+  };
+
+  const filtered = COMMUNITIES.filter(c =>
+    (!search || c.name.toLowerCase().includes(search.toLowerCase()) || c.category.toLowerCase().includes(search.toLowerCase()))
+    && (tab==='discover' ? !joined.includes(c.id) : joined.includes(c.id))
+  );
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <h1 className="text-xl font-bold">👥 Community</h1>
+    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+      <h1 className="text-xl font-bold">\ud83d\udc65 Community</h1>
       <div className="flex gap-2">
-        {['discover', 'joined', 'manage'].map(tb => (
-          <button key={tb} onClick={() => setTab(tb)} className="glass-button px-4 py-2 rounded-xl text-xs font-medium capitalize"
-            style={{ background: tab === tb ? t.accentLight : t.surface, color: tab === tb ? t.accent : t.textSecondary }}>{tb}</button>
-        ))}
+        {(['discover','joined','manage'] as const).map(tb=>(<button key={tb} onClick={()=>setTab(tb)} className="px-4 py-2 rounded-xl text-xs font-medium capitalize" style={{ background:tab===tb?t.accentLight:'transparent', color:tab===tb?t.accent:t.textSecondary, border:tab===tb?`1px solid ${t.accent}33`:'1px solid transparent' }}>{tb} {tb==='joined'&&joined.length>0?`(${joined.length})`:''}</button>))}
       </div>
-      <input placeholder="Search communities..." className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background: t.input, color: t.text, borderColor: t.inputBorder }} />
-      <div className="space-y-2.5">
-        {GROUPS.map((g, i) => (
-          <div key={g.id} className={`glass-card rounded-2xl p-4 flex items-center gap-3 animate-slide-up stagger-${i + 1}`}
-            style={{ background: t.card, borderColor: t.cardBorder, boxShadow: t.glassShadow, animationFillMode: 'both' }}>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: t.accentLight }}>{g.icon}</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{g.name}</h3>
-              <p className="text-xs" style={{ color: t.textSecondary }}>{g.desc}</p>
-              <p className="text-xs mt-0.5" style={{ color: t.textMuted }}>{g.members.toLocaleString()} members</p>
-            </div>
-            <button className="glass-button px-3 py-1.5 rounded-xl text-xs font-medium" style={{ background: t.accentLight, color: t.accent }}>Join</button>
-          </div>
-        ))}
-      </div>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search communities..." className="w-full p-3 rounded-xl text-sm outline-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+      {filtered.length===0 ? (
+        <div className="text-center py-10 glass-card rounded-2xl" style={{ background:t.card, borderColor:t.cardBorder }}>
+          <p className="text-3xl mb-2">{tab==='discover'?'\ud83c\udf89':'\ud83d\udc65'}</p>
+          <p className="text-sm" style={{ color:t.textSecondary }}>{tab==='discover'?'You joined all communities!':'No communities joined yet'}</p>
+          {tab!=='discover' && <button onClick={()=>setTab('discover')} className="text-xs mt-2" style={{ color:t.accent }}>Discover communities \u2192</button>}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(c=>(<div key={c.id} className="glass-card rounded-xl p-4 flex items-center gap-3 cursor-pointer" style={{ background:t.card, borderColor:t.cardBorder }} onClick={()=>router.push(`/community/${c.id}`)}>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background:`${t.accent}15` }}>{c.emoji}</div>
+            <div className="flex-1"><p className="font-semibold text-sm">{c.name}</p><p className="text-xs" style={{ color:t.textSecondary }}>{c.desc}</p><p className="text-[11px]" style={{ color:t.textMuted }}>{c.members.toLocaleString()} members</p></div>
+            <button onClick={e=>{e.stopPropagation();handleToggle(c.id);}} className="px-4 py-2 rounded-xl text-xs font-semibold" style={{ background:joined.includes(c.id)?'rgba(239,68,68,0.1)':t.accentLight, color:joined.includes(c.id)?'#ef4444':t.accent, border:`1px solid ${joined.includes(c.id)?'rgba(239,68,68,0.2)':t.accent+'33'}` }}>{joined.includes(c.id)?'Leave':'Join'}</button>
+          </div>))}
+        </div>
+      )}
     </div>
   );
 }

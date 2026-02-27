@@ -1,50 +1,32 @@
 "use client";
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 
-const NAV_ITEMS = [
-  { path: '/home', label: 'Home', icon: '🏠' },
-  { path: '/community', label: 'Community', icon: '👥' },
-  { path: '/create', label: 'Create', icon: '✨' },
-  { path: '/marketplace', label: 'Market', icon: '🏪' },
-  { path: '/jobplace', label: 'Jobs', icon: '💼' },
+const NAV = [
+  { label:'Home', icon:'\ud83c\udfe0', path:'/home' },
+  { label:'Community', icon:'\ud83d\udc65', path:'/community' },
+  { label:'Create', icon:'\u2728', path:'/create' },
+  { label:'Market', icon:'\ud83c\udfea', path:'/marketplace' },
+  { label:'Jobs', icon:'\ud83d\udcbc', path:'/jobplace' },
 ];
 
 export default function TopNav() {
   const router = useRouter();
-  const path = usePathname();
+  const pathname = usePathname();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-
   return (
-    <nav className="glass-nav sticky top-0 z-50" style={{ background: t.nav }}>
-      <div className="max-w-4xl mx-auto px-3">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-1 cursor-pointer" onClick={() => router.push('/home')}>
-            <span className="text-xl">🛡️</span>
-            <span className="font-bold text-lg" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5cf6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Datore</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            {NAV_ITEMS.map(item => {
-              const active = path?.startsWith(item.path);
-              return (
-                <button key={item.path} onClick={() => router.push(item.path)}
-                  className="flex flex-col items-center px-2.5 py-1 rounded-xl transition-all"
-                  style={{ background: active ? t.accentLight : 'transparent', color: active ? t.accent : t.textSecondary }}>
-                  <span className="text-base">{item.icon}</span>
-                  <span className="text-[10px] font-medium mt-0.5">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/menu')} className="text-lg p-1.5 rounded-xl transition-colors" style={{ color: t.textSecondary }}>☰</button>
-            <button onClick={() => router.push('/inbox')} className="text-lg p-1.5 rounded-xl transition-colors relative" style={{ color: t.textSecondary }}>
-              💬<span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full" style={{ background: t.danger }}></span>
-            </button>
-            <button onClick={() => router.push('/notifications')} className="text-lg p-1.5 rounded-xl transition-colors" style={{ color: t.textSecondary }}>🔔</button>
-          </div>
+    <nav className="sticky top-0 z-50 hidden md:block" style={{ background:isDark?'rgba(15,15,26,0.85)':'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', borderBottom:`1px solid ${t.cardBorder}` }}>
+      <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
+        <div onClick={()=>router.push('/home')} className="flex items-center gap-2 cursor-pointer"><span className="text-xl">\ud83d\udee1\ufe0f</span><span className="font-bold text-lg" style={{ color:t.accent }}>Datore</span></div>
+        <div className="flex items-center gap-1">{NAV.map(item=>{const active=pathname?.startsWith(item.path);return(<button key={item.path} onClick={()=>router.push(item.path)} className="flex flex-col items-center px-3 py-1.5 rounded-xl text-xs" style={{ background:active?t.accentLight:'transparent', color:active?t.accent:t.textSecondary }}><span className="text-base">{item.icon}</span><span className="font-medium" style={{ fontSize:10 }}>{item.label}</span></button>);})}</div>
+        <div className="flex items-center gap-2">
+          <button onClick={()=>router.push('/menu')} className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ color:t.textSecondary }}>\u2630</button>
+          <button onClick={()=>router.push('/inbox')} className="w-9 h-9 rounded-xl flex items-center justify-center relative" style={{ color:t.textSecondary }}>\ud83d\udcac<span style={{ position:'absolute', top:2, right:2, width:8, height:8, borderRadius:'50%', background:'#ef4444' }}></span></button>
+          <button onClick={()=>router.push('/buddylist')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}>\u2b50</button>
+          <button onClick={()=>router.push('/notifications')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}>\ud83d\udd14</button>
+          <button onClick={()=>router.push('/profile')} className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>\ud83d\udc64</button>
         </div>
       </div>
     </nav>

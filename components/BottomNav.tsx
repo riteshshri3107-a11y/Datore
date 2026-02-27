@@ -1,38 +1,24 @@
 "use client";
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 
-const ITEMS = [
-  { path: '/home', label: 'Home', icon: '🏠' },
-  { path: '/search', label: 'Search', icon: '🔍' },
-  { path: '/jobplace', label: 'Jobs', icon: '💼' },
-  { path: '/marketplace', label: 'Market', icon: '🏪' },
-  { path: '/profile', label: 'Profile', icon: '👤' },
+const NAV = [
+  { label:'Home', icon:'\ud83c\udfe0', path:'/home' },
+  { label:'Jobs', icon:'\ud83d\udcbc', path:'/jobplace' },
+  { label:'Create', icon:'\u2728', path:'/create' },
+  { label:'Messages', icon:'\ud83d\udcac', path:'/inbox' },
+  { label:'Profile', icon:'\ud83d\udc64', path:'/profile' },
 ];
 
 export default function BottomNav() {
   const router = useRouter();
-  const path = usePathname();
+  const pathname = usePathname();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-
   return (
-    <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ background: t.nav }}>
-      <div className="flex justify-around py-1.5 px-2">
-        {ITEMS.map(item => {
-          const active = path?.startsWith(item.path);
-          return (
-            <button key={item.path} onClick={() => router.push(item.path)}
-              className="flex flex-col items-center py-1 px-3 rounded-xl transition-all"
-              style={{ color: active ? t.accent : t.textMuted }}>
-              <span className="text-lg">{item.icon}</span>
-              <span className="text-[10px] font-medium">{item.label}</span>
-              {active && <div className="w-4 h-0.5 rounded-full mt-0.5" style={{ background: t.accent }}></div>}
-            </button>
-          );
-        })}
-      </div>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ background:isDark?'rgba(15,15,26,0.92)':'rgba(255,255,255,0.92)', backdropFilter:'blur(20px)', borderTop:`1px solid ${t.cardBorder}` }}>
+      <div className="flex items-center justify-around h-14 max-w-lg mx-auto px-2">{NAV.map(item=>{const active=pathname?.startsWith(item.path);return(<button key={item.path} onClick={()=>router.push(item.path)} className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl" style={{ color:active?t.accent:t.textMuted }}><span className="text-lg">{item.icon}</span><span style={{ fontSize:9, fontWeight:active?600:400 }}>{item.label}</span></button>);})}</div>
     </nav>
   );
 }

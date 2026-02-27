@@ -1,138 +1,73 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { searchWorkers } from '@/lib/supabase';
-import { JOB_CATEGORIES } from '@/types';
-import { formatCurrency } from '@/lib/utils';
-
-const DEMO_WORKERS = [
-  { id: '1', full_name: 'Maria Santos', skills: ['Babysitting', 'Tutoring'], hourly_rate: 22, rating: 4.9, review_count: 47, completed_jobs: 52, availability: 'available', city: 'Toronto', background_check: 'clear', trust_score: 92, is_police_verified: true, categories: ['Babysitting'], avatar_url: '' },
-  { id: '2', full_name: 'James O\'Brien', skills: ['Plumbing', 'Electrical'], hourly_rate: 45, rating: 4.7, review_count: 31, completed_jobs: 38, availability: 'available', city: 'Mississauga', background_check: 'clear', trust_score: 88, is_police_verified: true, categories: ['Plumbing'], avatar_url: '' },
-  { id: '3', full_name: 'Priya Sharma', skills: ['House Cleaning', 'Cooking'], hourly_rate: 28, rating: 4.8, review_count: 63, completed_jobs: 71, availability: 'busy', city: 'Brampton', background_check: 'clear', trust_score: 95, is_police_verified: true, categories: ['House Cleaning'], avatar_url: '' },
-  { id: '4', full_name: 'David Chen', skills: ['Tutoring', 'Tech Support'], hourly_rate: 40, rating: 4.6, review_count: 22, completed_jobs: 28, availability: 'available', city: 'Toronto', background_check: 'clear', trust_score: 85, is_police_verified: false, categories: ['Tutoring'], avatar_url: '' },
-  { id: '5', full_name: 'Aisha Hassan', skills: ['Pet Care', 'Gardening'], hourly_rate: 20, rating: 4.9, review_count: 55, completed_jobs: 60, availability: 'available', city: 'Scarborough', background_check: 'clear', trust_score: 94, is_police_verified: true, categories: ['Pet Care'], avatar_url: '' },
-  { id: '6', full_name: 'Mike Johnson', skills: ['Moving', 'General Labor'], hourly_rate: 30, rating: 4.5, review_count: 18, completed_jobs: 22, availability: 'scheduled', city: 'North York', background_check: 'pending', trust_score: 78, is_police_verified: false, categories: ['Moving'], avatar_url: '' },
-];
+import { DEMO_WORKERS, getFavorites, toggleFavorite } from '@/lib/demoData';
 
 export default function ProvidersPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const [search, setSearch] = useState(searchParams?.get('skill') || '');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('rating');
-  const [workers, setWorkers] = useState<any[]>(DEMO_WORKERS);
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('All Skills');
+  const [sort, setSort] = useState('Rating');
+  const [favs, setFavs] = useState<string[]>([]);
 
-  useEffect(() => {
-    searchWorkers({ category: selectedCategory, skill: search }).then(data => {
-      if (data && data.length > 0) setWorkers(data);
-    });
-  }, [selectedCategory]);
+  useEffect(() => { setFavs(getFavorites()); }, []);
 
-  const filtered = workers
-    .filter(w => {
-      if (selectedCategory && !w.categories?.includes(selectedCategory)) return false;
-      if (search && !w.skills?.some((s: string) => s.toLowerCase().includes(search.toLowerCase())) && !w.full_name.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'price_low') return a.hourly_rate - b.hourly_rate;
-      if (sortBy === 'price_high') return b.hourly_rate - a.hourly_rate;
-      if (sortBy === 'jobs') return b.completed_jobs - a.completed_jobs;
-      return 0;
-    });
+  const handleFav = (id:string) => { toggleFavorite(id); setFavs(getFavorites()); };
 
-  const availabilityColor = (a: string) => a === 'available' ? '#22c55e' : a === 'busy' ? '#ef4444' : '#f59e0b';
-  const trustColor = (s: number) => s >= 80 ? '#22c55e' : s >= 60 ? '#eab308' : '#ef4444';
+  const cats = ['All Skills', ...new Set(DEMO_WORKERS.flatMap(w=>w.skills))];
+  let filtered = DEMO_WORKERS.filter(w => (!search || w.full_name.toLowerCase().includes(search.toLowerCase()) || w.skills.some(s=>s.toLowerCase().includes(search.toLowerCase()))) && (cat==='All Skills' || w.skills.includes(cat)));
+  if (sort==='Rating') filtered.sort((a,b)=>b.rating-a.rating);
+  else if (sort==='Price: Low') filtered.sort((a,b)=>a.hourly_rate-b.hourly_rate);
+  else if (sort==='Trust') filtered.sort((a,b)=>b.trust_score-a.trust_score);
 
+  const ac = (a:string)=>a==='available'?'#22c55e':a==='busy'?'#ef4444':'#f59e0b';
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-lg">←</button>
-          <h1 className="text-xl font-bold">👷 Service Providers</h1>
-        </div>
-        <button onClick={() => router.push('/jobplace/map')} className="glass-button px-3 py-2 rounded-xl text-xs font-medium" style={{ background: t.surface, color: t.accent, borderColor: t.cardBorder }}>🗺️ Map</button>
+        <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">\u2190</button><h1 className="text-xl font-bold">\ud83d\udc77 Service Providers</h1></div>
+        <button onClick={()=>router.push('/jobplace/map')} className="px-4 py-2 rounded-xl text-xs font-semibold" style={{ background:t.accentLight, color:t.accent, border:`1px solid ${t.accent}33` }}>\ud83d\uddfa\ufe0f Map</button>
       </div>
-
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search skills... (e.g., Babysitter, Plumber)"
-        className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background: t.input, color: t.text, borderColor: t.inputBorder }} />
-
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-          className="glass-input px-3 py-2 rounded-xl text-xs" style={{ background: t.input, color: t.text, borderColor: t.inputBorder }}>
-          <option value="">All Skills</option>
-          {JOB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search skills... (e.g., Babysitter, Plumber)" className="w-full p-3 rounded-xl text-sm outline-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+      <div className="flex gap-2">
+        <select value={cat} onChange={e=>setCat(e.target.value)} className="flex-1 p-2.5 rounded-xl text-xs outline-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }}>
+          {cats.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          className="glass-input px-3 py-2 rounded-xl text-xs" style={{ background: t.input, color: t.text, borderColor: t.inputBorder }}>
-          <option value="rating">⭐ Rating</option>
-          <option value="price_low">💰 Price: Low</option>
-          <option value="price_high">💰 Price: High</option>
-          <option value="jobs">📋 Most Jobs</option>
+        <select value={sort} onChange={e=>setSort(e.target.value)} className="flex-1 p-2.5 rounded-xl text-xs outline-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }}>
+          {['Rating','Price: Low','Trust'].map(s=><option key={s} value={s}>\u2b50 {s}</option>)}
         </select>
       </div>
-
-      <p className="text-xs" style={{ color: t.textMuted }}>{filtered.length} workers found</p>
-
+      <p className="text-xs" style={{ color:t.textMuted }}>{filtered.length} workers found</p>
       <div className="space-y-3">
-        {filtered.map((w, i) => (
-          <div key={w.id} onClick={() => router.push(`/worker/${w.id}`)}
-            className={`glass-card rounded-2xl p-4 cursor-pointer animate-slide-up stagger-${(i % 6) + 1}`}
-            style={{ background: t.card, borderColor: t.cardBorder, boxShadow: t.glassShadow, animationFillMode: 'both' }}>
-            <div className="flex items-start gap-3">
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold"
-                  style={{ background: `linear-gradient(135deg, ${t.accent}33, #8b5cf633)`, color: t.accent }}>
-                  {w.full_name.split(' ').map((n: string) => n[0]).join('')}
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2"
-                  style={{ background: availabilityColor(w.availability), borderColor: isDark ? '#1a1a2e' : '#f5f7ff' }}></div>
+        {filtered.map(w=>(<div key={w.id} className="glass-card rounded-2xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
+          <div className="flex items-center gap-3">
+            <div onClick={()=>router.push(`/worker/${w.id}`)} className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold cursor-pointer" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent, position:'relative', flexShrink:0 }}>
+              {w.full_name.split(' ').map(n=>n[0]).join('')}
+              <div style={{ position:'absolute', bottom:-2, right:-2, width:12, height:12, borderRadius:'50%', background:ac(w.availability), border:`2px solid ${isDark?'#1a1a2e':'#fff'}` }}></div>
+            </div>
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>router.push(`/worker/${w.id}`)}>
+              <p className="font-semibold">{w.full_name} {w.is_police_verified?'\ud83d\udee1\ufe0f':''} {w.background_check==='clear'?'\u2705':''}</p>
+              <p className="text-xs" style={{ color:t.textSecondary }}>\u2605 {w.rating} ({w.review_count} reviews) \u00b7 {w.completed_jobs} jobs</p>
+              <div className="flex gap-1.5 flex-wrap mt-1">{w.skills.map(s=><span key={s} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background:t.accentLight, color:t.accent }}>{s}</span>)}</div>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[11px]" style={{ color:t.textMuted }}>\ud83d\udccd {w.city}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background:ac(w.availability)+'22', color:ac(w.availability) }}>\u25cf {w.availability.charAt(0).toUpperCase()+w.availability.slice(1)}</span>
               </div>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold">{w.full_name}</h3>
-                  {w.is_police_verified && <span className="text-xs" title="Police Verified">🛡️</span>}
-                  {w.background_check === 'clear' && <span className="text-xs" title="Background Clear">✅</span>}
-                </div>
-
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs" style={{ color: '#f59e0b' }}>★ {w.rating}</span>
-                  <span className="text-xs" style={{ color: t.textMuted }}>({w.review_count} reviews)</span>
-                  <span className="text-xs" style={{ color: t.textMuted }}>• {w.completed_jobs} jobs</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {w.skills?.slice(0, 3).map((s: string) => (
-                    <span key={s} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: t.accentLight, color: t.accent }}>{s}</span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs" style={{ color: t.textSecondary }}>📍 {w.city}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: availabilityColor(w.availability) + '22', color: availabilityColor(w.availability) }}>
-                      {w.availability === 'available' ? '🟢 Available' : w.availability === 'busy' ? '🔴 Busy' : '🟡 Scheduled'}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold" style={{ color: t.accent }}>{formatCurrency(w.hourly_rate)}/hr</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[10px]" style={{ color: t.textMuted }}>Trust:</span>
-                      <span className="text-[10px] font-bold" style={{ color: trustColor(w.trust_score) }}>{w.trust_score}/100</span>
-                    </div>
-                  </div>
-                </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="font-bold text-lg" style={{ color:t.accent }}>${w.hourly_rate}.00<span className="text-xs font-normal">/hr</span></p>
+              <p className="text-[10px]" style={{ color:t.textMuted }}>Trust <span className="font-bold" style={{ color:w.trust_score>=80?'#22c55e':'#eab308' }}>{w.trust_score}/100</span></p>
+              <div className="flex gap-1 mt-1.5 justify-end">
+                <button onClick={e=>{e.stopPropagation();router.push(`/chat/${w.id}`);}} className="p-1.5 rounded-lg text-xs" style={{ background:t.accentLight, color:t.accent }}>\ud83d\udcac</button>
+                <button onClick={e=>{e.stopPropagation();handleFav(w.id);}} className="p-1.5 rounded-lg text-xs" style={{ background:favs.includes(w.id)?'rgba(234,179,8,0.15)':'transparent', color:favs.includes(w.id)?'#eab308':t.textMuted }}>{favs.includes(w.id)?'\u2b50':'\u2606'}</button>
               </div>
             </div>
           </div>
-        ))}
+        </div>))}
       </div>
     </div>
   );
