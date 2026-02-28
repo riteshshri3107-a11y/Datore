@@ -43,7 +43,7 @@ export default function HomePage() {
 
   const handlePost = () => {
     if (!postText.trim() && !mediaPreview) return;
-    addUserPost({ text: postText.trim(), type: postType, media: mediaPreview ? 'uploaded' : undefined });
+    addUserPost({ text: postText.trim(), type: postType, media: mediaPreview || undefined });
     setUserPosts(getUserPosts());
     setPostText(''); setShowPost(false); setPostType('text'); clearMedia();
   };
@@ -121,8 +121,16 @@ export default function HomePage() {
               </div>
               <p className="text-sm leading-relaxed" style={{ color:t.textSecondary }}>{post.text}</p>
               {post.media && (
-                <div className="mt-3 rounded-xl h-40 flex items-center justify-center overflow-hidden" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', border:`1px solid ${t.cardBorder}` }}>
-                  <p className="text-sm" style={{ color:t.textMuted }}>[{post.type === 'video' ? 'Video' : 'Photo'} content]</p>
+                <div className="mt-3 rounded-xl overflow-hidden" style={{ border:`1px solid ${t.cardBorder}` }}>
+                  {post.media.startsWith('data:video') ? (
+                    <video src={post.media} controls playsInline style={{ width:'100%', maxHeight:300, display:'block', background:'#000' }} />
+                  ) : post.media.startsWith('data:image') ? (
+                    <img src={post.media} alt="Post" style={{ width:'100%', maxHeight:300, objectFit:'cover', display:'block' }} />
+                  ) : (
+                    <div className="h-40 flex items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)' }}>
+                      <p className="text-sm" style={{ color:t.textMuted }}>[{post.type === 'video' ? 'Video' : 'Photo'} content]</p>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop:`1px solid ${t.cardBorder}` }}>
