@@ -61,7 +61,7 @@ export default function WalletPage() {
   const txnColor = (type:string) => type==='escrow'||type==='withdraw' ? '#ef4444' : '#22c55e';
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">💰 Wallet</h1>
       {success && <div style={{ padding:'12px 16px', borderRadius:14, background:'rgba(34,197,94,0.15)', color:'#22c55e', fontSize:13, fontWeight:600, textAlign:'center' }}>{success}</div>}
 

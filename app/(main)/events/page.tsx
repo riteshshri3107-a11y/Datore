@@ -42,7 +42,7 @@ export default function EventsPage() {
   const myEvents = DEMO_EVENTS.filter(e => rsvpd.includes(e.id));
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Events</h1></div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>+ Create</button>

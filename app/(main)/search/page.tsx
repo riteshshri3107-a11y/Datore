@@ -116,7 +116,7 @@ export default function SearchPage() {
   const urgColors: Record<string,string> = { immediate:'#ef4444', today:'#f97316', tomorrow:'#eab308', by_date:'#3b82f6', no_rush:'#22c55e' };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3">
         <img src="/logo-icon.png" alt="" width={28} height={28} style={{ borderRadius:7 }} />
         <h1 className="text-xl font-bold flex-1">Search</h1>

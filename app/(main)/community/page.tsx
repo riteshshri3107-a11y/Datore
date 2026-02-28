@@ -30,7 +30,7 @@ export default function CommunityPage() {
   const filtered = COMMUNITIES.filter(c => (!search || c.name.toLowerCase().includes(search.toLowerCase()) || c.category.toLowerCase().includes(search.toLowerCase())) && (tab==='discover' ? !joined.includes(c.id) : joined.includes(c.id)));
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">👥 Community</h1>
       <div className="flex gap-2">
         {(['discover','joined','manage'] as const).map(tb=>(<button key={tb} onClick={()=>setTab(tb)} className="px-4 py-2 rounded-xl text-xs font-medium capitalize" style={{ background:tab===tb?t.accentLight:'transparent', color:tab===tb?t.accent:t.textSecondary, border:tab===tb?`1px solid ${t.accent}33`:'1px solid transparent' }}>{tb} {tb==='joined'&&joined.length>0?`(${joined.length})`:''} </button>))}

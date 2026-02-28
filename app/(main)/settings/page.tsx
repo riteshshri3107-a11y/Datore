@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const ACCENTS = ['#6366f1', '#ec4899', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'];
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">⚙ Settings</h1>
 
       <div className="glass-card rounded-2xl p-5 space-y-5" style={{ background: t.card, borderColor: t.cardBorder }}>

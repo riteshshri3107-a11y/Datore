@@ -14,7 +14,7 @@ export default function SafetyPage() {
   const avgTrust = Math.round(DEMO_WORKERS.reduce((a,w) => a + w.trust_score, 0) / DEMO_WORKERS.length);
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Safety Center</h1></div>
 
       {/* Safety Score Overview */}

@@ -24,7 +24,7 @@ export default function ProvidersPage() {
   const ac = (a:string)=>a==='available'?'#22c55e':a==='busy'?'#ef4444':'#f59e0b';
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">←</button><h1 className="text-xl font-bold">👷 Service Providers</h1></div>
         <button onClick={()=>router.push('/jobplace/map')} className="px-4 py-2 rounded-xl text-xs font-semibold" style={{ background:t.accentLight, color:t.accent }}>🗺️ Map</button>

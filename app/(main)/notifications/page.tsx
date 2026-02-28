@@ -85,7 +85,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       {/* Push notification simulation */}
       {showPush && (
         <div className="glass-card rounded-2xl p-3 flex items-center gap-3 animate-bounce" style={{ background:'rgba(99,102,241,0.12)', borderColor:'#6366f133', position:'relative' }} onClick={() => { setShowPush(false); router.push('/jobplace/job/1'); }}>

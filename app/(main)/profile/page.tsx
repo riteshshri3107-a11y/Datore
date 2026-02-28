@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const favCount = getFavorites().length;
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">👤 My Profile</h1>
         <button onClick={()=>router.push('/profile/edit')} className="px-4 py-1.5 rounded-xl text-xs font-medium" style={{ background:t.accentLight, color:t.accent }}>✏️ Edit</button>

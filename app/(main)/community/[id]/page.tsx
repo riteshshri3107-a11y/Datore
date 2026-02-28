@@ -27,7 +27,7 @@ export default function CommunityDetailPage() {
   const handlePost = () => { if(!newPost.trim()) return; setPosts([{ user:'You', text:newPost.trim(), time:'Just now', likes:0 }, ...posts]); setNewPost(''); };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">←</button><h1 className="text-xl font-bold">{c.emoji} {c.name}</h1></div>
       <div className="glass-card rounded-2xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
         <p className="text-sm" style={{ color:t.textSecondary }}>{c.desc}</p>

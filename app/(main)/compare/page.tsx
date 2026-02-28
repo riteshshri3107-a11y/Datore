@@ -29,7 +29,7 @@ export default function ComparePage() {
   ];
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Compare Workers</h1></div>
 
       {selected.length < 2 && (

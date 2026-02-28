@@ -71,7 +71,7 @@ export default function CreateJobPage() {
   const IS = { background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text };
 
   if (posted) return (
-    <div className="flex flex-col items-center justify-center py-20 animate-fade-in max-w-lg mx-auto">
+    <div className="flex flex-col items-center justify-center py-20 animate-fade-in ">
       <p className="text-4xl font-bold mb-2" style={{ color:'#22c55e' }}>Posted!</p>
       <h2 className="text-xl font-bold">Job Posted Successfully</h2>
       <p className="text-sm mt-2" style={{ color:t.textSecondary }}>Workers will see your job listing now.</p>
@@ -80,7 +80,7 @@ export default function CreateJobPage() {
   );
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto pb-8">
+    <div className="space-y-4 animate-fade-in  pb-8">
       <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Post a Job</h1></div>
 
       <div className="glass-card rounded-2xl p-5 space-y-4" style={{ background:t.card, borderColor:t.cardBorder }}>

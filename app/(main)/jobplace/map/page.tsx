@@ -60,6 +60,7 @@ export default function MapPage() {
         { attribution: 'OSM', maxZoom: 19 }
       ).addTo(map);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.control.scale({ position: 'bottomleft', metric: true, imperial: false, maxWidth: 150 }).addTo(map);
 
       // User location marker
       const userIcon = L.divIcon({
@@ -111,7 +112,8 @@ export default function MapPage() {
 
     // Adjust zoom based on radius
     const zoomMap: Record<number, number> = { 5: 14, 10: 13, 25: 12, 50: 11 };
-    mapRef.current.setView([CENTER.lat, CENTER.lng], zoomMap[radius] || 13, { animate: true });
+    const zoom = radius <= 3 ? 15 : radius <= 7 ? 14 : radius <= 15 ? 13 : radius <= 30 ? 12 : 11;
+    mapRef.current.setView([CENTER.lat, CENTER.lng], zoomMap[radius] || zoom, { animate: true });
 
     // Clear old markers
     markersRef.current.forEach(m => { try { mapRef.current.removeLayer(m); } catch {} });
@@ -145,7 +147,7 @@ export default function MapPage() {
     <div style={{ margin: '-1rem -0.75rem', height: 'calc(100vh - 60px)', position: 'relative' }}>
       {/* Top controls */}
       <div style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 1000 }}>
-        <div className="max-w-lg mx-auto flex gap-2">
+        <div className=" flex gap-2">
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or skill..."
             style={{ flex: 1, padding: '10px 16px', borderRadius: 16, border: `1px solid ${t.cardBorder}`, background: isDark ? 'rgba(15,15,26,0.93)' : 'rgba(255,255,255,0.93)', color: t.text, backdropFilter: 'blur(20px)', fontSize: 13, outline: 'none' }} />
           <button onClick={() => router.push('/jobplace/providers')}
@@ -153,7 +155,7 @@ export default function MapPage() {
         </div>
 
         {/* Radius selector */}
-        <div className="max-w-lg mx-auto flex gap-1.5 mt-2">
+        <div className=" flex gap-1.5 mt-2">
           {[5, 10, 25, 50].map(r => (
             <button key={r} onClick={() => setRadius(r)}
               style={{ padding: '5px 14px', borderRadius: 12, background: radius === r ? (accentColor || '#6366f1') : (isDark ? 'rgba(15,15,26,0.85)' : 'rgba(255,255,255,0.85)'), color: radius === r ? 'white' : t.textSecondary, border: `1px solid ${radius === r ? (accentColor || '#6366f1') : t.cardBorder}`, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
@@ -166,8 +168,16 @@ export default function MapPage() {
           </span>
         </div>
 
+        {/* Range Slider */}
+        <div className="flex items-center gap-3 mt-1.5 px-1">
+          <span style={{ fontSize:10, color:t.textMuted, minWidth:28 }}>1km</span>
+          <input type="range" min={1} max={50} value={radius} onChange={e => setRadius(Number(e.target.value))} style={{ flex:1, accentColor: accentColor||'#6366f1', height:4, cursor:'pointer' }} />
+          <span style={{ fontSize:10, color:t.textMuted, minWidth:32 }}>50km</span>
+          <span style={{ fontSize:11, fontWeight:700, color:t.accent, minWidth:40, textAlign:'right' }}>{radius}km</span>
+        </div>
+
         {/* Skill filter */}
-        <div className="max-w-lg mx-auto flex gap-1 mt-2 overflow-x-auto pb-1">
+        <div className=" flex gap-1 mt-2 overflow-x-auto pb-1">
           <button onClick={() => setSkillFilter('All')}
             style={{ padding: '4px 12px', borderRadius: 10, background: skillFilter === 'All' ? (accentColor || '#6366f1') : (isDark ? 'rgba(15,15,26,0.8)' : 'rgba(255,255,255,0.8)'), color: skillFilter === 'All' ? 'white' : t.textSecondary, border: `1px solid ${skillFilter === 'All' ? 'transparent' : t.cardBorder}`, fontSize: 10, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             All Skills
@@ -215,7 +225,7 @@ export default function MapPage() {
       {/* Selected worker card */}
       {selected && (
         <div style={{ position: 'absolute', bottom: 70, left: 8, right: 8, zIndex: 1001 }}>
-          <div className="max-w-md mx-auto" style={{ background: isDark ? 'rgba(15,15,26,0.96)' : 'rgba(255,255,255,0.96)', borderRadius: 20, padding: 16, border: `1px solid ${t.cardBorder}`, boxShadow: '0 -4px 30px rgba(0,0,0,0.2)', backdropFilter: 'blur(24px)' }}>
+          <div className="" style={{ background: isDark ? 'rgba(15,15,26,0.96)' : 'rgba(255,255,255,0.96)', borderRadius: 20, padding: 16, border: `1px solid ${t.cardBorder}`, boxShadow: '0 -4px 30px rgba(0,0,0,0.2)', backdropFilter: 'blur(24px)' }}>
             <button onClick={() => setSelected(null)} style={{ position: 'absolute', top: 16, right: 16, color: t.textMuted, background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', fontWeight: 700 }}>X</button>
             <div style={{ display: 'flex', gap: 12 }}>
               <div onClick={() => router.push(`/worker/${selected.id}`)} style={{ width: 54, height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, background: `linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color: t.accent, cursor: 'pointer', flexShrink: 0, position: 'relative' }}>

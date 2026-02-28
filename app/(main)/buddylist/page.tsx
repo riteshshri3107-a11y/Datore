@@ -17,7 +17,7 @@ export default function BuddyListPage() {
   const ac = (a:string)=>a==='available'?'#22c55e':a==='busy'?'#ef4444':'#f59e0b';
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">←</button><h1 className="text-xl font-bold">⭐ Buddy List</h1></div>
       <p className="text-xs" style={{ color:t.textMuted }}>{favWorkers.length} favorite worker{favWorkers.length!==1?'s':''}</p>
       {favWorkers.length===0 ? (

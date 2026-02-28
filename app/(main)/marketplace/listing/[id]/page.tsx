@@ -36,7 +36,7 @@ export default function ListingDetailPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3">
         <button onClick={() => router.back()} className="text-lg">{'<-'}</button>
         <h1 className="text-xl font-bold flex-1">Listing Details</h1>

@@ -19,7 +19,7 @@ export default function InboxPage() {
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">💬 Messages</h1>
       <div className="space-y-1">
         {RECENT.map(chat => {

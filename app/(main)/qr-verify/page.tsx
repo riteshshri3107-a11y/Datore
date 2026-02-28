@@ -24,7 +24,7 @@ export default function QRVerifyPage() {
   const badgeColors: Record<string,string> = { Excellent:'#22c55e', 'Very Good':'#3b82f6', Good:'#f59e0b' };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3">
         <button onClick={() => router.back()} className="text-lg">{'<-'}</button>
         <h1 className="text-xl font-bold">QR Verification</h1>

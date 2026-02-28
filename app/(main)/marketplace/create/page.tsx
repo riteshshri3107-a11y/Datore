@@ -37,7 +37,7 @@ export default function CreateListingPage() {
   };
 
   if (posted) return (
-    <div className="flex flex-col items-center justify-center py-20 animate-fade-in max-w-lg mx-auto">
+    <div className="flex flex-col items-center justify-center py-20 animate-fade-in ">
       <p className="text-5xl mb-4">Done!</p>
       <h2 className="text-xl font-bold">Listing Posted!</h2>
       <p className="text-sm mt-2" style={{ color:t.textSecondary }}>Your item is now live on the marketplace.</p>
@@ -45,7 +45,7 @@ export default function CreateListingPage() {
   );
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Sell an Item</h1></div>
       <div className="glass-card rounded-2xl p-5 space-y-4" style={{ background:t.card, borderColor:t.cardBorder }}>
         <input ref={mktPhotoRef} type="file" accept="image/*" className="hidden" onChange={handleMktPhoto} />

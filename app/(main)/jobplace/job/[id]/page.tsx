@@ -21,7 +21,7 @@ export default function JobDetailPage() {
   const handleApply = () => { setApplied(true); setShowApply(false); };
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-lg mx-auto">
+    <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">←</button><h1 className="text-xl font-bold">Job Details</h1></div>
       <div className="glass-card rounded-2xl p-5" style={{ background:t.card, borderColor:t.cardBorder, boxShadow:t.glassShadow }}>
         <span className="text-xs px-3 py-1 rounded-full" style={{ background:urg.bg, color:urg.c }}>{urg.e} {urg.l}</span>
