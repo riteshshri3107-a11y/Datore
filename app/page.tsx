@@ -32,7 +32,7 @@ export default function Landing() {
         <div className="relative max-w-4xl mx-auto px-4 pt-8 pb-16">
           <div className="flex justify-between items-center mb-12">
             <div className="flex items-center gap-2">
-              <span className="text-3xl">🛡</span>
+              <img src="/logo-icon.png" alt="Datore" width={40} height={40} style={{ borderRadius:10 }} />
               <span className="font-bold text-2xl" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5cf6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Datore</span>
             </div>
             <div className="flex items-center gap-3">

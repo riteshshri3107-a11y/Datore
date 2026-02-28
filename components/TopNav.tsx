@@ -19,7 +19,7 @@ export default function TopNav() {
   return (
     <nav className="sticky top-0 z-50 hidden md:block" style={{ background:isDark?'rgba(15,15,26,0.85)':'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', borderBottom:`1px solid ${t.cardBorder}` }}>
       <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
-        <div onClick={()=>router.push('/home')} className="flex items-center gap-2 cursor-pointer"><span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>D</span><span className="font-bold text-lg" style={{ color:t.accent }}>Datore</span></div>
+        <div onClick={()=>router.push('/home')} className="flex items-center gap-2 cursor-pointer"><img src="/logo-icon.png" alt="Datore" width={32} height={32} style={{ borderRadius:8 }} /><span className="font-bold text-lg" style={{ color:t.accent }}>Datore</span></div>
         <div className="flex items-center gap-1">{NAV.map(item=>{const active=pathname?.startsWith(item.path);return(<button key={item.path} onClick={()=>router.push(item.path)} className="flex flex-col items-center px-3 py-1.5 rounded-xl text-xs" style={{ background:active?t.accentLight:'transparent', color:active?t.accent:t.textSecondary }}><span className="text-base">{item.icon}</span><span className="font-medium" style={{ fontSize:10 }}>{item.label}</span></button>);})}</div>
         <div className="flex items-center gap-2">
           <button onClick={()=>router.push('/search')} className="w-9 h-9 rounded-xl flex items-center justify-center text-sm" style={{ color:t.textSecondary }} title="Search">Q</button>

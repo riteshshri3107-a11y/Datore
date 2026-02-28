@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
-            <span className="text-2xl">🛡</span>
+            <img src="/logo-128.png" alt="Datore" width={56} height={56} style={{ borderRadius:14 }} />
             <span className="font-bold text-xl" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5cf6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Datore</span>
           </div>
           <button onClick={toggle} className="glass-button p-2 rounded-xl" style={{ background: t.surface }}>{isDark ? '☀' : '🌙'}</button>

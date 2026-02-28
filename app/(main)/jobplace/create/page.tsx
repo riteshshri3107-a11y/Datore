@@ -1,6 +1,6 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
@@ -19,6 +19,26 @@ export default function CreateJobPage() {
   const [posted, setPosted] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [mediaCount, setMediaCount] = useState(0);
+  const [mediaFiles, setMediaFiles] = useState<{name:string;type:string;preview:string}[]>([]);
+  const jobPhotoRef = useRef<HTMLInputElement>(null);
+  const jobVideoRef = useRef<HTMLInputElement>(null);
+
+  const handleJobMedia = (e: React.ChangeEvent<HTMLInputElement>, mtype: string) => {
+    const file = e.target.files?.[0];
+    if (!file || mediaFiles.length >= 5) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setMediaFiles(prev => [...prev, { name:file.name, type:mtype, preview:ev.target?.result as string }]);
+      setMediaCount(prev => prev + 1);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const removeMedia = (idx: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== idx));
+    setMediaCount(prev => Math.max(0, prev - 1));
+  };
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
   const toggleTag = (tag: string) => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : prev.length < 5 ? [...prev, tag] : prev);
@@ -88,20 +108,42 @@ export default function CreateJobPage() {
           <textarea value={form.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="Describe what you need..." className="w-full px-4 py-3 rounded-xl text-sm resize-none outline-none" style={IS} />
         </div>
 
-        {/* Photo/Video upload */}
+        {/* Photo/Video upload - REAL file pickers */}
         <div>
-          <label className="text-xs font-medium mb-2 block" style={{ color:t.textSecondary }}>Photos / Videos (optional)</label>
-          <div className="flex gap-2">
-            <button onClick={() => setMediaCount(Math.min(mediaCount + 1, 5))} className="flex-1 h-20 rounded-xl flex flex-col items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`2px dashed ${t.cardBorder}` }}>
-              <span className="text-sm font-bold" style={{ color:t.accent }}>+ Photo</span>
-              <span className="text-[10px]" style={{ color:t.textMuted }}>From camera or gallery</span>
-            </button>
-            <button onClick={() => setMediaCount(Math.min(mediaCount + 1, 5))} className="flex-1 h-20 rounded-xl flex flex-col items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`2px dashed ${t.cardBorder}` }}>
-              <span className="text-sm font-bold" style={{ color:'#ef4444' }}>+ Video</span>
-              <span className="text-[10px]" style={{ color:t.textMuted }}>Record or upload</span>
-            </button>
-          </div>
-          {mediaCount > 0 && <p className="text-[10px] mt-1" style={{ color:t.accent }}>{mediaCount} file(s) attached (demo)</p>}
+          <input ref={jobPhotoRef} type="file" accept="image/*" className="hidden" onChange={e => handleJobMedia(e, 'photo')} />
+          <input ref={jobVideoRef} type="file" accept="video/*" className="hidden" onChange={e => handleJobMedia(e, 'video')} />
+          <label className="text-xs font-medium mb-2 block" style={{ color:t.textSecondary }}>Photos / Videos (max 5)</label>
+          {/* Previews */}
+          {mediaFiles.length > 0 && (
+            <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+              {mediaFiles.map((m, i) => (
+                <div key={i} className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden" style={{ border:`1px solid ${t.cardBorder}` }}>
+                  {m.type === 'photo' ? (
+                    <img src={m.preview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)' }}>
+                      <span className="text-[10px] font-bold" style={{ color:'#ef4444' }}>VIDEO</span>
+                    </div>
+                  )}
+                  <button onClick={() => removeMedia(i)} className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background:'rgba(0,0,0,0.7)' }}>X</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Upload buttons */}
+          {mediaFiles.length < 5 && (
+            <div className="flex gap-2">
+              <button onClick={() => jobPhotoRef.current?.click()} className="flex-1 h-20 rounded-xl flex flex-col items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`2px dashed ${t.accent}44` }}>
+                <span className="text-sm font-bold" style={{ color:t.accent }}>+ Photo</span>
+                <span className="text-[10px]" style={{ color:t.textMuted }}>Camera or gallery</span>
+              </button>
+              <button onClick={() => jobVideoRef.current?.click()} className="flex-1 h-20 rounded-xl flex flex-col items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`2px dashed #ef444444` }}>
+                <span className="text-sm font-bold" style={{ color:'#ef4444' }}>+ Video</span>
+                <span className="text-[10px]" style={{ color:t.textMuted }}>Record or upload</span>
+              </button>
+            </div>
+          )}
+          {mediaCount > 0 && <p className="text-[10px] mt-1" style={{ color:'#22c55e' }}>{mediaCount} file(s) attached</p>}
         </div>
 
         {/* Urgency */}
