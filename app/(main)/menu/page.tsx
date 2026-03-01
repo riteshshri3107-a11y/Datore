@@ -32,11 +32,13 @@ const MENU = [
   ]},
   { section: 'Shopping', items: [
     { Icon: IcoMarket, label: 'Global Shop', path: '/shopping', color:'#ec4899', badge:'BR-99' },
-    { Icon: IcoList, label: 'Marketplace', path: '/marketplace', color:'#f97316', badge:'' },
+    { Icon: IcoList, label: 'DetoMart (Jobs + Buy/Sell)', path: '/marketplace', color:'#f97316', badge:'Local' },
   ]},
-  { section: 'Education', items: [
+  { section: 'Education & Entertainment', items: [
     { Icon: IcoBookmark, label: 'Education Hub', path: '/education', color:'#8b5cf6', badge:'BR-100' },
     { Icon: IcoList, label: 'Micro-Learning', path: '/learn', color:'#06b6d4', badge:'' },
+    { Icon: IcoList, label: 'Games', path: '/games', color:'#ec4899', badge:'NEW' },
+    { Icon: IcoList, label: 'Reels', path: '/reels', color:'#ef4444', badge:'NEW' },
   ]},
   { section: 'AI & Voice', items: [
     { Icon: IcoChat, label: 'Deto AI Companion', path: '/deto', color:'#8b5cf6', badge:'BR-104/105/106' },
