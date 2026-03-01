@@ -90,21 +90,21 @@ export default function ShoppingPage() {
   if(sel) return (
     <div className="space-y-3 animate-fade-in">
       <button onClick={()=>setSel(null)} className="flex items-center gap-2 text-xs" style={{color:t.accent}}><IcoBack size={14}/> Back</button>
-      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <div className="text-center text-5xl mb-3">{sel.img}</div>
         <div className="flex items-center gap-2 mb-1">{sel.badge&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">{sel.badge}</span>}<span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.accent+'15',color:t.accent}}>via {sel.portal}</span>{sel.prime&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Prime</span>}</div>
         <h2 className="text-base font-bold mb-1">{sel.name}</h2>
         <div className="flex items-center gap-2 mb-2"><span className="text-lg font-bold" style={{color:'#22c55e'}}>${sel.price}</span><span className="text-xs line-through" style={{color:t.textMuted}}>${sel.orig}</span><span className="text-xs font-bold" style={{color:'#ef4444'}}>-{disc(sel)}%</span></div>
         <div className="flex items-center gap-2 mb-3"><span className="text-xs">⭐ {sel.rating}</span><span className="text-[10px]" style={{color:t.textMuted}}>({sel.reviews.toLocaleString()} reviews)</span><span className="text-[10px]" style={{color:sel.stock==='Low Stock'?'#f59e0b':'#22c55e'}}>{sel.stock}</span></div>
         <p className="text-xs mb-3">{sel.desc}</p>
-        {sel.sizes&&<div className="mb-3"><p className="text-[10px] font-bold mb-1">Size</p><div className="flex gap-1">{sel.sizes.map(s=>(<button key={s} className="px-3 py-1 rounded-lg text-xs" style={{background:t.bg,border:`1px solid ${t.border}`}}>{s}</button>))}</div></div>}
+        {sel.sizes&&<div className="mb-3"><p className="text-[10px] font-bold mb-1">Size</p><div className="flex gap-1">{sel.sizes.map(s=>(<button key={s} className="px-3 py-1 rounded-lg text-xs" style={{background:t.bg,border:`1px solid ${t.cardBorder}`}}>{s}</button>))}</div></div>}
 
         {/* Price Comparison — Datore Unique */}
         <h4 className="text-[10px] font-bold mb-1">💰 Price Comparison Across Portals</h4>
         <div className="space-y-1 mb-3">{sel.priceHistory.map((ph,i)=>(
           <div key={i} className="flex items-center gap-2 p-1.5 rounded-lg" style={{background:i===0?'rgba(34,197,94,0.08)':t.bg}}>
             <span className="text-[10px] font-medium w-20">{ph.portal}</span>
-            <div className="flex-1 h-1 rounded-full" style={{background:t.border}}><div className="h-1 rounded-full" style={{background:i===0?'#22c55e':'#3b82f6',width:`${(Math.min(...sel.priceHistory.map(x=>x.price))/ph.price)*100}%`}}/></div>
+            <div className="flex-1 h-1 rounded-full" style={{background:t.cardBorder}}><div className="h-1 rounded-full" style={{background:i===0?'#22c55e':'#3b82f6',width:`${(Math.min(...sel.priceHistory.map(x=>x.price))/ph.price)*100}%`}}/></div>
             <span className="text-[10px] font-bold" style={{color:i===0?'#22c55e':t.text}}>${ph.price}</span>
             {i===0&&<span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-700">Best</span>}
           </div>
@@ -124,8 +124,8 @@ export default function ShoppingPage() {
 
         <div className="flex gap-2">
           <button onClick={()=>toggleCart(sel.id)} className="flex-1 py-2.5 rounded-lg text-xs font-bold text-white" style={{background:sel.inCart?'#22c55e':t.accent}}>{sel.inCart?'✅ In Cart':'🛒 Add to Cart'}</button>
-          <button onClick={()=>toggleSave(sel.id)} className="px-4 py-2.5 rounded-lg text-xs" style={{background:t.border}}>{sel.saved?'💾':'🤍'}</button>
-          <button onClick={()=>toggleCompare(sel.id)} className="px-4 py-2.5 rounded-lg text-xs" style={{background:compareList.includes(sel.id)?'rgba(139,92,246,0.15)':t.border,color:compareList.includes(sel.id)?'#8b5cf6':t.text}}>⚖️</button>
+          <button onClick={()=>toggleSave(sel.id)} className="px-4 py-2.5 rounded-lg text-xs" style={{background:t.cardBorder}}>{sel.saved?'💾':'🤍'}</button>
+          <button onClick={()=>toggleCompare(sel.id)} className="px-4 py-2.5 rounded-lg text-xs" style={{background:compareList.includes(sel.id)?'rgba(139,92,246,0.15)':t.cardBorder,color:compareList.includes(sel.id)?'#8b5cf6':t.text}}>⚖️</button>
         </div>
       </div>
     </div>
@@ -139,7 +139,7 @@ export default function ShoppingPage() {
 
       {/* Search + Voice */}
       <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products globally..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div>
+        <div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products globally..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div>
         <button onClick={voiceS} className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':t.card}}><IcoMic size={16} color={voiceSrch?'#ef4444':t.textMuted}/></button>
       </div>
       {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
@@ -160,20 +160,20 @@ export default function ShoppingPage() {
 
           {/* Portals */}
           <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{PORTALS.map(p=>(
-            <button key={p} onClick={()=>setPortal(p)} className="px-2 py-0.5 rounded-full text-[9px] font-medium whitespace-nowrap" style={{background:portal===p?'rgba(139,92,246,0.15)':'transparent',color:portal===p?'#8b5cf6':t.textMuted,border:`1px solid ${portal===p?'#8b5cf6':t.border}`}}>{p}</button>
+            <button key={p} onClick={()=>setPortal(p)} className="px-2 py-0.5 rounded-full text-[9px] font-medium whitespace-nowrap" style={{background:portal===p?'rgba(139,92,246,0.15)':'transparent',color:portal===p?'#8b5cf6':t.textMuted,border:`1px solid ${portal===p?'#8b5cf6':t.cardBorder}`}}>{p}</button>
           ))}</div>
 
           {/* Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={()=>setPrimeOnly(!primeOnly)} className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{background:primeOnly?'rgba(59,130,246,0.15)':'transparent',color:primeOnly?'#3b82f6':t.textMuted,border:`1px solid ${primeOnly?'#3b82f6':t.border}`}}>Prime Only</button>
-            <select value={sort} onChange={e=>setSort(e.target.value)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.card,color:t.text,border:`1px solid ${t.border}`}}>{SORT_OPTS.map(s=><option key={s}>{s}</option>)}</select>
+            <button onClick={()=>setPrimeOnly(!primeOnly)} className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{background:primeOnly?'rgba(59,130,246,0.15)':'transparent',color:primeOnly?'#3b82f6':t.textMuted,border:`1px solid ${primeOnly?'#3b82f6':t.cardBorder}`}}>Prime Only</button>
+            <select value={sort} onChange={e=>setSort(e.target.value)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.card,color:t.text,border:`1px solid ${t.cardBorder}`}}>{SORT_OPTS.map(s=><option key={s}>{s}</option>)}</select>
             <span className="text-[9px]" style={{color:t.textMuted}}>{filtered.length} results</span>
           </div>
 
           {/* Product Grid */}
           <div className="grid grid-cols-2 gap-2">
             {filtered.map(p=>(
-              <button key={p.id} onClick={()=>setSel(p)} className="text-left p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+              <button key={p.id} onClick={()=>setSel(p)} className="text-left p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                 <div className="text-center text-3xl mb-1 relative">
                   {p.img}
                   {p.badge&&<span className="absolute top-0 left-0 text-[7px] px-1 py-0.5 rounded bg-orange-100 text-orange-600">{p.badge}</span>}
@@ -200,14 +200,14 @@ export default function ShoppingPage() {
         <div className="space-y-2">
           {cart.length===0?<p className="text-center text-sm py-8" style={{color:t.textMuted}}>Cart is empty</p>:(<>
             {cart.map(p=>(
-              <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                 <span className="text-2xl">{p.img}</span>
                 <div className="flex-1 min-w-0"><p className="text-xs font-semibold truncate">{p.name}</p><p className="text-[10px]" style={{color:t.textMuted}}>{p.portal} · {p.delivery}</p></div>
                 <div className="text-right"><p className="text-sm font-bold" style={{color:'#22c55e'}}>${p.price}</p>{p.orig>p.price&&<p className="text-[9px]" style={{color:'#ef4444'}}>Save ${(p.orig-p.price).toFixed(2)}</p>}</div>
                 <button onClick={()=>toggleCart(p.id)} className="text-xs" style={{color:'#ef4444'}}>✕</button>
               </div>
             ))}
-            <div className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex justify-between text-xs mb-1"><span>Subtotal ({cart.length} items)</span><span className="font-bold">${cartTotal.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs mb-1"><span>Savings</span><span className="font-bold" style={{color:'#22c55e'}}>-${savings.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs mb-2"><span>Delivery</span><span className="font-bold" style={{color:'#22c55e'}}>FREE</span></div>
@@ -222,7 +222,7 @@ export default function ShoppingPage() {
         <div className="space-y-2">
           {wishlist.length===0?<p className="text-center text-sm py-8" style={{color:t.textMuted}}>No saved items</p>:
           wishlist.map(p=>(
-            <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <span className="text-2xl">{p.img}</span>
               <div className="flex-1"><p className="text-xs font-semibold">{p.name}</p><p className="text-sm font-bold" style={{color:'#22c55e'}}>${p.price}</p></div>
               <button onClick={()=>toggleCart(p.id)} className="px-2 py-1 rounded text-[9px] font-bold text-white" style={{background:t.accent}}>🛒</button>
@@ -239,7 +239,7 @@ export default function ShoppingPage() {
             <div className="overflow-x-auto">
               <div className="flex gap-2" style={{minWidth:`${compareList.length*180}px`}}>
                 {compareList.map(id=>{const p=products.find(x=>x.id===id);if(!p)return null;return(
-                  <div key={p.id} className="w-44 p-3 rounded-xl flex-shrink-0" style={{background:t.card,border:`1px solid ${t.border}`}}>
+                  <div key={p.id} className="w-44 p-3 rounded-xl flex-shrink-0" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                     <div className="text-center text-3xl mb-2">{p.img}</div>
                     <p className="text-xs font-bold text-center mb-2 truncate">{p.name}</p>
                     <div className="space-y-1">

@@ -136,7 +136,7 @@ export default function ProfessionalPage() {
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
         {TABS.map(tb=>(
-          <button key={tb} onClick={()=>{setTab(tb);setSelJob(null);}} className="px-3 py-1.5 rounded-full text-[10px] font-semibold whitespace-nowrap flex items-center gap-1" style={{background:tab===tb?t.accent+'20':t.card,color:tab===tb?t.accent:t.textMuted,border:`1px solid ${tab===tb?t.accent:t.border}`}}>
+          <button key={tb} onClick={()=>{setTab(tb);setSelJob(null);}} className="px-3 py-1.5 rounded-full text-[10px] font-semibold whitespace-nowrap flex items-center gap-1" style={{background:tab===tb?t.accent+'20':t.card,color:tab===tb?t.accent:t.textMuted,border:`1px solid ${tab===tb?t.accent:t.cardBorder}`}}>
             {TAB_ICONS[tb]} {tb.charAt(0).toUpperCase()+tb.slice(1)}
           </button>
         ))}
@@ -145,7 +145,7 @@ export default function ProfessionalPage() {
       {/* PROFILE TAB */}
       {tab==='profile'&&(
         <div className="space-y-3">
-          <div className="p-4 rounded-xl relative" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div className="p-4 rounded-xl relative" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             {/* BR-101: Edit own profile */}
             <button onClick={()=>setEditProfile(!editProfile)} className="absolute top-3 right-3 text-[9px] px-2 py-0.5 rounded" style={{background:t.accent+'20',color:t.accent}}>{editProfile?'Done':'Edit'}</button>
             <div className="flex items-center gap-3 mb-3">
@@ -158,13 +158,13 @@ export default function ProfessionalPage() {
             </div>
             {/* LinkedIn feature: Open to Work */}
             <div className="flex gap-2 mb-3">
-              <button onClick={()=>setOpenToWork(!openToWork)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:openToWork?'rgba(34,197,94,0.15)':'transparent',color:openToWork?'#22c55e':t.textMuted,border:`1px solid ${openToWork?'#22c55e':t.border}`}}>
+              <button onClick={()=>setOpenToWork(!openToWork)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:openToWork?'rgba(34,197,94,0.15)':'transparent',color:openToWork?'#22c55e':t.textMuted,border:`1px solid ${openToWork?'#22c55e':t.cardBorder}`}}>
                 {openToWork?'✅':'⚪'} Open to Work
               </button>
-              <button onClick={()=>setCreatorMode(!creatorMode)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:creatorMode?'rgba(139,92,246,0.15)':'transparent',color:creatorMode?'#8b5cf6':t.textMuted,border:`1px solid ${creatorMode?'#8b5cf6':t.border}`}}>
+              <button onClick={()=>setCreatorMode(!creatorMode)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:creatorMode?'rgba(139,92,246,0.15)':'transparent',color:creatorMode?'#8b5cf6':t.textMuted,border:`1px solid ${creatorMode?'#8b5cf6':t.cardBorder}`}}>
                 {creatorMode?'✅':'⚪'} Creator Mode
               </button>
-              <button onClick={()=>setCareerBreak(!careerBreak)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:careerBreak?'rgba(245,158,11,0.15)':'transparent',color:careerBreak?'#f59e0b':t.textMuted,border:`1px solid ${careerBreak?'#f59e0b':t.border}`}}>
+              <button onClick={()=>setCareerBreak(!careerBreak)} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:careerBreak?'rgba(245,158,11,0.15)':'transparent',color:careerBreak?'#f59e0b':t.textMuted,border:`1px solid ${careerBreak?'#f59e0b':t.cardBorder}`}}>
                 {careerBreak?'✅':'⚪'} Career Break
               </button>
             </div>
@@ -199,17 +199,17 @@ export default function ProfessionalPage() {
       {/* JOBS TAB */}
       {tab==='jobs'&&!selJob&&(
         <div className="space-y-3">
-          <div className="flex gap-2"><div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search jobs, companies..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div></div>
+          <div className="flex gap-2"><div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search jobs, companies..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div></div>
           <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{(['all','remote','urgent','saved','applied'] as const).map(f=>(<button key={f} onClick={()=>setJobFilter(f)} className="px-3 py-1 rounded-full text-[10px] font-medium whitespace-nowrap" style={{background:jobFilter===f?t.accent+'20':t.card,color:jobFilter===f?t.accent:t.textMuted}}>{f==='all'?'🔥 All':f==='remote'?'🏠 Remote':f==='urgent'?'⚡ Urgent':f==='saved'?'💾 Saved':'✅ Applied'}</button>))}</div>
           {filteredJobs.map(j=>(
-            <button key={j.id} onClick={()=>setSelJob(j)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <button key={j.id} onClick={()=>setSelJob(j)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold" style={{background:t.accent+'15',color:t.accent}}>{j.logo}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1"><p className="text-sm font-semibold truncate">{j.title}</p>{j.urgent&&<span className="text-[8px] px-1 py-0.5 rounded bg-red-100 text-red-600">Urgent</span>}{j.easyApply&&<span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-600">Easy Apply</span>}</div>
                   <p className="text-[10px]" style={{color:t.textMuted}}>{j.company} · {j.location}{j.remote?' · 🏠 Remote':''}</p>
                   <div className="flex items-center gap-2 mt-1"><span className="text-[10px] font-semibold" style={{color:'#22c55e'}}>{j.salary}</span><span className="text-[9px]" style={{color:t.textMuted}}>{j.posted}</span><span className="text-[9px]" style={{color:t.textMuted}}>👥 {j.applicants}</span><span className="text-[9px]" style={{color:t.textMuted}}>via {j.source}</span></div>
-                  <div className="flex items-center gap-1 mt-1"><div className="flex-1 h-1 rounded-full" style={{background:t.border}}><div className="h-1 rounded-full" style={{background:j.match>=90?'#22c55e':j.match>=80?'#3b82f6':'#f59e0b',width:`${j.match}%`}}/></div><span className="text-[9px] font-bold" style={{color:j.match>=90?'#22c55e':'#3b82f6'}}>{j.match}% match</span></div>
+                  <div className="flex items-center gap-1 mt-1"><div className="flex-1 h-1 rounded-full" style={{background:t.cardBorder}}><div className="h-1 rounded-full" style={{background:j.match>=90?'#22c55e':j.match>=80?'#3b82f6':'#f59e0b',width:`${j.match}%`}}/></div><span className="text-[9px] font-bold" style={{color:j.match>=90?'#22c55e':'#3b82f6'}}>{j.match}% match</span></div>
                 </div>
                 <div className="flex flex-col gap-1"><button onClick={e=>{e.stopPropagation();setJobs(p=>p.map(x=>x.id===j.id?{...x,saved:!x.saved}:x));}} className="text-sm">{j.saved?'💾':'🤍'}</button><span className="text-[9px]" style={{color:t.textMuted}}>⭐ {j.compRating}</span></div>
               </div>
@@ -222,7 +222,7 @@ export default function ProfessionalPage() {
       {tab==='jobs'&&selJob&&(
         <div className="space-y-3">
           <button onClick={()=>setSelJob(null)} className="text-xs" style={{color:t.accent}}>← Back to Jobs</button>
-          <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex gap-3 mb-3"><div className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold" style={{background:t.accent+'15',color:t.accent}}>{selJob.logo}</div><div><h2 className="text-base font-bold">{selJob.title}</h2><p className="text-xs" style={{color:t.textMuted}}>{selJob.company} · {selJob.location}</p></div></div>
             <div className="flex gap-2 mb-3">{selJob.urgent&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-red-100 text-red-600">Urgent</span>}{selJob.remote&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">Remote</span>}<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">{selJob.salary}</span><span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.card}}>{selJob.type}</span></div>
             <p className="text-xs mb-3">{selJob.desc}</p>
@@ -233,7 +233,7 @@ export default function ProfessionalPage() {
             <div className="flex items-center gap-3 mb-3"><span className="text-[10px]">⭐ {selJob.compRating} ({selJob.compReviews} reviews)</span><span className="text-[10px]">👥 {selJob.applicants} applicants</span><span className="text-[10px]">📅 {selJob.posted}</span></div>
             <div className="flex gap-2">
               <button onClick={()=>setJobs(p=>p.map(j=>j.id===selJob.id?{...j,applied:true}:j))} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:selJob.applied?'#22c55e':t.accent}}>{selJob.applied?'✅ Applied':'Apply Now'}</button>
-              <button onClick={()=>setJobs(p=>p.map(j=>j.id===selJob.id?{...j,saved:!j.saved}:j))} className="px-4 py-2 rounded-lg text-xs" style={{background:t.border}}>{selJob.saved?'💾 Saved':'Save'}</button>
+              <button onClick={()=>setJobs(p=>p.map(j=>j.id===selJob.id?{...j,saved:!j.saved}:j))} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>{selJob.saved?'💾 Saved':'Save'}</button>
             </div>
           </div>
         </div>
@@ -244,7 +244,7 @@ export default function ProfessionalPage() {
         <div className="space-y-2">
           <div className="flex gap-2 mb-2">{(['connected','pending','suggestion'] as const).map(s=>{const cnt=conns.filter(c=>c.status===s).length;return(<span key={s} className="px-3 py-1 rounded-full text-[10px] font-medium" style={{background:t.card}}>{s==='connected'?'🤝':'🕐'} {s} ({cnt})</span>);})}</div>
           {conns.map(c=>(
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{background:t.accent}}>{c.avatar}</div>
               <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate">{c.name}</p><p className="text-[10px] truncate" style={{color:t.textMuted}}>{c.title}</p><p className="text-[9px]" style={{color:t.textMuted}}>{c.mutual} mutual · Endorsed: {c.endorsed.join(', ')}</p></div>
               {c.status==='suggestion'?<button onClick={()=>setConns(p=>p.map(x=>x.id===c.id?{...x,status:'pending'}:x))} className="px-3 py-1 rounded-lg text-[10px] font-bold text-white" style={{background:t.accent}}>Connect</button>:
@@ -258,8 +258,8 @@ export default function ProfessionalPage() {
       {/* RESUME TAB — Monster gap: Resume scoring */}
       {tab==='resume'&&(
         <div className="space-y-3">
-          <div className="p-4 rounded-xl text-center" style={{background:t.card,border:`1px solid ${t.border}`}}>
-            <div className="relative inline-block mb-2"><svg width="80" height="80"><circle cx="40" cy="40" r="35" fill="none" stroke={t.border} strokeWidth="6"/><circle cx="40" cy="40" r="35" fill="none" stroke={resumeScore>=80?'#22c55e':resumeScore>=60?'#f59e0b':'#ef4444'} strokeWidth="6" strokeDasharray={`${resumeScore*2.2} 220`} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg><span className="absolute inset-0 flex items-center justify-center text-lg font-bold">{resumeScore}</span></div>
+          <div className="p-4 rounded-xl text-center" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+            <div className="relative inline-block mb-2"><svg width="80" height="80"><circle cx="40" cy="40" r="35" fill="none" stroke={t.cardBorder} strokeWidth="6"/><circle cx="40" cy="40" r="35" fill="none" stroke={resumeScore>=80?'#22c55e':resumeScore>=60?'#f59e0b':'#ef4444'} strokeWidth="6" strokeDasharray={`${resumeScore*2.2} 220`} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg><span className="absolute inset-0 flex items-center justify-center text-lg font-bold">{resumeScore}</span></div>
             <h3 className="text-sm font-bold">Resume Score</h3>
             <p className="text-[10px]" style={{color:t.textMuted}}>AI-analyzed against 10K+ job postings</p>
           </div>
@@ -267,7 +267,7 @@ export default function ProfessionalPage() {
             {[{label:'Keywords Match',val:85,tip:'Add: "microservices", "CI/CD"'},{label:'ATS Compatibility',val:92,tip:'Excellent formatting'},{label:'Experience Relevance',val:78,tip:'Add quantifiable achievements'},{label:'Skills Coverage',val:72,tip:'Add certifications for AWS, K8s'},{label:'Education Match',val:88,tip:'Relevant degree detected'}].map(m=>(
               <div key={m.label} className="p-2 rounded-lg" style={{background:t.card}}>
                 <div className="flex justify-between text-xs mb-1"><span>{m.label}</span><span className="font-bold" style={{color:m.val>=80?'#22c55e':m.val>=60?'#f59e0b':'#ef4444'}}>{m.val}%</span></div>
-                <div className="h-1.5 rounded-full" style={{background:t.border}}><div className="h-1.5 rounded-full" style={{background:m.val>=80?'#22c55e':m.val>=60?'#f59e0b':'#ef4444',width:`${m.val}%`}}/></div>
+                <div className="h-1.5 rounded-full" style={{background:t.cardBorder}}><div className="h-1.5 rounded-full" style={{background:m.val>=80?'#22c55e':m.val>=60?'#f59e0b':'#ef4444',width:`${m.val}%`}}/></div>
                 <p className="text-[9px] mt-1" style={{color:t.textMuted}}>💡 {m.tip}</p>
               </div>
             ))}
@@ -280,7 +280,7 @@ export default function ProfessionalPage() {
       {/* COMPANIES TAB — Indeed gap: Company reviews */}
       {tab==='companies'&&(
         <div className="space-y-2">{COMPANIES.map(c=>(
-          <div key={c.name} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={c.name} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold" style={{background:t.accent+'15',color:t.accent}}>{c.name.charAt(0)}</div><div className="flex-1"><p className="text-sm font-bold">{c.name}</p><p className="text-[10px]" style={{color:t.textMuted}}>{c.industry} · {c.size} employees</p></div><div className="text-right"><p className="text-sm font-bold flex items-center gap-1">⭐ {c.rating}</p><p className="text-[9px]" style={{color:t.textMuted}}>{c.reviews.toLocaleString()} reviews</p></div></div>
             <div className="grid grid-cols-3 gap-2 mt-2">{[{l:'Open Jobs',v:c.openJobs},{l:'Recommend',v:c.recommend+'%'},{l:'CEO Approval',v:c.ceoApproval+'%'}].map(s=>(<div key={s.l} className="text-center p-1 rounded" style={{background:t.bg}}><p className="text-xs font-bold">{s.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s.l}</p></div>))}</div>
           </div>
@@ -296,7 +296,7 @@ export default function ProfessionalPage() {
             <button className="mt-2 px-3 py-1 rounded-lg text-[10px] font-bold text-white" style={{background:'#3b82f6'}}>Start Practice</button>
           </div>
           {INTERVIEWS_DATA.map((iv,i)=>(
-            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2"><p className="text-sm font-semibold flex-1">{iv.company} — {iv.role}</p><span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:iv.status==='scheduled'?'rgba(59,130,246,0.15)':iv.status==='completed'?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)',color:iv.status==='scheduled'?'#3b82f6':iv.status==='completed'?'#22c55e':'#ef4444'}}>{iv.status}</span></div>
               <p className="text-[10px]" style={{color:t.textMuted}}>📅 {iv.date} · {iv.type}{iv.rating?` · ⭐ ${iv.rating}/5`:''}</p>
               <p className="text-[10px]">{iv.notes}</p>
@@ -310,7 +310,7 @@ export default function ProfessionalPage() {
         <div className="space-y-2">
           <p className="text-xs font-bold">💰 Salary Insights (Canada, 2026)</p>
           {SALARY_DATA.map(s=>(
-            <div key={s.role} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={s.role} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <p className="text-xs font-bold mb-2">{s.role}</p>
               <div className="grid grid-cols-4 gap-1">{[{l:'Junior',v:s.junior},{l:'Mid',v:s.mid},{l:'Senior',v:s.senior},{l:'Lead',v:s.lead}].map(lv=>(<div key={lv.l} className="text-center p-1 rounded" style={{background:t.bg}}><p className="text-[9px] font-bold" style={{color:'#22c55e'}}>{lv.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{lv.l}</p></div>))}</div>
             </div>
@@ -323,9 +323,9 @@ export default function ProfessionalPage() {
         <div className="space-y-2">
           <p className="text-xs font-bold">🎯 Skill Assessments & Endorsements</p>
           {SKILL_ASSESS.map(s=>(
-            <div key={s.skill} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={s.skill} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2 mb-1"><p className="text-sm font-semibold flex-1">{s.skill}</p>{s.verified&&<span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-600">✅ Verified</span>}<span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:s.level==='Expert'?'rgba(139,92,246,0.15)':s.level==='Advanced'?'rgba(59,130,246,0.15)':'rgba(245,158,11,0.15)',color:s.level==='Expert'?'#8b5cf6':s.level==='Advanced'?'#3b82f6':'#f59e0b'}}>{s.level}</span></div>
-              <div className="flex items-center gap-2"><div className="flex-1 h-1.5 rounded-full" style={{background:t.border}}><div className="h-1.5 rounded-full" style={{background:s.score>=85?'#22c55e':s.score>=70?'#3b82f6':'#f59e0b',width:`${s.score}%`}}/></div><span className="text-[9px] font-bold">{s.score}%</span></div>
+              <div className="flex items-center gap-2"><div className="flex-1 h-1.5 rounded-full" style={{background:t.cardBorder}}><div className="h-1.5 rounded-full" style={{background:s.score>=85?'#22c55e':s.score>=70?'#3b82f6':'#f59e0b',width:`${s.score}%`}}/></div><span className="text-[9px] font-bold">{s.score}%</span></div>
               <p className="text-[9px] mt-1" style={{color:t.textMuted}}>👍 {s.endorsements} endorsements</p>
             </div>
           ))}
@@ -336,7 +336,7 @@ export default function ProfessionalPage() {
       {/* ARTICLES TAB */}
       {tab==='articles'&&(
         <div className="space-y-2">{ARTICLES.map(a=>(
-          <div key={a.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={a.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <p className="text-sm font-semibold">{a.title}</p>
             <p className="text-[10px]" style={{color:t.textMuted}}>by {a.author} · {a.reads} reads · {a.time} read</p>
             <span className="text-[9px] px-2 py-0.5 rounded-full mt-1 inline-block" style={{background:t.accent+'15',color:t.accent}}>{a.tag}</span>
@@ -349,7 +349,7 @@ export default function ProfessionalPage() {
         <div className="space-y-2">
           <div className="grid grid-cols-5 gap-1 mb-2">{(['applied','screening','interview','offer','rejected'] as const).map(s=>{const cnt=appTrack.filter(a=>a.status===s).length;return(<div key={s} className="text-center p-2 rounded-lg" style={{background:statusBg(s)}}><p className="text-sm font-bold" style={{color:statusColor(s)}}>{cnt}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s}</p></div>);})}</div>
           {appTrack.map(a=>(
-            <div key={a.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={a.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="w-2 h-full rounded-full" style={{background:statusColor(a.status)}}/>
               <div className="flex-1"><p className="text-sm font-semibold">{a.role}</p><p className="text-[10px]" style={{color:t.textMuted}}>{a.company} · {a.date}{a.salary?` · ${a.salary}`:''}</p><p className="text-[9px]">{a.notes}</p></div>
               <span className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{background:statusBg(a.status),color:statusColor(a.status)}}>{a.status}</span>

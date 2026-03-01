@@ -114,7 +114,7 @@ export default function EducationPage() {
   if(sel) return (
     <div className="space-y-3 animate-fade-in">
       <button onClick={()=>setSel(null)} className="flex items-center gap-2 text-xs" style={{color:t.accent}}><IcoBack size={14}/> Back</button>
-      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <div className="text-center text-5xl mb-3">{sel.icon}</div>
         <h2 className="text-base font-bold">{sel.title}</h2>
         <p className="text-xs" style={{color:t.textMuted}}>by {sel.instructor} · {sel.university}</p>
@@ -136,7 +136,7 @@ export default function EducationPage() {
         <div className="space-y-1 mb-3">{sel.modules.map((m,i)=>(
           <div key={i} className="p-2 rounded-lg" style={{background:t.bg}}>
             <div className="flex justify-between text-[10px] mb-1"><span className="font-medium">{i+1}. {m.name}</span><span>{m.completed}/{m.lessons}</span></div>
-            <div className="h-1 rounded-full" style={{background:t.border}}><div className="h-1 rounded-full" style={{background:m.completed===m.lessons?'#22c55e':m.completed>0?'#3b82f6':t.border,width:`${(m.completed/m.lessons)*100}%`}}/></div>
+            <div className="h-1 rounded-full" style={{background:t.cardBorder}}><div className="h-1 rounded-full" style={{background:m.completed===m.lessons?'#22c55e':m.completed>0?'#3b82f6':t.cardBorder,width:`${(m.completed/m.lessons)*100}%`}}/></div>
           </div>
         ))}</div>
 
@@ -167,13 +167,13 @@ export default function EducationPage() {
       {/* EXPLORE */}
       {tab==='explore'&&(
         <>
-          <div className="flex gap-2"><div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search courses, skills..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div></div>
+          <div className="flex gap-2"><div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search courses, skills..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div></div>
           <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{CATS.map(c=>(<button key={c} onClick={()=>setCatF(c)} className="px-2 py-0.5 rounded-full text-[9px] font-medium whitespace-nowrap" style={{background:catF===c?t.accent+'20':t.card,color:catF===c?t.accent:t.textMuted}}>{c}</button>))}</div>
           <div className="flex gap-1 items-center">{LEVELS.map(l=>(<button key={l} onClick={()=>setLevelF(l)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:levelF===l?'rgba(139,92,246,0.15)':'transparent',color:levelF===l?'#8b5cf6':t.textMuted}}>{l}</button>))}
             <button onClick={()=>setFreeF(!freeF)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:freeF?'rgba(34,197,94,0.15)':'transparent',color:freeF?'#22c55e':t.textMuted}}>Free Only</button>
           </div>
           <div className="space-y-2">{filtered.map(c=>(
-            <button key={c.id} onClick={()=>setSel(c)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <button key={c.id} onClick={()=>setSel(c)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex gap-3">
                 <span className="text-2xl">{c.icon}</span>
                 <div className="flex-1 min-w-0">
@@ -186,7 +186,7 @@ export default function EducationPage() {
                     <span className="text-[9px]" style={{color:t.textMuted}}>{c.level}</span>
                     <span className="text-[9px]" style={{color:t.textMuted}}>{c.duration}</span>
                   </div>
-                  {c.enrolled&&c.progress>0&&<div className="flex items-center gap-2 mt-1"><div className="flex-1 h-1 rounded-full" style={{background:t.border}}><div className="h-1 rounded-full" style={{background:c.progress===100?'#22c55e':'#3b82f6',width:`${c.progress}%`}}/></div><span className="text-[9px] font-bold">{c.progress}%</span></div>}
+                  {c.enrolled&&c.progress>0&&<div className="flex items-center gap-2 mt-1"><div className="flex-1 h-1 rounded-full" style={{background:t.cardBorder}}><div className="h-1 rounded-full" style={{background:c.progress===100?'#22c55e':'#3b82f6',width:`${c.progress}%`}}/></div><span className="text-[9px] font-bold">{c.progress}%</span></div>}
                 </div>
               </div>
             </button>
@@ -200,13 +200,13 @@ export default function EducationPage() {
           <div className="grid grid-cols-3 gap-2 mb-2">{[{l:'Enrolled',v:enrolled.length},{l:'Completed',v:enrolled.filter(c=>c.progress===100).length},{l:'Hours Learned',v:enrolled.reduce((s,c)=>s+Math.round(c.videoHours*(c.progress/100)),0)}].map(s=>(<div key={s.l} className="text-center p-2 rounded-xl" style={{background:t.card}}><p className="text-lg font-bold">{s.v}</p><p className="text-[9px]" style={{color:t.textMuted}}>{s.l}</p></div>))}</div>
           {enrolled.length===0?<p className="text-center text-sm py-8" style={{color:t.textMuted}}>No courses enrolled yet</p>:
           enrolled.map(c=>(
-            <button key={c.id} onClick={()=>setSel(c)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <button key={c.id} onClick={()=>setSel(c)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{c.icon}</span>
                 <div className="flex-1">
                   <p className="text-sm font-semibold">{c.title}</p>
                   <p className="text-[10px]" style={{color:t.textMuted}}>{c.university} · Next: Module {c.modules.findIndex(m=>m.completed<m.lessons)+1}</p>
-                  <div className="flex items-center gap-2 mt-1"><div className="flex-1 h-1.5 rounded-full" style={{background:t.border}}><div className="h-1.5 rounded-full" style={{background:c.progress===100?'#22c55e':'#3b82f6',width:`${c.progress}%`}}/></div><span className="text-[10px] font-bold">{c.progress}%</span></div>
+                  <div className="flex items-center gap-2 mt-1"><div className="flex-1 h-1.5 rounded-full" style={{background:t.cardBorder}}><div className="h-1.5 rounded-full" style={{background:c.progress===100?'#22c55e':'#3b82f6',width:`${c.progress}%`}}/></div><span className="text-[10px] font-bold">{c.progress}%</span></div>
                 </div>
                 <span className="text-xs font-bold" style={{color:c.progress===100?'#22c55e':t.accent}}>{c.progress===100?'✅':'▶'}</span>
               </div>
@@ -218,7 +218,7 @@ export default function EducationPage() {
       {/* CERTIFICATES */}
       {tab==='certificates'&&(
         <div className="space-y-2">{CERTS.map(c=>(
-          <div key={c.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${c.verified?'#22c55e':t.border}40`}}>
+          <div key={c.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${c.verified?'#22c55e':t.cardBorder}40`}}>
             <div className="flex items-center gap-3"><span className="text-2xl">{c.icon}</span><div className="flex-1"><p className="text-sm font-bold">{c.title}</p><p className="text-[10px]" style={{color:t.textMuted}}>{c.issuer} · {c.date}</p><p className="text-[9px]" style={{color:t.textMuted}}>ID: {c.credentialId}</p></div>{c.verified&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">✅ Verified</span>}</div>
             <div className="flex flex-wrap gap-1 mt-2">{c.skills.map(s=>(<span key={s} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.accent+'15',color:t.accent}}>{s}</span>))}</div>
           </div>
@@ -228,11 +228,11 @@ export default function EducationPage() {
       {/* LEARNING PATHS */}
       {tab==='paths'&&(
         <div className="space-y-2">{PATHS.map(p=>(
-          <div key={p.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={p.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex items-center gap-3 mb-2"><span className="text-2xl">{p.icon}</span><div className="flex-1"><p className="text-sm font-bold">{p.title}</p><p className="text-[10px]" style={{color:t.textMuted}}>{p.courses} courses · {p.duration}</p></div></div>
             <p className="text-[10px] mb-2">{p.desc}</p>
             <div className="flex flex-wrap gap-1 mb-2">{p.skills.map(s=>(<span key={s} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.accent+'10',color:t.accent}}>{s}</span>))}</div>
-            <div className="flex items-center gap-2"><div className="flex-1 h-1.5 rounded-full" style={{background:t.border}}><div className="h-1.5 rounded-full" style={{background:p.progress>0?'#3b82f6':t.border,width:`${p.progress}%`}}/></div><span className="text-[10px] font-bold">{p.progress}%</span></div>
+            <div className="flex items-center gap-2"><div className="flex-1 h-1.5 rounded-full" style={{background:t.cardBorder}}><div className="h-1.5 rounded-full" style={{background:p.progress>0?'#3b82f6':t.cardBorder,width:`${p.progress}%`}}/></div><span className="text-[10px] font-bold">{p.progress}%</span></div>
           </div>
         ))}</div>
       )}
@@ -240,7 +240,7 @@ export default function EducationPage() {
       {/* MENTORS */}
       {tab==='mentors'&&(
         <div className="space-y-2">{MENTORS.map(m=>(
-          <div key={m.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={m.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{background:t.accent}}>{m.avatar}</div>
               <div className="flex-1"><p className="text-sm font-semibold">{m.name}</p><p className="text-[10px]" style={{color:t.textMuted}}>{m.title}</p><div className="flex items-center gap-2 mt-1"><span className="text-[10px]">⭐ {m.rating}</span><span className="text-[9px]" style={{color:t.textMuted}}>{m.sessions} sessions</span><span className="text-[9px] font-bold" style={{color:'#22c55e'}}>{m.price}</span></div></div>
@@ -255,20 +255,20 @@ export default function EducationPage() {
       {tab==='quiz'&&(
         <div className="space-y-3">
           {!quizDone?(
-            <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex justify-between mb-3"><span className="text-xs font-bold">Question {quizIdx+1}/{QUIZ_Q.length}</span><span className="text-xs font-bold" style={{color:'#22c55e'}}>Score: {quizScore}</span></div>
-              <div className="h-1 rounded-full mb-4" style={{background:t.border}}><div className="h-1 rounded-full" style={{background:t.accent,width:`${((quizIdx+1)/QUIZ_Q.length)*100}%`}}/></div>
+              <div className="h-1 rounded-full mb-4" style={{background:t.cardBorder}}><div className="h-1 rounded-full" style={{background:t.accent,width:`${((quizIdx+1)/QUIZ_Q.length)*100}%`}}/></div>
               <p className="text-sm font-semibold mb-4">{QUIZ_Q[quizIdx].q}</p>
               <div className="space-y-2">{QUIZ_Q[quizIdx].opts.map((o,i)=>{
                 const isCorrect = i===QUIZ_Q[quizIdx].correct;
                 const isSelected = quizAns===i;
                 const bg = quizAns===null?t.bg:isCorrect?'rgba(34,197,94,0.15)':isSelected?'rgba(239,68,68,0.15)':t.bg;
-                const border = quizAns===null?t.border:isCorrect?'#22c55e':isSelected?'#ef4444':t.border;
+                const border = quizAns===null?t.cardBorder:isCorrect?'#22c55e':isSelected?'#ef4444':t.cardBorder;
                 return(<button key={i} onClick={()=>quizAns===null&&answerQuiz(i)} className="w-full text-left p-3 rounded-xl text-sm" style={{background:bg,border:`1px solid ${border}`}}>{o}{quizAns!==null&&isCorrect&&' ✅'}{quizAns!==null&&isSelected&&!isCorrect&&' ❌'}</button>);
               })}</div>
             </div>
           ):(
-            <div className="p-4 rounded-xl text-center" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div className="p-4 rounded-xl text-center" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <p className="text-4xl mb-2">{quizScore>=4?'🏆':quizScore>=3?'⭐':'📚'}</p>
               <h3 className="text-lg font-bold">Quiz Complete!</h3>
               <p className="text-sm" style={{color:t.textMuted}}>Score: {quizScore}/{QUIZ_Q.length} ({Math.round((quizScore/QUIZ_Q.length)*100)}%)</p>
@@ -287,7 +287,7 @@ export default function EducationPage() {
             <button onClick={()=>router.push('/deto')} className="mt-2 px-3 py-1 rounded-lg text-[10px] font-bold text-white" style={{background:'#8b5cf6'}}>Open Deto Tutor</button>
           </div>
           {[{title:'React Best Practices 2026',posts:145,members:2340,tag:'Tech'},{title:'ML Study Group',posts:89,members:1200,tag:'AI/ML'},{title:'Career Advice Hub',posts:234,members:5600,tag:'Career'}].map((g,i)=>(
-            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <p className="text-sm font-bold">{g.title}</p>
               <div className="flex gap-3 mt-1"><span className="text-[10px]" style={{color:t.textMuted}}>💬 {g.posts} posts</span><span className="text-[10px]" style={{color:t.textMuted}}>👥 {g.members} members</span><span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.accent+'15',color:t.accent}}>{g.tag}</span></div>
             </div>

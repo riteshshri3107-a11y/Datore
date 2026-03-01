@@ -138,10 +138,10 @@ export default function BuddyGroupsPage() {
         </div>
         <div className="flex items-center gap-2 p-2 rounded-lg" style={{background:rc(sg.risk)+'15'}}><IcoShield size={14} color={rc(sg.risk)}/><span className="text-[10px] font-medium" style={{color:rc(sg.risk)}}>Safety: {100-sg.risk}/100 · AI-monitored</span></div>
         {editing===sg.id && (
-          <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.border}`}}>
-            <input value={eName} onChange={e=>setEName(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}} placeholder="Name"/>
-            <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}} placeholder="Description"/>
-            <div className="flex gap-2"><button onClick={()=>editGroup(sg.id)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditing(null)} className="px-4 py-1.5 rounded-lg text-xs" style={{background:t.border}}>Cancel</button></div>
+          <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+            <input value={eName} onChange={e=>setEName(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}} placeholder="Name"/>
+            <textarea value={eDesc} onChange={e=>setEDesc(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}} placeholder="Description"/>
+            <div className="flex gap-2"><button onClick={()=>editGroup(sg.id)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditing(null)} className="px-4 py-1.5 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
           </div>
         )}
         <button onClick={()=>setShowMem(!showMem)} className="w-full text-left p-2 rounded-lg text-xs font-medium" style={{background:t.card}}>👥 {showMem?'Hide':'Show'} Members ({sg.memberList.length})</button>
@@ -149,11 +149,11 @@ export default function BuddyGroupsPage() {
           <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg" style={{background:t.card}}><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:t.accent}}>{m.avatar}</div><span className="text-sm flex-1">{m.name}</span><span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:m.role==='admin'?'rgba(239,68,68,0.15)':m.role==='mod'?'rgba(59,130,246,0.15)':'rgba(156,163,175,0.15)',color:m.role==='admin'?'#ef4444':m.role==='mod'?'#3b82f6':t.textMuted}}>{m.role}</span></div>
         ))}
         {/* BR-97: Post with visibility */}
-        <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.border}`}}>
-          <textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder="Share with this group..." rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}/>
+        <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+          <textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder="Share with this group..." rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
           <div className="flex items-center justify-between">
             <div className="flex gap-1 flex-wrap">{(['group_only','all_groups','friends','public','professional'] as Visibility[]).map(v=>(
-              <button key={v} onClick={()=>setPostVis(v)} className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{background:postVis===v?t.accent+'20':'transparent',color:postVis===v?t.accent:t.textMuted,border:`1px solid ${postVis===v?t.accent:t.border}`}}>
+              <button key={v} onClick={()=>setPostVis(v)} className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{background:postVis===v?t.accent+'20':'transparent',color:postVis===v?t.accent:t.textMuted,border:`1px solid ${postVis===v?t.accent:t.cardBorder}`}}>
                 {v==='group_only'?'🔒 Group':v==='all_groups'?'👥 All Groups':v==='friends'?'💛 Friends':v==='professional'?'💼 Professional':'🌐 Public'}
               </button>))}
             </div>
@@ -162,7 +162,7 @@ export default function BuddyGroupsPage() {
         </div>
         {gp.length===0&&<p className="text-center text-sm py-6" style={{color:t.textMuted}}>No posts yet</p>}
         {gp.map(po=>(
-          <div key={po.id} className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={po.id} className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:t.accent}}>{po.avatar}</div><div className="flex-1"><p className="text-sm font-semibold">{po.author}</p><p className="text-[9px]" style={{color:t.textMuted}}>{po.time} · {po.visibility==='group_only'?'🔒 Group':po.visibility==='all_groups'?'👥 All Groups':po.visibility==='friends'?'💛 Friends':po.visibility==='professional'?'💼 Pro':'🌐 Public'}</p></div>
             {po.authorId==='me'&&<button onClick={()=>delPost(po.id)} className="text-[9px] px-2 py-0.5 rounded" style={{color:'#ef4444',background:'rgba(239,68,68,0.1)'}}>Delete</button>}</div>
             <p className="text-sm">{po.text}</p>
@@ -186,25 +186,25 @@ export default function BuddyGroupsPage() {
         </div>
       )}
       <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search groups..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div>
-        <button onClick={voiceS} className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':t.card,border:`1px solid ${t.border}`}}><IcoMic size={16} color={voiceSrch?'#ef4444':t.textMuted}/></button>
+        <div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search groups..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div>
+        <button onClick={voiceS} className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':t.card,border:`1px solid ${t.cardBorder}`}}><IcoMic size={16} color={voiceSrch?'#ef4444':t.textMuted}/></button>
       </div>
       {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
       <div className="flex gap-1 p-1 rounded-xl" style={{background:t.card}}>{(['my','discover','safety'] as const).map(tb=>(
         <button key={tb} onClick={()=>setTab(tb)} className="flex-1 py-2 rounded-lg text-xs font-semibold" style={{background:tab===tb?t.accent:'transparent',color:tab===tb?'#fff':t.textMuted}}>{tb==='my'?'👥 My Groups':tb==='discover'?'🔍 Discover':'🛡️ Safety'}</button>
       ))}</div>
       {tab!=='safety'&&<div className="flex gap-1 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>{CATS.map(c=>(
-        <button key={c} onClick={()=>setCatF(c)} className="px-3 py-1 rounded-full text-[10px] font-medium whitespace-nowrap" style={{background:catF===c?t.accent+'20':t.card,color:catF===c?t.accent:t.textMuted,border:`1px solid ${catF===c?t.accent:t.border}`}}>{c}</button>
+        <button key={c} onClick={()=>setCatF(c)} className="px-3 py-1 rounded-full text-[10px] font-medium whitespace-nowrap" style={{background:catF===c?t.accent+'20':t.card,color:catF===c?t.accent:t.textMuted,border:`1px solid ${catF===c?t.accent:t.cardBorder}`}}>{c}</button>
       ))}</div>}
       {showCreate&&(
-        <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.border}`}}>
+        <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
           <h3 className="text-sm font-bold">Create Buddy Group</h3>
           <p className="text-[9px]" style={{color:t.textMuted}}>🛡️ AI monitors all content. No hate speech, terrorism, religious extremism, or anti-social agendas.</p>
-          <input value={nName} onChange={e=>setNName(e.target.value)} placeholder="Group name" className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}/>
-          <textarea value={nDesc} onChange={e=>setNDesc(e.target.value)} placeholder="Description (AI-scanned)" rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}/>
-          <select value={nCat} onChange={e=>setNCat(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}><option value="">Category</option>{CATS.filter(c=>c!=='All').map(c=><option key={c} value={c}>{c}</option>)}</select>
-          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>setNVis(v)} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.border}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
-          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>setShowCreate(false)} className="px-4 py-2 rounded-lg text-xs" style={{background:t.border}}>Cancel</button></div>
+          <input value={nName} onChange={e=>setNName(e.target.value)} placeholder="Group name" className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
+          <textarea value={nDesc} onChange={e=>setNDesc(e.target.value)} placeholder="Description (AI-scanned)" rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
+          <select value={nCat} onChange={e=>setNCat(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}><option value="">Category</option>{CATS.filter(c=>c!=='All').map(c=><option key={c} value={c}>{c}</option>)}</select>
+          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>setNVis(v)} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.cardBorder}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
+          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>setShowCreate(false)} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
         </div>
       )}
       {tab==='safety'&&(
@@ -226,7 +226,7 @@ export default function BuddyGroupsPage() {
         <div className="space-y-2">
           {list.length===0&&<p className="text-center text-sm py-8" style={{color:t.textMuted}}>No groups found</p>}
           {list.map(g=>(
-            <button key={g.id} onClick={()=>setSel(g)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <button key={g.id} onClick={()=>setSel(g)} className="w-full text-left p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{g.icon}</span>
                 <div className="flex-1 min-w-0">

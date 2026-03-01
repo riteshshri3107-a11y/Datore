@@ -284,7 +284,7 @@ export default function DetoPage() {
 
       {/* Settings */}
       {showSettings&&(
-        <div className="rounded-xl p-3 mb-2 space-y-2" style={{background:t.card,border:`1px solid ${t.border}`}}>
+        <div className="rounded-xl p-3 mb-2 space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
           <div><p className="text-[9px] font-bold mb-1">Persona</p><div className="flex gap-1">{(['friendly','professional','playful'] as const).map(p=>(<button key={p} onClick={()=>setPersona(p)} className="px-2 py-1 rounded-lg text-[9px]" style={{background:persona===p?t.accent+'20':'transparent',color:persona===p?t.accent:t.textMuted}}>{p}</button>))}</div></div>
           <div className="flex gap-2"><button onClick={()=>setKidsMode(!kidsMode)} className="px-3 py-1 rounded-lg text-[9px]" style={{background:kidsMode?'rgba(34,197,94,0.15)':'transparent',color:kidsMode?'#22c55e':t.textMuted}}>{kidsMode?'✅':'⚪'} Kids Mode</button>
           <button onClick={()=>setMoodCheck(true)} className="px-3 py-1 rounded-lg text-[9px]" style={{background:t.accent+'15',color:t.accent}}>Mood Check-In</button></div>
@@ -312,7 +312,7 @@ export default function DetoPage() {
                   <div className="rounded-2xl px-3 py-2 text-[12px]" style={{
                     background:msg.role==='user'?`linear-gradient(135deg,${t.accent},#8b5cf6)`:msg.type==='action'?'rgba(59,130,246,0.08)':msg.type==='schedule'?'rgba(245,158,11,0.08)':msg.type==='autopost'?'rgba(139,92,246,0.08)':t.card,
                     color:msg.role==='user'?'white':t.text,
-                    border:msg.role==='deto'?`1px solid ${msg.type==='action'?'rgba(59,130,246,0.2)':msg.type==='schedule'?'rgba(245,158,11,0.2)':msg.type==='autopost'?'rgba(139,92,246,0.2)':t.border}`:'none',
+                    border:msg.role==='deto'?`1px solid ${msg.type==='action'?'rgba(59,130,246,0.2)':msg.type==='schedule'?'rgba(245,158,11,0.2)':msg.type==='autopost'?'rgba(139,92,246,0.2)':t.cardBorder}`:'none',
                     borderTopRightRadius:msg.role==='user'?'6px':'18px', borderTopLeftRadius:msg.role==='deto'?'6px':'18px',
                   }}>
                     {msg.type==='action'&&<span className="text-[8px] font-bold block mb-1" style={{color:'#3b82f6'}}>⚡ ACTION COMMAND</span>}
@@ -331,13 +331,13 @@ export default function DetoPage() {
 
           {/* Confirmation Buttons */}
           {pendingAction&&(
-            <div className="flex gap-2 py-2"><button onClick={confirmAction} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#22c55e'}}>✅ Confirm Action</button><button onClick={cancelAction} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.border}`}}>Cancel</button></div>
+            <div className="flex gap-2 py-2"><button onClick={confirmAction} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#22c55e'}}>✅ Confirm Action</button><button onClick={cancelAction} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>Cancel</button></div>
           )}
           {pendingSchedule&&(
-            <div className="flex gap-2 py-2"><button onClick={confirmSchedule} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#f59e0b'}}>⏰ Confirm Schedule</button><button onClick={cancelSchedule} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.border}`}}>Cancel</button></div>
+            <div className="flex gap-2 py-2"><button onClick={confirmSchedule} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#f59e0b'}}>⏰ Confirm Schedule</button><button onClick={cancelSchedule} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>Cancel</button></div>
           )}
           {pendingPost&&(
-            <div className="flex gap-2 py-2"><button onClick={confirmPost} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#8b5cf6'}}>📤 Post Now</button><button onClick={cancelPost} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.border}`}}>Discard</button></div>
+            <div className="flex gap-2 py-2"><button onClick={confirmPost} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:'#8b5cf6'}}>📤 Post Now</button><button onClick={cancelPost} className="flex-1 py-2 rounded-lg text-xs" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>Discard</button></div>
           )}
 
           {/* Quick Actions */}
@@ -348,14 +348,14 @@ export default function DetoPage() {
           </div>
 
           {/* Input */}
-          <div className="flex items-center gap-2 pt-1" style={{borderTop:`1px solid ${t.border}`}}>
+          <div className="flex items-center gap-2 pt-1" style={{borderTop:`1px solid ${t.cardBorder}`}}>
             {voiceMode?(
-              <button onClick={toggleVoice} className="flex-1 py-3 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2" style={{background:isListening?'#ef444422':t.card,color:isListening?'#ef4444':t.text,border:`1px solid ${isListening?'#ef4444':t.border}`}}>
+              <button onClick={toggleVoice} className="flex-1 py-3 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2" style={{background:isListening?'#ef444422':t.card,color:isListening?'#ef4444':t.text,border:`1px solid ${isListening?'#ef4444':t.cardBorder}`}}>
                 <IcoMic size={16} color={isListening?'#ef4444':t.accent}/>{isListening?'🔴 Listening...':'🎙️ Tap to speak'}
               </button>
             ):(
               <>
-                <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage()} placeholder={kidsMode?"Ask Deto! 🌟":"Talk to Deto..."} className="flex-1 px-3 py-2.5 rounded-2xl text-sm outline-none" style={{background:t.card,border:`1px solid ${t.border}`,color:t.text}}/>
+                <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage()} placeholder={kidsMode?"Ask Deto! 🌟":"Talk to Deto..."} className="flex-1 px-3 py-2.5 rounded-2xl text-sm outline-none" style={{background:t.card,border:`1px solid ${t.cardBorder}`,color:t.text}}/>
                 <button onClick={()=>sendMessage()} className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}><IcoSend size={14} color="white"/></button>
               </>
             )}
@@ -370,7 +370,7 @@ export default function DetoPage() {
           <p className="text-[10px] font-bold" style={{color:t.textMuted}}>BR-104: Voice Command Action History</p>
           {actionLog.length===0?<p className="text-center text-xs py-8" style={{color:t.textMuted}}>No actions yet. Try: "Create a babysitter job"</p>:
           actionLog.map((a,i)=>(
-            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2 mb-1"><span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:a.status==='executed'?'#22c55e':'#3b82f6'}}>{a.status}</span><span className="text-xs font-semibold">{a.intent.replace(/_/g,' ')}</span></div>
               {Object.entries(a.details).map(([k,v])=>(<p key={k} className="text-[10px]"><span style={{color:t.textMuted}}>{k}:</span> {v}</p>))}
             </div>
@@ -384,7 +384,7 @@ export default function DetoPage() {
           <p className="text-[10px] font-bold" style={{color:t.textMuted}}>BR-105: Alarms, Reminders & Meetings</p>
           {schedules.length===0?<p className="text-center text-xs py-8" style={{color:t.textMuted}}>No schedules. Try: "Set an alarm for 8 AM"</p>:
           schedules.map((s,i)=>(
-            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm">{s.type==='alarm'?'⏰':s.type==='reminder'?'🔔':s.type==='meeting'?'📅':'🏥'}</span>
                 <span className="text-xs font-semibold flex-1">{s.title}</span>
@@ -403,7 +403,7 @@ export default function DetoPage() {
           <p className="text-[10px] font-bold" style={{color:t.textMuted}}>BR-106: Deto Auto-Generated Posts</p>
           {autoPostLog.length===0?<p className="text-center text-xs py-8" style={{color:t.textMuted}}>No posts yet. Try: "Create a birthday post for friends"</p>:
           autoPostLog.map((p,i)=>(
-            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:p.status==='posted'?'#22c55e':'#8b5cf6'}}>{p.status}</span>
                 <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.accent+'15',color:t.accent}}>{p.audience}</span>

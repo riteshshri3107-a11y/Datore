@@ -66,7 +66,7 @@ export default function ProfilePage() {
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">My Profile</h1></div>
 
       {/* Profile Card */}
-      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+      <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <div className="flex items-center gap-3 mb-3">
           <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>RS</div>
           <div className="flex-1"><h2 className="text-base font-bold">Rajesh S.</h2><p className="text-[10px]" style={{color:t.textMuted}}>CEO & Founder, AARNAIT AI</p><p className="text-[10px]" style={{color:t.textMuted}}>📍 Toronto, ON · Raipur, India</p></div>
@@ -98,9 +98,9 @@ export default function ProfilePage() {
       {tab==='posts'&&(
         <div className="space-y-2">
           {posts.map(p=>(
-            <div key={p.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+            <div key={p.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               {editingPost===p.id?(
-                <div className="space-y-2"><textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-xs" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}/><div className="flex gap-2"><button onClick={()=>{setPosts(pr=>pr.map(x=>x.id===p.id?{...x,text:editText}:x));setEditingPost(null);}} className="px-3 py-1 rounded text-[9px] font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditingPost(null)} className="px-3 py-1 rounded text-[9px]" style={{background:t.border}}>Cancel</button></div></div>
+                <div className="space-y-2"><textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-xs" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/><div className="flex gap-2"><button onClick={()=>{setPosts(pr=>pr.map(x=>x.id===p.id?{...x,text:editText}:x));setEditingPost(null);}} className="px-3 py-1 rounded text-[9px] font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditingPost(null)} className="px-3 py-1 rounded text-[9px]" style={{background:t.cardBorder}}>Cancel</button></div></div>
               ):(
                 <>
                   <p className="text-xs mb-1">{p.text}</p>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
       {/* BR-101: JOBS with Delete */}
       {tab==='jobs'&&(
         <div className="space-y-2">{jobs.map(j=>(
-          <div key={j.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={j.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex-1"><p className="text-xs font-semibold">{j.title}</p><p className="text-[9px]" style={{color:t.textMuted}}>{j.posted} · {j.budget} · 👥 {j.applicants} applicants</p></div>
             <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:j.status==='Active'?'rgba(34,197,94,0.15)':'rgba(156,163,175,0.15)',color:j.status==='Active'?'#22c55e':t.textMuted}}>{j.status}</span>
             <button onClick={()=>setJobs(p=>p.filter(x=>x.id!==j.id))} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete</button>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
       {/* BR-101: PRODUCTS with Delete */}
       {tab==='products'&&(
         <div className="space-y-2">{products.map(p=>(
-          <div key={p.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={p.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex-1"><p className="text-xs font-semibold">{p.name}</p><p className="text-[9px]" style={{color:t.textMuted}}>${p.price} · {p.views} views</p></div>
             <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:'rgba(34,197,94,0.15)',color:'#22c55e'}}>{p.status}</span>
             <button onClick={()=>setProducts(pr=>pr.filter(x=>x.id!==p.id))} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete</button>
@@ -140,7 +140,7 @@ export default function ProfilePage() {
       {/* BR-101: COMMUNITIES with Delete */}
       {tab==='communities'&&(
         <div className="space-y-2">{communities.map(c=>(
-          <div key={c.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div key={c.id} className="p-3 rounded-xl flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <div className="flex-1"><p className="text-xs font-semibold">{c.name}</p><p className="text-[9px]" style={{color:t.textMuted}}>👥 {c.members} members</p></div>
             <button onClick={()=>setCommunities(pr=>pr.filter(x=>x.id!==c.id))} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete</button>
           </div>
@@ -150,13 +150,13 @@ export default function ProfilePage() {
       {/* BR-103: RATINGS */}
       {tab==='ratings'&&(
         <div className="space-y-3">
-          <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.border}`}}>
+          <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <h3 className="text-sm font-bold mb-2">Rate a User</h3>
             <p className="text-[9px] mb-3" style={{color:t.textMuted}}>BR-103: Only users with ⭐ 4.0+ rating AND 10+ friends can rate others</p>
             <div className="flex items-center gap-2 p-2 rounded-lg mb-2" style={{background:canRate?'rgba(34,197,94,0.08)':'rgba(239,68,68,0.08)'}}>
               <span className="text-[10px]" style={{color:canRate?'#22c55e':'#ef4444'}}>Your rating: ⭐ {myRating} {myRating>=4.0?'✅':'❌'} | Friends: {myFriends} {myFriends>=10?'✅':'❌'}</span>
             </div>
-            <input value={ratingTarget} onChange={e=>setRatingTarget(e.target.value)} placeholder="Enter user name..." className="w-full p-2 rounded-lg text-xs mb-2" style={{background:t.bg,color:t.text,border:`1px solid ${t.border}`}}/>
+            <input value={ratingTarget} onChange={e=>setRatingTarget(e.target.value)} placeholder="Enter user name..." className="w-full p-2 rounded-lg text-xs mb-2" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
             <div className="flex items-center gap-2 mb-2"><span className="text-[10px]">Rating:</span>{[1,2,3,4,5].map(v=>(<button key={v} onClick={()=>setRatingValue(v)} className="text-sm">{v<=ratingValue?'⭐':'☆'}</button>))}</div>
             <button onClick={submitRating} className="w-full py-2 rounded-lg text-xs font-bold text-white" style={{background:canRate?t.accent:'#9ca3af'}} disabled={!canRate}>
               {canRate?'Submit Rating':'❌ Not Eligible'}
