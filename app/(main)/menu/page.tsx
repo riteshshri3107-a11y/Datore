@@ -8,40 +8,44 @@ import { IcoUser, IcoSettings, IcoWallet, IcoDashboard, IcoQR, IcoShield, IcoFri
 
 const MENU = [
   { section: 'Account', items: [
-    { Icon: IcoUser, label: 'My Profile', path: '/profile', color:'#6366f1' },
-    { Icon: IcoSettings, label: 'Settings', path: '/settings', color:'#8b5cf6' },
-    { Icon: IcoWallet, label: 'Wallet & Tokens', path: '/wallet', color:'#22c55e' },
-    { Icon: IcoDashboard, label: 'Dashboard', path: '/dashboard', color:'#3b82f6' },
+    { Icon: IcoUser, label: 'My Profile', path: '/profile', color:'#6366f1', badge:'' },
+    { Icon: IcoSettings, label: 'Settings', path: '/settings', color:'#8b5cf6', badge:'' },
+    { Icon: IcoWallet, label: 'Wallet & Tokens', path: '/wallet', color:'#22c55e', badge:'' },
+    { Icon: IcoDashboard, label: 'Dashboard', path: '/dashboard', color:'#3b82f6', badge:'' },
   ]},
   { section: 'Safety & Verification', items: [
-    { Icon: IcoQR, label: 'QR Verification', path: '/qr-verify', color:'#06b6d4' },
-    { Icon: IcoShield, label: 'Safety Center', path: '/safety', color:'#22c55e' },
+    { Icon: IcoQR, label: 'QR Verification', path: '/qr-verify', color:'#06b6d4', badge:'' },
+    { Icon: IcoShield, label: 'Safety Center', path: '/safety', color:'#22c55e', badge:'' },
   ]},
   { section: 'Social', items: [
-    { Icon: IcoFriends, label: 'Friends', path: '/friends', color:'#ec4899' },
-    { Icon: IcoCalendar, label: 'Events', path: '/events', color:'#8b5cf6' },
-    { Icon: IcoCommunity, label: 'Community Groups', path: '/community', color:'#06b6d4' },
-    { Icon: IcoChat, label: 'Messages', path: '/inbox', color:'#f97316' },
+    { Icon: IcoFriends, label: 'Friends', path: '/friends', color:'#ec4899', badge:'' },
+    { Icon: IcoCalendar, label: 'Events', path: '/events', color:'#8b5cf6', badge:'' },
+    { Icon: IcoCommunity, label: 'Buddy Groups', path: '/buddy-groups', color:'#06b6d4', badge:'BR-96/97' },
+    { Icon: IcoChat, label: 'Messages', path: '/inbox', color:'#f97316', badge:'' },
   ]},
-  { section: 'Jobs & Services', items: [
-    { Icon: IcoJobs, label: 'My Jobs', path: '/jobplace', color:'#6366f1' },
-    { Icon: IcoUser, label: 'Find Workers', path: '/jobplace/providers', color:'#22c55e' },
-    { Icon: IcoMap, label: 'Map View', path: '/jobplace/map', color:'#f59e0b' },
-    { Icon: IcoCompare, label: 'Compare Workers', path: '/compare', color:'#3b82f6' },
-    { Icon: IcoStar, label: 'Buddy List', path: '/buddylist', color:'#eab308' },
+  { section: 'Professional', items: [
+    { Icon: IcoJobs, label: 'Professional Profile', path: '/professional', color:'#3b82f6', badge:'BR-98' },
+    { Icon: IcoUser, label: 'Find Workers', path: '/jobplace/providers', color:'#22c55e', badge:'' },
+    { Icon: IcoMap, label: 'Map View', path: '/jobplace/map', color:'#f59e0b', badge:'' },
+    { Icon: IcoCompare, label: 'Compare Workers', path: '/compare', color:'#3b82f6', badge:'' },
+    { Icon: IcoStar, label: 'Buddy List', path: '/buddylist', color:'#eab308', badge:'' },
   ]},
-  { section: 'Marketplace', items: [
-    { Icon: IcoMarket, label: 'Browse Items', path: '/marketplace', color:'#ec4899' },
-    { Icon: IcoList, label: 'My Listings', path: '/marketplace/my-listings', color:'#f97316' },
+  { section: 'Shopping', items: [
+    { Icon: IcoMarket, label: 'Global Shop', path: '/shopping', color:'#ec4899', badge:'BR-99' },
+    { Icon: IcoList, label: 'Marketplace', path: '/marketplace', color:'#f97316', badge:'' },
+  ]},
+  { section: 'Education', items: [
+    { Icon: IcoBookmark, label: 'Education Hub', path: '/education', color:'#8b5cf6', badge:'BR-100' },
+    { Icon: IcoList, label: 'Micro-Learning', path: '/learn', color:'#06b6d4', badge:'' },
   ]},
   { section: 'AI & Voice', items: [
-    { Icon: IcoChat, label: 'Deto AI Companion', path: '/deto', color:'#8b5cf6' },
-    { Icon: IcoMic, label: 'Voice Commerce', path: '/voice-commerce', color:'#06b6d4' },
+    { Icon: IcoChat, label: 'Deto AI Companion', path: '/deto', color:'#8b5cf6', badge:'BR-104/105/106' },
+    { Icon: IcoMic, label: 'Voice Commerce', path: '/voice-commerce', color:'#06b6d4', badge:'' },
   ]},
   { section: 'More', items: [
-    { Icon: IcoBell, label: 'Notifications', path: '/notifications', color:'#ef4444' },
-    { Icon: IcoSearch, label: 'Search', path: '/search', color:'#6b7280' },
-    { Icon: IcoBookmark, label: 'Saved / Favorites', path: '/saved', color:'#eab308' },
+    { Icon: IcoBell, label: 'Notifications', path: '/notifications', color:'#ef4444', badge:'' },
+    { Icon: IcoSearch, label: 'Search', path: '/search', color:'#6b7280', badge:'BR-102' },
+    { Icon: IcoBookmark, label: 'Saved / Favorites', path: '/saved', color:'#eab308', badge:'' },
   ]},
 ];
 
@@ -58,25 +62,22 @@ export default function MenuPage() {
       {MENU.map(section => (
         <div key={section.section}>
           <h2 className="text-[10px] font-semibold uppercase tracking-wider mb-2 px-1" style={{ color: t.textMuted }}>{section.section}</h2>
-          <div className="glass-card rounded-2xl overflow-hidden" style={{ background: t.card, borderColor: t.cardBorder }}>
-            {section.items.map((item, i) => (
-              <button key={item.path} onClick={() => router.push(item.path)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-                style={{ borderBottom: i < section.items.length - 1 ? `1px solid ${t.cardBorder}` : 'none' }}>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:`${item.color}15` }}>
-                  <item.Icon size={18} color={item.color} />
-                </span>
+          <div className="space-y-1">
+            {section.items.map(item => (
+              <button key={item.path} onClick={() => router.push(item.path)} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background: 'transparent' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: item.color + '15' }}>
+                  <item.Icon size={16} color={item.color} />
+                </div>
                 <span className="text-sm font-medium flex-1">{item.label}</span>
-                <span style={{ color: t.textMuted, fontSize: 12 }}>›</span>
+                {item.badge && <span className="text-[7px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: item.color + '15', color: item.color }}>{item.badge}</span>}
               </button>
             ))}
           </div>
         </div>
       ))}
-      <button onClick={async () => { await signOut(); router.push('/login'); }}
-        className="glass-card rounded-2xl p-4 w-full flex items-center justify-center gap-2 font-medium text-sm"
-        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}>
-        <IcoLogout size={18} color="#ef4444" /> Log Out
+      <button onClick={async () => { await signOut(); router.push('/auth/login'); }} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background:'rgba(239,68,68,0.06)' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(239,68,68,0.15)' }}><IcoLogout size={16} color="#ef4444" /></div>
+        <span className="text-sm font-medium" style={{ color:'#ef4444' }}>Sign Out</span>
       </button>
     </div>
   );
