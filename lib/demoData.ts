@@ -124,10 +124,10 @@ export function getUserPosts(): Array<{id:string; text:string; time:string; like
   if (typeof window === 'undefined') return [];
   try { return JSON.parse(localStorage.getItem('datore-user-posts') || '[]'); } catch { return []; }
 }
-export function addUserPost(post: {text:string; type:string; media?:string}) {
+export function addUserPost(post: {text:string; type:string; media?:string; audience?:string}) {
   if (typeof window === 'undefined') return;
   const posts = getUserPosts();
-  posts.unshift({ id: 'u'+Date.now(), text: post.text, time: 'Just now', likes: 0, comments: 0, type: post.type, media: post.media });
+  posts.unshift({ id: 'u'+Date.now(), text: post.text, time: 'Just now', likes: 0, comments: 0, type: post.type, media: post.media, audience: post.audience || 'public' });
   try { localStorage.setItem('datore-user-posts', JSON.stringify(posts)); } catch {}
 }
 
