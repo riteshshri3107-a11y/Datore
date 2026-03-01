@@ -41,8 +41,7 @@ const MENU = [
     { Icon: IcoList, label: 'Reels', path: '/reels', color:'#ef4444', badge:'NEW' },
   ]},
   { section: 'AI & Voice', items: [
-    { Icon: IcoChat, label: 'Deto AI Companion', path: '/deto', color:'#8b5cf6', badge:'BR-104/105/106' },
-    { Icon: IcoMic, label: 'Voice Commerce', path: '/voice-commerce', color:'#06b6d4', badge:'' },
+    { Icon: IcoChat, label: 'Deto AI Assistant (Voice + Actions + Scheduling)', path: '/deto', color:'#8b5cf6', badge:'BR-104/105/106' },
   ]},
   { section: 'More', items: [
     { Icon: IcoBell, label: 'Notifications', path: '/notifications', color:'#ef4444', badge:'' },

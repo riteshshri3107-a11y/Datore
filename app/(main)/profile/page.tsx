@@ -1,13 +1,24 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield } from '@/components/Icons';
+import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
 
 /* BR-101: User Content Ownership — edit/delete own posts, jobs, products, communities, groups
-   BR-103: Rating Eligibility — 4.0+ rating AND 10+ friends required to rate others */
+   BR-103: Rating Eligibility — 4.0+ rating AND 10+ friends required to rate others
+   NEW: Multi-avatar system — separate profile pics for Public, Friends, Buddy+, Professional */
+
+type AvatarMode = 'public'|'friends'|'buddy'|'professional';
+const AVATAR_MODES:{key:AvatarMode;label:string;icon:string;color:string}[] = [
+  {key:'public',label:'Public',icon:'🌐',color:'#22c55e'},
+  {key:'friends',label:'Friends',icon:'💛',color:'#f59e0b'},
+  {key:'buddy',label:'Buddy+',icon:'👥',color:'#8b5cf6'},
+  {key:'professional',label:'Professional',icon:'💼',color:'#3b82f6'},
+];
+
+const DEFAULT_AVATARS = ['👨‍💼','👩‍💻','🧑‍🔬','👨‍🎨','👩‍🏫','🧑‍🚀','👨‍🍳','👩‍⚕️','🦸','🧑‍💼','👷','🧑‍🎤'];
 
 interface UserPost { id:string; text:string; time:string; likes:number; audience:string; }
 interface UserJob { id:string; title:string; status:string; applicants:number; posted:string; budget:string; }
@@ -49,6 +60,20 @@ export default function ProfilePage() {
   const [ratingTarget,setRatingTarget] = useState('');
   const [ratingValue,setRatingValue] = useState(5);
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
+  // Avatar system
+  const [avatars,setAvatars] = useState<Record<AvatarMode,string|null>>({public:null,friends:null,buddy:null,professional:null});
+  const [activeAvatarMode,setActiveAvatarMode] = useState<AvatarMode>('public');
+  const [showAvatarPicker,setShowAvatarPicker] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = (e:React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setAvatars(a=>({...a,[activeAvatarMode]:ev.target?.result as string})); setShowAvatarPicker(false); };
+    reader.readAsDataURL(file);
+  };
+  const setEmojiAvatar = (emoji:string) => { setAvatars(a=>({...a,[activeAvatarMode]:emoji})); setShowAvatarPicker(false); };
+  const currentAvatar = avatars[activeAvatarMode];
 
   const canRate = myRating >= 4.0 && myFriends >= 10;
 
@@ -65,12 +90,37 @@ export default function ProfilePage() {
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">My Profile</h1></div>
 
-      {/* Profile Card */}
+      {/* Profile Card with Avatar */}
       <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+        <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload}/>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>RS</div>
+          {/* Avatar with edit overlay */}
+          <div className="relative">
+            {currentAvatar && currentAvatar.startsWith('data:image') ? (
+              <img src={currentAvatar} alt="Avatar" className="w-14 h-14 rounded-full object-cover" style={{border:`2px solid ${t.accent}`}}/>
+            ) : currentAvatar && currentAvatar.length <= 4 ? (
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,border:`2px solid ${t.accent}`}}>{currentAvatar}</div>
+            ) : (
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>RS</div>
+            )}
+            <button onClick={()=>setShowAvatarPicker(true)} className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{background:t.accent,border:`2px solid ${isDark?'#1a1a2e':'#fff'}`}}><IcoCamera size={10} color="white"/></button>
+          </div>
           <div className="flex-1"><h2 className="text-base font-bold">Rajesh S.</h2><p className="text-[10px]" style={{color:t.textMuted}}>CEO & Founder, AARNAIT AI</p><p className="text-[10px]" style={{color:t.textMuted}}>📍 Toronto, ON · Raipur, India</p></div>
+          <button onClick={()=>router.push('/profile/edit')} className="px-3 py-1 rounded-lg text-[9px] font-semibold" style={{background:t.accent+'15',color:t.accent}}>Edit</button>
         </div>
+
+        {/* Avatar Visibility Mode Selector */}
+        <div className="mb-3">
+          <p className="text-[9px] font-bold mb-1.5" style={{color:t.textMuted}}>PROFILE PICTURE SHOWING AS:</p>
+          <div className="flex gap-1.5">{AVATAR_MODES.map(m=>(
+            <button key={m.key} onClick={()=>setActiveAvatarMode(m.key)} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg" style={{background:activeAvatarMode===m.key?m.color+'18':'transparent',border:`1.5px solid ${activeAvatarMode===m.key?m.color:t.cardBorder}`}}>
+              <span className="text-[10px]">{m.icon}</span>
+              <span className="text-[8px] font-semibold" style={{color:activeAvatarMode===m.key?m.color:t.textMuted}}>{m.label}</span>
+              {avatars[m.key]&&<span className="text-[7px]" style={{color:'#22c55e'}}>✓</span>}
+            </button>
+          ))}</div>
+        </div>
+
         <div className="grid grid-cols-4 gap-2">
           {[{l:'Rating',v:`⭐ ${myRating}`},{l:'Friends',v:myFriends+''},{l:'Posts',v:posts.length+''},{l:'Jobs',v:jobs.length+''}].map(s=>(<div key={s.l} className="text-center p-1.5 rounded-lg" style={{background:t.bg}}><p className="text-xs font-bold">{s.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s.l}</p></div>))}
         </div>
@@ -80,6 +130,20 @@ export default function ProfilePage() {
           <span className="text-[9px]" style={{color:canRate?'#22c55e':'#ef4444'}}>{canRate?'✅ Eligible to rate others (4.0+ rating & 10+ friends)':'❌ Not eligible to rate: Need 4.0+ rating AND 10+ friends'}</span>
         </div>
       </div>
+
+      {/* Avatar Picker Modal */}
+      {showAvatarPicker&&(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.6)'}} onClick={()=>setShowAvatarPicker(false)}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-sm rounded-2xl p-5 space-y-3" style={{background:isDark?'#1a1a2e':'#fff'}}>
+            <h3 className="font-bold text-sm">Set {AVATAR_MODES.find(m=>m.key===activeAvatarMode)?.label} Profile Picture</h3>
+            <p className="text-[9px]" style={{color:t.textMuted}}>This avatar is shown to {activeAvatarMode==='public'?'everyone':activeAvatarMode==='professional'?'your professional network':`your ${activeAvatarMode}`}</p>
+            <button onClick={()=>avatarRef.current?.click()} className="w-full py-3 rounded-xl text-xs font-bold text-white" style={{background:t.accent}}>📷 Upload Photo</button>
+            <p className="text-[9px] text-center" style={{color:t.textMuted}}>— or pick an avatar —</p>
+            <div className="grid grid-cols-6 gap-2">{DEFAULT_AVATARS.map(em=>(<button key={em} onClick={()=>setEmojiAvatar(em)} className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}>{em}</button>))}</div>
+            {currentAvatar&&<button onClick={()=>{setAvatars(a=>({...a,[activeAvatarMode]:null}));setShowAvatarPicker(false);}} className="w-full py-2 rounded-xl text-xs" style={{color:'#ef4444'}}>Remove Current Avatar</button>}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{(['overview','posts','jobs','products','communities','ratings'] as const).map(tb=>(

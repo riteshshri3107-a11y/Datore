@@ -51,13 +51,31 @@ export default function ShoppingPage() {
   const [cat,setCat] = useState<string>('All');
   const [portal,setPortal] = useState<string>('All');
   const [sort,setSort] = useState<string>('Best Match');
-  const [sel,setSel] = useState<Product|null>(null);
+  const [selId,setSelId] = useState<string|null>(null);
   const [view,setView] = useState<'grid'|'list'>('grid');
   const [tab,setTab] = useState<'shop'|'cart'|'wishlist'|'orders'|'compare'>('shop');
   const [voiceSrch,setVoiceSrch] = useState(false);
   const [primeOnly,setPrimeOnly] = useState(false);
   const [maxPrice,setMaxPrice] = useState(2000);
   const [minRating,setMinRating] = useState(0);
+  const [qty,setQty] = useState<Record<string,number>>({});
+  const [showCheckout,setShowCheckout] = useState(false);
+  const [payMethod,setPayMethod] = useState<'card'|'token'|'wallet'>('card');
+  const [orderPlaced,setOrderPlaced] = useState(false);
+  const [shippingAddr,setShippingAddr] = useState({name:'Rajesh S.',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
+  const [cardInfo,setCardInfo] = useState({number:'',expiry:'',cvv:'',name:''});
+
+  /* TOKEN SYSTEM — country-based currency, same-country only */
+  const TOKEN_RATE:Record<string,{symbol:string;rate:number;name:string}> = {
+    'Canada': { symbol:'🍁', rate:1.36, name:'CAD Tokens' },
+    'India': { symbol:'🪷', rate:83.12, name:'INR Tokens' },
+    'USA': { symbol:'🗽', rate:1.00, name:'USD Tokens' },
+    'UK': { symbol:'👑', rate:0.79, name:'GBP Tokens' },
+    'Australia': { symbol:'🦘', rate:1.53, name:'AUD Tokens' },
+  };
+  const userCountry = shippingAddr.country;
+  const tokenInfo = TOKEN_RATE[userCountry] || TOKEN_RATE['Canada'];
+  const [tokenBalance] = useState(5000); // user's token balance in local currency equivalent
   const [compareList,setCompareList] = useState<string[]>([]);
 
   let filtered = products.filter(p=>{
@@ -74,22 +92,28 @@ export default function ShoppingPage() {
   if(sort==='Rating') filtered.sort((a,b)=>b.rating-a.rating);
   if(sort==='Most Reviewed') filtered.sort((a,b)=>b.reviews-a.reviews);
 
+  const sel = selId ? products.find(p=>p.id===selId) || null : null;
+
   const cart = products.filter(p=>p.inCart);
   const wishlist = products.filter(p=>p.saved);
-  const cartTotal = cart.reduce((s,p)=>s+p.price,0);
-  const savings = cart.reduce((s,p)=>s+(p.orig-p.price),0);
+  const getQty = (id:string) => qty[id] || 1;
+  const cartTotal = cart.reduce((s,p)=>s+p.price*getQty(p.id),0);
+  const savings = cart.reduce((s,p)=>s+(p.orig-p.price)*getQty(p.id),0);
+  const cartTokens = Math.round(cartTotal * tokenInfo.rate);
 
-  const toggleCart = (id:string) => setProducts(p=>p.map(x=>x.id===id?{...x,inCart:!x.inCart}:x));
+  const toggleCart = (id:string) => { setProducts(p=>p.map(x=>x.id===id?{...x,inCart:!x.inCart}:x)); if(!qty[id]) setQty(q=>({...q,[id]:1})); };
   const toggleSave = (id:string) => setProducts(p=>p.map(x=>x.id===id?{...x,saved:!x.saved}:x));
   const toggleCompare = (id:string) => setCompareList(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id].slice(0,3));
+  const updateQty = (id:string, delta:number) => setQty(q=>({...q,[id]:Math.max(1,Math.min(10,(q[id]||1)+delta))}));
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setSearch('headphones');setVoiceSrch(false);},2000); };
+  const placeOrder = () => { setOrderPlaced(true); setTimeout(()=>{setProducts(p=>p.map(x=>({...x,inCart:false}))); setQty({}); setShowCheckout(false); setOrderPlaced(false); setTab('shop');},3000); };
 
   const disc = (p:Product) => Math.round((1-p.price/p.orig)*100);
 
   // PRODUCT DETAIL
   if(sel) return (
     <div className="space-y-3 animate-fade-in">
-      <button onClick={()=>setSel(null)} className="flex items-center gap-2 text-xs" style={{color:t.accent}}><IcoBack size={14}/> Back</button>
+      <button onClick={()=>setSelId(null)} className="flex items-center gap-2 text-xs" style={{color:t.accent}}><IcoBack size={14}/> Back</button>
       <div className="p-4 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <div className="text-center text-5xl mb-3">{sel.img}</div>
         <div className="flex items-center gap-2 mb-1">{sel.badge&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">{sel.badge}</span>}<span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.accent+'15',color:t.accent}}>via {sel.portal}</span>{sel.prime&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Prime</span>}</div>
@@ -173,7 +197,7 @@ export default function ShoppingPage() {
           {/* Product Grid */}
           <div className="grid grid-cols-2 gap-2">
             {filtered.map(p=>(
-              <button key={p.id} onClick={()=>setSel(p)} className="text-left p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+              <button key={p.id} onClick={()=>setSelId(p.id)} className="text-left p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                 <div className="text-center text-3xl mb-1 relative">
                   {p.img}
                   {p.badge&&<span className="absolute top-0 left-0 text-[7px] px-1 py-0.5 rounded bg-orange-100 text-orange-600">{p.badge}</span>}
@@ -195,7 +219,7 @@ export default function ShoppingPage() {
         </>
       )}
 
-      {/* CART */}
+      {/* CART with Quantities + Checkout */}
       {tab==='cart'&&(
         <div className="space-y-2">
           {cart.length===0?<p className="text-center text-sm py-8" style={{color:t.textMuted}}>Cart is empty</p>:(<>
@@ -203,17 +227,124 @@ export default function ShoppingPage() {
               <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                 <span className="text-2xl">{p.img}</span>
                 <div className="flex-1 min-w-0"><p className="text-xs font-semibold truncate">{p.name}</p><p className="text-[10px]" style={{color:t.textMuted}}>{p.portal} · {p.delivery}</p></div>
-                <div className="text-right"><p className="text-sm font-bold" style={{color:'#22c55e'}}>${p.price}</p>{p.orig>p.price&&<p className="text-[9px]" style={{color:'#ef4444'}}>Save ${(p.orig-p.price).toFixed(2)}</p>}</div>
+                {/* Qty controls */}
+                <div className="flex items-center gap-1">
+                  <button onClick={()=>updateQty(p.id,-1)} className="w-6 h-6 rounded flex items-center justify-center text-xs" style={{background:t.cardBorder}}>−</button>
+                  <span className="text-xs font-bold w-5 text-center">{getQty(p.id)}</span>
+                  <button onClick={()=>updateQty(p.id,1)} className="w-6 h-6 rounded flex items-center justify-center text-xs" style={{background:t.cardBorder}}>+</button>
+                </div>
+                <div className="text-right"><p className="text-sm font-bold" style={{color:'#22c55e'}}>${(p.price*getQty(p.id)).toFixed(2)}</p>{p.orig>p.price&&<p className="text-[9px]" style={{color:'#ef4444'}}>Save ${((p.orig-p.price)*getQty(p.id)).toFixed(2)}</p>}</div>
                 <button onClick={()=>toggleCart(p.id)} className="text-xs" style={{color:'#ef4444'}}>✕</button>
               </div>
             ))}
+            {/* Cart Summary */}
             <div className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-              <div className="flex justify-between text-xs mb-1"><span>Subtotal ({cart.length} items)</span><span className="font-bold">${cartTotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-xs mb-1"><span>Savings</span><span className="font-bold" style={{color:'#22c55e'}}>-${savings.toFixed(2)}</span></div>
-              <div className="flex justify-between text-xs mb-2"><span>Delivery</span><span className="font-bold" style={{color:'#22c55e'}}>FREE</span></div>
-              <button className="w-full py-2.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Checkout — ${cartTotal.toFixed(2)}</button>
+              <div className="flex justify-between text-xs mb-1"><span>Subtotal ({cart.length} items, {cart.reduce((s,p)=>s+getQty(p.id),0)} units)</span><span className="font-bold">${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>Total Savings</span><span className="font-bold" style={{color:'#22c55e'}}>-${savings.toFixed(2)}</span></div>
+              <div className="flex justify-between text-xs mb-1"><span>Delivery</span><span className="font-bold" style={{color:'#22c55e'}}>FREE</span></div>
+              <div className="flex justify-between text-xs mb-1" style={{borderTop:`1px solid ${t.cardBorder}`,paddingTop:6}}><span>Token equivalent ({tokenInfo.name})</span><span className="font-bold">{tokenInfo.symbol} {cartTokens.toLocaleString()}</span></div>
+              <button onClick={()=>setShowCheckout(true)} className="w-full mt-2 py-3 rounded-xl text-sm font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>Proceed to Checkout — ${cartTotal.toFixed(2)}</button>
             </div>
           </>)}
+        </div>
+      )}
+
+      {/* ══════ CHECKOUT MODAL ══════ */}
+      {showCheckout&&(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.7)'}} onClick={()=>!orderPlaced&&setShowCheckout(false)}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-lg rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto" style={{background:isDark?'#1a1a2e':'#fff'}}>
+            {orderPlaced ? (
+              <div className="text-center py-8 space-y-3">
+                <div className="text-5xl">✅</div>
+                <h2 className="text-xl font-bold" style={{color:'#22c55e'}}>Order Placed!</h2>
+                <p className="text-xs" style={{color:t.textMuted}}>Order #{Date.now().toString().slice(-6)} confirmed. Redirecting...</p>
+                <div className="flex justify-center gap-2">{cart.slice(0,3).map(p=>(<span key={p.id} className="text-2xl">{p.img}</span>))}</div>
+              </div>
+            ) : (<>
+              <h2 className="text-lg font-bold">Checkout</h2>
+
+              {/* Shipping Address */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold" style={{color:t.textMuted}}>📦 SHIPPING ADDRESS</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={shippingAddr.name} onChange={e=>setShippingAddr(a=>({...a,name:e.target.value}))} placeholder="Full name" className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  <select value={shippingAddr.country} onChange={e=>setShippingAddr(a=>({...a,country:e.target.value}))} className="p-2 rounded-lg text-xs" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}>
+                    {Object.keys(TOKEN_RATE).map(c=>(<option key={c} value={c}>{c}</option>))}
+                  </select>
+                  <input value={shippingAddr.line1} onChange={e=>setShippingAddr(a=>({...a,line1:e.target.value}))} placeholder="Address" className="col-span-2 p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  <input value={shippingAddr.city} onChange={e=>setShippingAddr(a=>({...a,city:e.target.value}))} placeholder="City" className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  <input value={shippingAddr.zip} onChange={e=>setShippingAddr(a=>({...a,zip:e.target.value}))} placeholder="Postal Code" className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="p-3 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}>
+                <p className="text-[10px] font-bold mb-2" style={{color:t.textMuted}}>🛒 ORDER SUMMARY</p>
+                {cart.map(p=>(<div key={p.id} className="flex items-center gap-2 py-1"><span>{p.img}</span><span className="text-[10px] flex-1 truncate">{p.name} × {getQty(p.id)}</span><span className="text-[10px] font-bold">${(p.price*getQty(p.id)).toFixed(2)}</span></div>))}
+                <div className="border-t pt-1 mt-1" style={{borderColor:t.cardBorder}}>
+                  <div className="flex justify-between text-xs"><span>Total</span><span className="font-bold text-sm">${cartTotal.toFixed(2)}</span></div>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold" style={{color:t.textMuted}}>💳 PAYMENT METHOD</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    {k:'card' as const,l:'💳 Card',d:'Credit/Debit'},
+                    {k:'token' as const,l:`${tokenInfo.symbol} Tokens`,d:tokenInfo.name},
+                    {k:'wallet' as const,l:'👛 Wallet',d:'Datore Wallet'},
+                  ]).map(m=>(
+                    <button key={m.k} onClick={()=>setPayMethod(m.k)} className="p-2 rounded-xl text-center" style={{background:payMethod===m.k?t.accent+'15':'transparent',border:`1.5px solid ${payMethod===m.k?t.accent:t.cardBorder}`}}>
+                      <p className="text-xs font-bold" style={{color:payMethod===m.k?t.accent:t.text}}>{m.l}</p>
+                      <p className="text-[8px]" style={{color:t.textMuted}}>{m.d}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Card Fields */}
+                {payMethod==='card'&&(
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={cardInfo.number} onChange={e=>setCardInfo(c=>({...c,number:e.target.value}))} placeholder="Card Number" maxLength={19} className="col-span-2 p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                    <input value={cardInfo.name} onChange={e=>setCardInfo(c=>({...c,name:e.target.value}))} placeholder="Name on Card" className="col-span-2 p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                    <input value={cardInfo.expiry} onChange={e=>setCardInfo(c=>({...c,expiry:e.target.value}))} placeholder="MM/YY" maxLength={5} className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                    <input value={cardInfo.cvv} onChange={e=>setCardInfo(c=>({...c,cvv:e.target.value}))} placeholder="CVV" maxLength={4} type="password" className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  </div>
+                )}
+
+                {/* Token Payment */}
+                {payMethod==='token'&&(
+                  <div className="p-3 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}>
+                    <div className="flex justify-between text-xs mb-2"><span>Your {tokenInfo.name} Balance</span><span className="font-bold">{tokenInfo.symbol} {tokenBalance.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs mb-2"><span>Order Cost</span><span className="font-bold" style={{color:cartTokens<=tokenBalance?'#22c55e':'#ef4444'}}>{tokenInfo.symbol} {cartTokens.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-xs"><span>After Purchase</span><span className="font-bold">{tokenInfo.symbol} {(tokenBalance-cartTokens).toLocaleString()}</span></div>
+                    {cartTokens>tokenBalance&&<p className="text-[9px] mt-2" style={{color:'#ef4444'}}>⚠️ Insufficient tokens. Top up or use another method.</p>}
+                    <div className="mt-2 p-2 rounded-lg" style={{background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.2)'}}>
+                      <p className="text-[9px]" style={{color:'#f59e0b'}}>🔒 Tokens work only within <strong>{userCountry}</strong>. International token payments are not available.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Wallet */}
+                {payMethod==='wallet'&&(
+                  <div className="p-3 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}>
+                    <div className="flex justify-between text-xs mb-1"><span>Datore Wallet</span><span className="font-bold" style={{color:'#22c55e'}}>$2,450.00</span></div>
+                    <p className="text-[9px]" style={{color:t.textMuted}}>Funds from your Datore earnings and deposits</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Place Order */}
+              <div className="flex gap-2">
+                <button onClick={placeOrder} disabled={payMethod==='token'&&cartTokens>tokenBalance} className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-40" style={{background:`linear-gradient(135deg,${t.accent},#22c55e)`}}>
+                  {payMethod==='token'?`Pay ${tokenInfo.symbol} ${cartTokens.toLocaleString()} Tokens`
+                   :payMethod==='wallet'?`Pay $${cartTotal.toFixed(2)} from Wallet`
+                   :`Pay $${cartTotal.toFixed(2)}`}
+                </button>
+                <button onClick={()=>setShowCheckout(false)} className="px-4 py-3 rounded-xl text-xs" style={{border:`1px solid ${t.cardBorder}`}}>Cancel</button>
+              </div>
+            </>)}
+          </div>
         </div>
       )}
 

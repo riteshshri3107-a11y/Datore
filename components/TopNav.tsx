@@ -82,7 +82,6 @@ export default function TopNav() {
           <button onClick={()=>router.push('/inbox')} className="w-9 h-9 rounded-xl flex items-center justify-center relative" style={{ color:t.textSecondary }}><IcoChat size={18} /><span style={{ position:'absolute', top:2, right:2, width:8, height:8, borderRadius:'50%', background:'#ef4444' }}></span></button>
           <button onClick={()=>router.push('/friends')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}><IcoFriends size={18} /></button>
           <button onClick={()=>router.push('/notifications')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}><IcoBell size={18} /></button>
-          <button onClick={()=>router.push('/profile')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)` }}><IcoUser size={18} color={t.accent} /></button>
         </div>
       </div>
     </nav>
