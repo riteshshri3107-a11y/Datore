@@ -179,7 +179,7 @@ export default function BuddyGroupsPage() {
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">Buddy Groups</h1><button onClick={()=>setShowCreate(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>+ Create</button></div>
       {modAlert&&!modAlert.safe&&(
         <div className="p-3 rounded-xl space-y-1" style={{background:sb(modAlert.severity),border:`1px solid ${modAlert.severity==='critical'?'#ef4444':'#f59e0b'}40`}}>
-          <div className="flex items-center gap-2"><span>🛡️</span><span className="text-xs font-bold" style={{color:modAlert.severity==='critical'?'#ef4444':'#f59e0b'}}>{modAlert.severity.toUpperCase()} — {modAlert.category}</span></div>
+          <div className="flex items-center gap-2"><span>🛡️</span><span className="text-xs font-bold" style={{color:modAlert.severity==='critical'?'#ef4444':'#f59e0b'}}>{modAlert.severity.toUpperCase()} -- {modAlert.category}</span></div>
           <p className="text-xs">{modAlert.message}</p>
           <p className="text-[9px]" style={{color:t.textMuted}}>Risk: {modAlert.riskScore}/100 · Action: {modAlert.action.replace(/_/g,' ')}</p>
           <button onClick={()=>setModAlert(null)} className="text-[9px] underline" style={{color:t.textMuted}}>Dismiss</button>

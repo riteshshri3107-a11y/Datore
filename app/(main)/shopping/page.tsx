@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic } from '@/components/Icons';
 
-/* BR-99: GLOBAL SHOPPING AGGREGATION — Amazon/Instacart/Walmart Feature Parity
+/* BR-99: GLOBAL SHOPPING AGGREGATION -- Amazon/Instacart/Walmart Feature Parity
    COMMON: Categories, Search, Product Detail, Reviews, Cart, Wishlist, Comparisons
    AMAZON FEATURES: Prime delivery, Price history, Recommendations, "Customers also bought"
    INSTACART FEATURES: Same-hour delivery, Store selection, Fresh picks, Replacement preferences
@@ -65,7 +65,7 @@ export default function ShoppingPage() {
   const [shippingAddr,setShippingAddr] = useState({name:'Rajesh S.',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
   const [cardInfo,setCardInfo] = useState({number:'',expiry:'',cvv:'',name:''});
 
-  /* TOKEN SYSTEM — country-based currency, same-country only */
+  /* TOKEN SYSTEM -- country-based currency, same-country only */
   const TOKEN_RATE:Record<string,{symbol:string;rate:number;name:string}> = {
     'Canada': { symbol:'🍁', rate:1.36, name:'CAD Tokens' },
     'India': { symbol:'🪷', rate:83.12, name:'INR Tokens' },
@@ -123,7 +123,7 @@ export default function ShoppingPage() {
         <p className="text-xs mb-3">{sel.desc}</p>
         {sel.sizes&&<div className="mb-3"><p className="text-[10px] font-bold mb-1">Size</p><div className="flex gap-1">{sel.sizes.map(s=>(<button key={s} className="px-3 py-1 rounded-lg text-xs" style={{background:t.bg,border:`1px solid ${t.cardBorder}`}}>{s}</button>))}</div></div>}
 
-        {/* Price Comparison — Datore Unique */}
+        {/* Price Comparison -- Datore Unique */}
         <h4 className="text-[10px] font-bold mb-1">💰 Price Comparison Across Portals</h4>
         <div className="space-y-1 mb-3">{sel.priceHistory.map((ph,i)=>(
           <div key={i} className="flex items-center gap-2 p-1.5 rounded-lg" style={{background:i===0?'rgba(34,197,94,0.08)':t.bg}}>
@@ -243,7 +243,7 @@ export default function ShoppingPage() {
               <div className="flex justify-between text-xs mb-1"><span>Total Savings</span><span className="font-bold" style={{color:'#22c55e'}}>-${savings.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs mb-1"><span>Delivery</span><span className="font-bold" style={{color:'#22c55e'}}>FREE</span></div>
               <div className="flex justify-between text-xs mb-1" style={{borderTop:`1px solid ${t.cardBorder}`,paddingTop:6}}><span>Token equivalent ({tokenInfo.name})</span><span className="font-bold">{tokenInfo.symbol} {cartTokens.toLocaleString()}</span></div>
-              <button onClick={()=>setShowCheckout(true)} className="w-full mt-2 py-3 rounded-xl text-sm font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>Proceed to Checkout — ${cartTotal.toFixed(2)}</button>
+              <button onClick={()=>setShowCheckout(true)} className="w-full mt-2 py-3 rounded-xl text-sm font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>Proceed to Checkout -- ${cartTotal.toFixed(2)}</button>
             </div>
           </>)}
         </div>

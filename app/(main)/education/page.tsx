@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoStar, IcoMic } from '@/components/Icons';
 
-/* BR-100: EDUCATION MODULE — Coursera/Lex/Udemy Feature Parity + Gap Analysis
+/* BR-100: EDUCATION MODULE -- Coursera/Lex/Udemy Feature Parity + Gap Analysis
    COMMON: Course catalog, Enrollment, Progress tracking, Certificates, Video delivery
    COURSERA GAPS FILLED: Peer grading, Capstone projects, Degree programs, Financial aid
    LEX GAPS FILLED: Interactive exercises, AI tutoring, Code playgrounds, Real-time feedback
@@ -144,7 +144,7 @@ export default function EducationPage() {
         <div className="flex items-center gap-2 mb-3">{sel.peerReview&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Peer Review</span>}{sel.certified&&<span className="text-[9px] px-2 py-0.5 rounded-full bg-green-50 text-green-600">Certificate</span>}<span className="text-[9px]" style={{color:t.textMuted}}>Subtitles: {sel.subtitles.join(', ')}</span></div>
 
         <button onClick={()=>{setCourses(p=>p.map(c=>c.id===sel.id?{...c,enrolled:!c.enrolled}:c));setSel({...sel,enrolled:!sel.enrolled});}} className="w-full py-2.5 rounded-lg text-xs font-bold text-white" style={{background:sel.enrolled?'#22c55e':t.accent}}>
-          {sel.enrolled?'✅ Enrolled — Continue Learning':'Enroll Now'+(sel.free?' — Free':` — $${sel.price}/mo`)}
+          {sel.enrolled?'✅ Enrolled -- Continue Learning':'Enroll Now'+(sel.free?' -- Free':` -- $${sel.price}/mo`)}
         </button>
       </div>
     </div>
@@ -251,7 +251,7 @@ export default function EducationPage() {
         ))}</div>
       )}
 
-      {/* QUIZ — Lex gap: Interactive exercises */}
+      {/* QUIZ -- Lex gap: Interactive exercises */}
       {tab==='quiz'&&(
         <div className="space-y-3">
           {!quizDone?(

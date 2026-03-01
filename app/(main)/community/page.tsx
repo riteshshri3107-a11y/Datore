@@ -159,7 +159,7 @@ export default function CommunityPage() {
           <div className="glass-card rounded-2xl p-4" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <p className="text-xs font-bold mb-2">📋 Group Rules</p>
             {sg.rules.map((r,i)=><p key={i} className="text-[11px] flex items-center gap-2 mb-1" style={{color:t.textSecondary}}><span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style={{background:t.accent+'15',color:t.accent}}>{i+1}</span>{r}</p>)}
-            <p className="text-[11px] flex items-center gap-2 mt-2" style={{color:'#22c55e'}}><IcoShield size={12} color="#22c55e"/>AI moderation active — harmful content auto-blocked</p>
+            <p className="text-[11px] flex items-center gap-2 mt-2" style={{color:'#22c55e'}}><IcoShield size={12} color="#22c55e"/>AI moderation active -- harmful content auto-blocked</p>
           </div>
           {/* Post Composer */}
           <div className="glass-card rounded-2xl p-4" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>

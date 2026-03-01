@@ -6,9 +6,9 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
 
-/* BR-101: User Content Ownership — edit/delete own posts, jobs, products, communities, groups
-   BR-103: Rating Eligibility — 4.0+ rating AND 10+ friends required to rate others
-   NEW: Multi-avatar system — separate profile pics for Public, Friends, Buddy+, Professional */
+/* BR-101: User Content Ownership -- edit/delete own posts, jobs, products, communities, groups
+   BR-103: Rating Eligibility -- 4.0+ rating AND 10+ friends required to rate others
+   NEW: Multi-avatar system -- separate profile pics for Public, Friends, Buddy+, Professional */
 
 type AvatarMode = 'public'|'friends'|'buddy'|'professional';
 const AVATAR_MODES:{key:AvatarMode;label:string;icon:string;color:string}[] = [
@@ -31,9 +31,9 @@ const MY_POSTS:UserPost[] = [
   {id:'mp3',text:'Weekend hike with the dog walkers group! 🐕🌿',time:'3d ago',likes:56,audience:'Buddy Group'},
 ];
 const MY_JOBS:UserJob[] = [
-  {id:'mj1',title:'House Cleaner Needed — Brampton',status:'Active',applicants:8,posted:'2d ago',budget:'$35/hr'},
+  {id:'mj1',title:'House Cleaner Needed -- Brampton',status:'Active',applicants:8,posted:'2d ago',budget:'$35/hr'},
   {id:'mj2',title:'Math Tutor for Grade 10',status:'Active',applicants:3,posted:'5d ago',budget:'$40/hr'},
-  {id:'mj3',title:'Dog Walker — Weekend Only',status:'Closed',applicants:12,posted:'2w ago',budget:'$20/hr'},
+  {id:'mj3',title:'Dog Walker -- Weekend Only',status:'Closed',applicants:12,posted:'2w ago',budget:'$20/hr'},
 ];
 const MY_PRODUCTS:UserProduct[] = [
   {id:'mpd1',name:'Used MacBook Pro 2023',price:1200,status:'Active',views:89},
@@ -138,7 +138,7 @@ export default function ProfilePage() {
             <h3 className="font-bold text-sm">Set {AVATAR_MODES.find(m=>m.key===activeAvatarMode)?.label} Profile Picture</h3>
             <p className="text-[9px]" style={{color:t.textMuted}}>This avatar is shown to {activeAvatarMode==='public'?'everyone':activeAvatarMode==='professional'?'your professional network':`your ${activeAvatarMode}`}</p>
             <button onClick={()=>avatarRef.current?.click()} className="w-full py-3 rounded-xl text-xs font-bold text-white" style={{background:t.accent}}>📷 Upload Photo</button>
-            <p className="text-[9px] text-center" style={{color:t.textMuted}}>— or pick an avatar —</p>
+            <p className="text-[9px] text-center" style={{color:t.textMuted}}>-- or pick an avatar --</p>
             <div className="grid grid-cols-6 gap-2">{DEFAULT_AVATARS.map(em=>(<button key={em} onClick={()=>setEmojiAvatar(em)} className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}>{em}</button>))}</div>
             {currentAvatar&&<button onClick={()=>{setAvatars(a=>({...a,[activeAvatarMode]:null}));setShowAvatarPicker(false);}} className="w-full py-2 rounded-xl text-xs" style={{color:'#ef4444'}}>Remove Current Avatar</button>}
           </div>

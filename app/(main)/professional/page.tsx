@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoBookmark, IcoStar, IcoMic, IcoUser, IcoSend } from '@/components/Icons';
 
-/* BR-98: PROFESSIONAL PROFILE — LinkedIn/Monster/Indeed Feature Parity + Gaps Filled
+/* BR-98: PROFESSIONAL PROFILE -- LinkedIn/Monster/Indeed Feature Parity + Gaps Filled
    COMMON FEATURES: Profile, Experience, Skills, Job Search, Network, Messaging, Resume, Endorsements
    LINKEDIN GAPS FILLED: Open-to-work privacy, Skill assessments, Creator mode, Career breaks
    MONSTER GAPS FILLED: Resume scoring, Career advice, Salary negotiation tools
@@ -255,7 +255,7 @@ export default function ProfessionalPage() {
         </div>
       )}
 
-      {/* RESUME TAB — Monster gap: Resume scoring */}
+      {/* RESUME TAB -- Monster gap: Resume scoring */}
       {tab==='resume'&&(
         <div className="space-y-3">
           <div className="p-4 rounded-xl text-center" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
@@ -277,7 +277,7 @@ export default function ProfessionalPage() {
         </div>
       )}
 
-      {/* COMPANIES TAB — Indeed gap: Company reviews */}
+      {/* COMPANIES TAB -- Indeed gap: Company reviews */}
       {tab==='companies'&&(
         <div className="space-y-2">{COMPANIES.map(c=>(
           <div key={c.name} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
@@ -287,7 +287,7 @@ export default function ProfessionalPage() {
         ))}</div>
       )}
 
-      {/* INTERVIEWS TAB — Indeed gap: Interview prep */}
+      {/* INTERVIEWS TAB -- Indeed gap: Interview prep */}
       {tab==='interviews'&&(
         <div className="space-y-2">
           <div className="p-3 rounded-xl" style={{background:'rgba(59,130,246,0.08)',border:'1px solid rgba(59,130,246,0.2)'}}>
@@ -297,7 +297,7 @@ export default function ProfessionalPage() {
           </div>
           {INTERVIEWS_DATA.map((iv,i)=>(
             <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-              <div className="flex items-center gap-2"><p className="text-sm font-semibold flex-1">{iv.company} — {iv.role}</p><span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:iv.status==='scheduled'?'rgba(59,130,246,0.15)':iv.status==='completed'?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)',color:iv.status==='scheduled'?'#3b82f6':iv.status==='completed'?'#22c55e':'#ef4444'}}>{iv.status}</span></div>
+              <div className="flex items-center gap-2"><p className="text-sm font-semibold flex-1">{iv.company} -- {iv.role}</p><span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:iv.status==='scheduled'?'rgba(59,130,246,0.15)':iv.status==='completed'?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)',color:iv.status==='scheduled'?'#3b82f6':iv.status==='completed'?'#22c55e':'#ef4444'}}>{iv.status}</span></div>
               <p className="text-[10px]" style={{color:t.textMuted}}>📅 {iv.date} · {iv.type}{iv.rating?` · ⭐ ${iv.rating}/5`:''}</p>
               <p className="text-[10px]">{iv.notes}</p>
             </div>
@@ -305,7 +305,7 @@ export default function ProfessionalPage() {
         </div>
       )}
 
-      {/* SALARY TAB — Monster gap: Salary tools */}
+      {/* SALARY TAB -- Monster gap: Salary tools */}
       {tab==='salary'&&(
         <div className="space-y-2">
           <p className="text-xs font-bold">💰 Salary Insights (Canada, 2026)</p>
@@ -318,7 +318,7 @@ export default function ProfessionalPage() {
         </div>
       )}
 
-      {/* SKILLS TAB — LinkedIn gap: Skill assessments */}
+      {/* SKILLS TAB -- LinkedIn gap: Skill assessments */}
       {tab==='skills'&&(
         <div className="space-y-2">
           <p className="text-xs font-bold">🎯 Skill Assessments & Endorsements</p>
@@ -344,7 +344,7 @@ export default function ProfessionalPage() {
         ))}</div>
       )}
 
-      {/* APPLICATION TRACKER — LinkedIn gap: Status tracking */}
+      {/* APPLICATION TRACKER -- LinkedIn gap: Status tracking */}
       {tab==='tracker'&&(
         <div className="space-y-2">
           <div className="grid grid-cols-5 gap-1 mb-2">{(['applied','screening','interview','offer','rejected'] as const).map(s=>{const cnt=appTrack.filter(a=>a.status===s).length;return(<div key={s} className="text-center p-2 rounded-lg" style={{background:statusBg(s)}}><p className="text-sm font-bold" style={{color:statusColor(s)}}>{cnt}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s}</p></div>);})}</div>

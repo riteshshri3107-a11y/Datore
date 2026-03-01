@@ -21,7 +21,7 @@ const MOODS = ['😊 Happy','😔 Down','😤 Stressed','😴 Tired','🎉 Excit
 const DETO_INTROS = [
   "Hey there! 🌟 I can now create jobs, schedule alarms, and even write posts for you. What can I help with?",
   "Welcome back! 😊 Try saying: 'Create a babysitter job' or 'Set an alarm for 8 AM'. I'm ready!",
-  "Hi friend! I've learned new skills — voice commands, scheduling, auto-posts! What's on your mind?",
+  "Hi friend! I've learned new skills -- voice commands, scheduling, auto-posts! What's on your mind?",
 ];
 
 const RESPONSES: Record<string,string[]> = {

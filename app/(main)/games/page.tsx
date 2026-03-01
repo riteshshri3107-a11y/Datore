@@ -165,7 +165,7 @@ export default function GamesPage() {
             <div className="flex flex-wrap gap-1.5">{selected.tags.map(tag=>(<span key={tag} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.accentLight,color:t.accent}}>{tag}</span>))}</div>
             <div className="grid grid-cols-3 gap-2">{[{l:'Size',v:selected.size},{l:'Price',v:selected.price},{l:'Category',v:selected.cat}].map(s=>(<div key={s.l} className="text-center p-2 rounded-lg" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}><p className="text-xs font-bold">{s.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s.l}</p></div>))}</div>
             <div className="flex gap-2">
-              <button onClick={()=>{toggleInstall(selected.id);}} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white" style={{background:installed.includes(selected.id)?'#6b7280':t.accent}}>{installed.includes(selected.id)?'✓ Installed — Play ▶':'Install Now'}</button>
+              <button onClick={()=>{toggleInstall(selected.id);}} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white" style={{background:installed.includes(selected.id)?'#6b7280':t.accent}}>{installed.includes(selected.id)?'✓ Installed -- Play ▶':'Install Now'}</button>
               <button onClick={()=>toggleWish(selected.id)} className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:wishlist.includes(selected.id)?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.1)'}}><IcoHeart size={16} color={wishlist.includes(selected.id)?'#ef4444':'#8b5cf6'} fill={wishlist.includes(selected.id)?'#ef4444':'none'}/></button>
             </div>
           </div>

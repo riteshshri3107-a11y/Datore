@@ -66,7 +66,7 @@ export default function TopNav() {
             );
           })}
 
-          {/* Hex Icon Group — Global Shop, Jobs, Education */}
+          {/* Hex Icon Group -- Global Shop, Jobs, Education */}
           <div className="flex items-end gap-1 ml-2 px-2 py-1 rounded-xl" style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
             {NAV_HEX.map(item => (
               <HexBadge key={item.path} Icon={item.Icon} label={item.label} color={item.color} active={!!pathname?.startsWith(item.path)} onClick={()=>router.push(item.path)} />

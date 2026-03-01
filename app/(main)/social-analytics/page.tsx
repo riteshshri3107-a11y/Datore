@@ -50,7 +50,7 @@ export default function SocialAnalyticsPage() {
         </div>
         <div className="rounded-xl p-4" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
           <p className="text-xs font-bold mb-3">Endorsements</p>
-          {ENDORSE.map((e,i)=>(<div key={i} className="flex items-center gap-3 py-2" style={{borderBottom:i<ENDORSE.length-1?`1px solid ${t.cardBorder}`:'none'}}><div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:t.surface}}><IcoUser size={14} color={t.textMuted}/></div><div className="flex-1"><p className="text-xs"><span className="font-semibold">{e.from}</span> — <span style={{color:t.accent}}>"{e.skill}"</span></p></div><span className="text-[10px]" style={{color:t.textMuted}}>{e.time}</span></div>))}
+          {ENDORSE.map((e,i)=>(<div key={i} className="flex items-center gap-3 py-2" style={{borderBottom:i<ENDORSE.length-1?`1px solid ${t.cardBorder}`:'none'}}><div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:t.surface}}><IcoUser size={14} color={t.textMuted}/></div><div className="flex-1"><p className="text-xs"><span className="font-semibold">{e.from}</span> -- <span style={{color:t.accent}}>"{e.skill}"</span></p></div><span className="text-[10px]" style={{color:t.textMuted}}>{e.time}</span></div>))}
         </div>
       </div>}
 

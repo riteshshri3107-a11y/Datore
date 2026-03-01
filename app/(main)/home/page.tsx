@@ -297,7 +297,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              {/* Post Content — Edit or Display */}
+              {/* Post Content -- Edit or Display */}
               {editingPost === post.id ? (
                 <div className="space-y-2 mb-3">
                   <textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={3} className="w-full p-3 rounded-xl text-sm outline-none resize-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
@@ -414,7 +414,7 @@ export default function HomePage() {
       )}
 
       {/* ═══════════════════════════════════════
-          CREATE POST MODAL — with Audience Picker
+          CREATE POST MODAL -- with Audience Picker
          ═══════════════════════════════════════ */}
       {showPost && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={() => { setShowPost(false); clearMedia(); }}>
@@ -424,7 +424,7 @@ export default function HomePage() {
               <button onClick={() => { setShowPost(false); clearMedia(); }}><IcoClose size={20} color={t.textMuted} /></button>
             </div>
 
-            {/* Audience Selector — 4 Profile Types */}
+            {/* Audience Selector -- 4 Profile Types */}
             <div>
               <p className="text-[10px] font-semibold mb-2" style={{ color:t.textMuted }}>POST VISIBILITY</p>
               <div className="grid grid-cols-4 gap-1.5">
