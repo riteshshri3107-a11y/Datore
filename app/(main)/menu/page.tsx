@@ -34,11 +34,14 @@ const MENU = [
     { Icon: IcoMarket, label: 'Global Shop', path: '/shopping', color:'#ec4899', badge:'BR-99' },
     { Icon: IcoList, label: 'NearBy (Local Jobs + Buy/Sell)', path: '/nearby', color:'#f97316', badge:'Local' },
   ]},
-  { section: 'Education & Entertainment', items: [
-    { Icon: IcoBookmark, label: 'Education Hub', path: '/education', color:'#8b5cf6', badge:'BR-100' },
+  { section: 'Learning & Entertainment', items: [
+    { Icon: IcoBookmark, label: 'Learning (Library, News, Science, History, Awards)', path: '/learning', color:'#8b5cf6', badge:'' },
     { Icon: IcoList, label: 'Micro-Learning', path: '/learn', color:'#06b6d4', badge:'' },
-    { Icon: IcoList, label: 'Games', path: '/games', color:'#ec4899', badge:'NEW' },
-    { Icon: IcoList, label: 'Reels', path: '/reels', color:'#ef4444', badge:'NEW' },
+    { Icon: IcoList, label: 'Entertainment (Movies, TV, Games, Matches, Vacations)', path: '/entertainment', color:'#ec4899', badge:'NEW' },
+    { Icon: IcoList, label: 'Reels', path: '/reels', color:'#ef4444', badge:'' },
+  ]},
+  { section: 'Health & Wellness', items: [
+    { Icon: IcoList, label: 'Health (Doctors, Fitness, Diet, Yoga, Exercises)', path: '/health', color:'#10b981', badge:'NEW' },
   ]},
   { section: 'AI & Voice', items: [
     { Icon: IcoChat, label: 'Deto AI Assistant (Voice + Actions + Scheduling)', path: '/deto', color:'#8b5cf6', badge:'BR-104/105/106' },

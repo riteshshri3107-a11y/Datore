@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoHome, IcoCommunity, IcoPlus, IcoMarket, IcoJobs, IcoSearch, IcoQR, IcoShield, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoGrad, IcoMic, IcoGamepad, IcoFilm } from './Icons';
+import { IcoHome, IcoCommunity, IcoPlus, IcoMarket, IcoJobs, IcoSearch, IcoQR, IcoShield, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
 
 const NAV_MAIN = [
   { label:'Home', Icon:IcoHome, path:'/home', color:'#6366f1' },
@@ -14,8 +14,9 @@ const NAV_MAIN = [
 const NAV_HEX = [
   { label:'Global\nShop', Icon:IcoGlobe, path:'/shopping', color:'#22c55e' },
   { label:'Near\nBy', Icon:IcoStore, path:'/nearby', color:'#f97316' },
-  { label:'Educ\nation', Icon:IcoGrad, path:'/education', color:'#8b5cf6' },
-  { label:'Games', Icon:IcoGamepad, path:'/games', color:'#ec4899' },
+  { label:'Learn\ning', Icon:IcoBook, path:'/learning', color:'#8b5cf6' },
+  { label:'Entert\nain', Icon:IcoPlay, path:'/entertainment', color:'#ec4899' },
+  { label:'Health', Icon:IcoHealth, path:'/health', color:'#10b981' },
   { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#ef4444' },
 ];
 
