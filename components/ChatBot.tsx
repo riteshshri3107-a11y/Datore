@@ -3,48 +3,46 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { IcoSend, IcoClose, IcoMic } from './Icons';
 
 const REPLIES: Array<{keys:string[]; text:string; go?:string}> = [
-  { keys:['hello','hi','hey','howdy','sup','good morning','good evening'], text:"Hey there! I'm Dato, your AI assistant for Datore. I can help you find workers, post jobs, navigate the app, check your wallet, or answer questions. Just ask!" },
-  { keys:['help','what can you','what do you','menu','options'], text:"Here's what I can help with:\n\n- Find workers near you\n- Post a new job\n- Browse job listings\n- Open map view\n- Check your wallet\n- Community groups\n- Safety and trust info\n- Marketplace\n\nJust type what you need!" },
-  { keys:['find worker','search worker','need someone','hire','looking for'], text:"Let me open the worker directory! You can search by skill, filter by rating, and check availability.", go:'/jobplace/providers' },
-  { keys:['post job','create job','new job','post a job','need help with'], text:"Let's create a new job posting! I'll take you to the form where you can set title, budget, urgency, and description.", go:'/jobplace/create' },
-  { keys:['map','nearby','around me','close to me','location'], text:"Opening the map view! You'll see all available workers near you with their ratings and rates.", go:'/jobplace/map' },
-  { keys:['wallet','balance','money','token','payment','add money'], text:"Taking you to your wallet! You can check your balance, add tokens, or withdraw funds.", go:'/wallet' },
-  { keys:['community','group','join','social'], text:"Opening Communities! Join groups like GTA Babysitters, Toronto Handyworkers, Pet Lovers, and more.", go:'/community' },
-  { keys:['market','buy','sell','listing','shop'], text:"Opening the Marketplace! Browse and sell electronics, furniture, sports gear, and more.", go:'/marketplace' },
-  { keys:['profile','my account','my info'], text:"Here's your profile page where you can update your info, view activity, and manage settings.", go:'/profile' },
-  { keys:['setting','theme','dark mode','preference'], text:"Opening Settings! You can change theme, dark mode, accent colors, and notification preferences.", go:'/settings' },
-  { keys:['buddy','favorite','saved worker','fav list'], text:"Opening your Buddy List! These are workers you've saved as favorites for quick rehiring.", go:'/buddylist' },
-  { keys:['message','chat','inbox','conversation'], text:"Opening your messages! You can chat with workers and job posters here.", go:'/inbox' },
-  { keys:['notification','alert','updates'], text:"Opening notifications! Check your latest updates, job applications, and messages.", go:'/notifications' },
-  { keys:['trust','trust score','how trust','rating system'], text:"Trust Score (0-100) is calculated from:\n\n- Reviews (40%)\n- Job completion rate (15%)\n- Low complaints (15%)\n- Chat sentiment (10%)\n- On-time delivery (10%)\n- Verification status (10%)\n\nScores above 80 are rated Excellent!" },
-  { keys:['safety','safe','secure','verification','police','background'], text:"Datore safety features:\n\n- Police verification badges\n- Background checks\n- Trust score system (0-100)\n- Escrow payments\n- Live photo verification\n- QR code check-in\n- Community reviews\n\nYour safety is our top priority!" },
-  { keys:['plumb','pipe','leak','faucet','toilet'], text:"James O'Brien is our top plumber! Rating 4.7, $45/hr, police verified with 10+ years experience. Want to view his profile?", go:'/worker/2' },
-  { keys:['babysit','nanny','child','kids','daycare'], text:"Maria Santos is our best babysitter! Rating 4.9, $22/hr, first aid and CPR certified with 52 completed jobs.", go:'/worker/1' },
-  { keys:['clean','cleaning','maid','housekeep'], text:"Priya Sharma is a top cleaner! Rating 4.8, $28/hr, trust score 95, 71 completed jobs. She also does amazing cooking!", go:'/worker/3' },
-  { keys:['pet','dog','cat','animal','walk'], text:"Aisha Hassan is perfect for pet care! Rating 4.9, $20/hr, pet first aid certified, 60 happy clients!", go:'/worker/5' },
-  { keys:['cook','chef','food','catering','meal'], text:"Rosa Martinez is our star chef! Rating 4.8, $35/hr, specializes in Latin and Mediterranean cuisine.", go:'/worker/7' },
-  { keys:['tutor','teach','math','science','homework','study'], text:"David Chen tutors math and science for grades 6-12! Rating 4.6, $40/hr, BSc in Computer Science.", go:'/worker/4' },
-  { keys:['move','moving','reloc','heavy','lift','furniture'], text:"Mike Johnson is a reliable mover! Rating 4.5, $30/hr or $180 fixed for apartments.", go:'/worker/6' },
-  { keys:['paint','garden','landscap','yard','lawn'], text:"Tom Wilson does both gardening and painting! Rating 4.4, $25/hr, 6+ years experience.", go:'/worker/8' },
-  { keys:['how much','cost','price','cheap','afford','rate'], text:"Rates vary by service:\n\nBabysitting: $18-25/hr\nPlumbing: $45-80/hr\nCleaning: $25-35/hr\nTutoring: $35-45/hr\nPet Care: $18-25/hr\nMoving: $25-35/hr\nPainting: $25-40/hr\n\nAll workers set their own rates!" },
-  { keys:['how to use','tutorial','guide','start','new user','beginner'], text:"Getting started with Datore:\n\n1. Browse workers or post a job\n2. Chat with workers directly\n3. Hire and pay through escrow\n4. Rate and review after the job\n5. Save favorites to your Buddy List\n\nNeed help with a specific step?" },
-  { keys:['escrow','how pay','payment work','money safe'], text:"Escrow payment works like this:\n\n1. You fund the job amount\n2. Money is held securely in escrow\n3. Worker completes the job\n4. You confirm completion\n5. Payment is released to the worker\n\nYour money is always safe!" },
-  { keys:['cancel','refund','dispute','complaint','problem'], text:"If you have an issue:\n\n1. Try resolving through chat first\n2. Open a dispute within 24 hours\n3. Provide evidence (photos, messages)\n4. Our team reviews within 48 hours\n5. Refund issued if claim is valid\n\nWe're here to help!" },
-  { keys:['weather','outside','rain'], text:"I focus on helping with Datore services! But I'd say it's always a good day to get things done." },
-  { keys:['thank','thanks','thx','appreciate'], text:"You're welcome! Happy to help anytime. Is there anything else you need?" },
-  { keys:['bye','goodbye','see you','later'], text:"See you later! I'm always here if you need help finding workers or posting jobs. Have a great day!" },
-  { keys:['joke','funny','laugh'], text:"Why did the plumber go to school? Because he wanted to get to the bottom of things!\n\nNeed anything else?" },
-  { keys:['who are you','what are you','your name','dato'], text:"I'm Dato, your AI assistant built into Datore! Think of me like Siri or Google Assistant, but specifically designed to help you find local workers, manage jobs, and navigate the app. I'm available 24/7!" },
-  { keys:['best worker','recommend','suggest','top rated'], text:"Here are our highest-rated workers:\n\n1. Maria Santos - Babysitting (4.9)\n2. Aisha Hassan - Pet Care (4.9)\n3. Priya Sharma - Cleaning (4.8)\n4. Rosa Martinez - Cooking (4.8)\n5. James O'Brien - Plumbing (4.7)\n\nWant to see any of their profiles?" },
-  { keys:['urgent','emergency','asap','right now','immediately'], text:"For urgent needs, I recommend:\n\n1. Post a job with 'Immediate' urgency\n2. Check the Map for available workers nearby\n3. Contact top-rated workers directly via chat\n\nShall I help you post an urgent job?", go:'/jobplace/create' },
+  { keys:['hello','hi','hey','howdy','sup','good morning','good evening'], text:"Hey there! I'm Dato, your AI assistant. I can help you find workers, post jobs, navigate, check wallet, or answer questions. Just ask!" },
+  { keys:['help','what can you','what do you','menu','options'], text:"I can help with:\n\n• Find workers near you\n• Post a new job\n• Browse marketplace\n• Open map view\n• Check your wallet\n• Community groups\n• Safety & trust info\n\nJust type what you need!" },
+  { keys:['find worker','search worker','need someone','hire','looking for'], text:"Let me open the worker directory for you!", go:'/jobplace/providers' },
+  { keys:['post job','create job','new job','post a job','need help with'], text:"Let's create a new job posting!", go:'/jobplace/create' },
+  { keys:['map','nearby','around me','close to me','location'], text:"Opening the map view!", go:'/jobplace/map' },
+  { keys:['wallet','balance','money','token','payment'], text:"Taking you to your wallet!", go:'/wallet' },
+  { keys:['community','group','join','social'], text:"Opening Communities!", go:'/community' },
+  { keys:['market','buy','sell','listing','shop'], text:"Opening Global Shop!", go:'/shopping' },
+  { keys:['profile','my account','my info'], text:"Opening your profile!", go:'/profile' },
+  { keys:['setting','theme','dark mode'], text:"Opening Settings!", go:'/settings' },
+  { keys:['message','chat','inbox'], text:"Opening your messages!", go:'/inbox' },
+  { keys:['notification','alert'], text:"Opening notifications!", go:'/notifications' },
+  { keys:['trust','trust score','rating system'], text:"Trust Score (0-100) is calculated from reviews (40%), completion rate (15%), low complaints (15%), chat sentiment (10%), on-time (10%), and verification (10%)." },
+  { keys:['safety','safe','secure','verification'], text:"Datore safety features: police verification, background checks, trust scores, escrow payments, live photo verification, QR check-in, and community reviews." },
+  { keys:['babysit','nanny','child','kids'], text:"Maria Santos is our top babysitter! Rating 4.9, $22/hr, first aid certified.", go:'/worker/1' },
+  { keys:['plumb','pipe','leak','faucet'], text:"James O'Brien is our top plumber! Rating 4.7, $45/hr, 10+ years experience.", go:'/worker/2' },
+  { keys:['clean','cleaning','maid'], text:"Priya Sharma is a top cleaner! Rating 4.8, $28/hr, trust score 95.", go:'/worker/3' },
+  { keys:['pet','dog','cat','walk'], text:"Aisha Hassan is perfect for pet care! Rating 4.9, $20/hr, pet first aid certified.", go:'/worker/5' },
+  { keys:['cook','chef','food'], text:"Rosa Martinez is our star chef! Rating 4.8, $35/hr, Latin & Mediterranean cuisine.", go:'/worker/7' },
+  { keys:['tutor','teach','math','homework'], text:"David Chen tutors math & science! Rating 4.6, $40/hr, BSc in CS.", go:'/worker/4' },
+  { keys:['how much','cost','price','rate'], text:"Typical rates:\n\nBabysitting: $18-25/hr\nPlumbing: $45-80/hr\nCleaning: $25-35/hr\nTutoring: $35-45/hr\nPet Care: $18-25/hr" },
+  { keys:['how to use','tutorial','guide','start'], text:"Getting started:\n\n1. Browse workers or post a job\n2. Chat with workers\n3. Hire and pay via escrow\n4. Rate after completion\n5. Save favorites to Buddy List" },
+  { keys:['thank','thanks','thx'], text:"You're welcome! Happy to help anytime. 😊" },
+  { keys:['bye','goodbye','see you'], text:"See you later! I'm always here if you need help. Have a great day!" },
+  { keys:['who are you','what are you','your name','dato'], text:"I'm Dato, your AI assistant built into Datore! I help you find local workers, manage jobs, and navigate the app. Available 24/7!" },
+  { keys:['best worker','recommend','top rated'], text:"Top-rated workers:\n\n⭐ Maria Santos — Babysitting (4.9)\n⭐ Aisha Hassan — Pet Care (4.9)\n⭐ Priya Sharma — Cleaning (4.8)\n⭐ Rosa Martinez — Cooking (4.8)\n⭐ James O'Brien — Plumbing (4.7)" },
+  { keys:['urgent','emergency','asap','immediately'], text:"For urgent needs:\n\n1. Post a job with 'Immediate' urgency\n2. Check Map for available workers\n3. Contact top-rated workers directly", go:'/jobplace/create' },
+  { keys:['health','doctor','fitness','yoga'], text:"Opening Health section! Find online doctors, fitness plans, diet guides, and yoga sessions.", go:'/health' },
+  { keys:['learn','education','news','library'], text:"Opening Learning! Access our library, news, tech & science articles, history, and awards.", go:'/learning' },
+  { keys:['entertain','movie','game','tv','vacation'], text:"Opening Entertainment! Browse movies, TV shows, games, live matches, and vacation deals.", go:'/entertainment' },
+  { keys:['reel','video','short'], text:"Opening Reels! Watch and create short-form content.", go:'/reels' },
 ];
 
 function getReply(q: string): { text: string; go?: string } {
   const l = q.toLowerCase().trim();
   for (const r of REPLIES) { if (r.keys.some(k => l.includes(k))) return { text: r.text, go: r.go }; }
-  return { text: "I'm not sure about that, but I can help you with:\n\n- \"Find workers\" to browse providers\n- \"Post a job\" to create a listing\n- \"Map\" to see workers nearby\n- \"Wallet\" to check your balance\n- \"Trust\" to learn about trust scores\n\nTry asking about a specific service like babysitting, plumbing, or cleaning!" };
+  return { text: "I'm not sure about that. Try asking about:\n\n• \"Find workers\" to browse providers\n• \"Post a job\" to create a listing\n• \"Health\" for doctor consultations\n• \"Learning\" for courses & news\n• \"Entertainment\" for movies & games" };
 }
 
 export default function ChatBot() {
@@ -52,154 +50,219 @@ export default function ChatBot() {
   const { isDark, accentColor } = useThemeStore();
   const t = getTheme(isDark, 2, accentColor);
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<{text:string; fromMe:boolean; go?:string}[]>([
-    { text:"Hi! I'm Dato, your AI assistant. I can help you find workers, post jobs, check safety scores, manage your wallet, or navigate anywhere in the app. Just ask or tap a quick action below!", fromMe:false },
+  const [msgs, setMsgs] = useState<{text:string; fromMe:boolean; go?:string; time:string}[]>([
+    { text:"Hi! I'm Dato, your AI assistant. Ask me anything about Datore — find workers, post jobs, explore entertainment, health, learning, and more!", fromMe:false, time:'Now' },
   ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
+  const [listening, setListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top:scrollRef.current.scrollHeight, behavior:'smooth' }); }, [msgs, typing]);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 300); }, [open]);
 
+  const getTime = () => new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
   const send = (text?: string) => {
     const q = (text || input).trim();
     if (!q) return;
-    setMsgs(p => [...p, { text:q, fromMe:true }]);
+    setMsgs(p => [...p, { text:q, fromMe:true, time:getTime() }]);
     setInput('');
     setTyping(true);
     setTimeout(() => {
       const reply = getReply(q);
       setTyping(false);
-      setMsgs(p => [...p, { text:reply.text, fromMe:false, go:reply.go }]);
-    }, 600 + Math.random() * 800);
+      setMsgs(p => [...p, { text:reply.text, fromMe:false, go:reply.go, time:getTime() }]);
+    }, 500 + Math.random() * 700);
+  };
+
+  const voiceSearch = () => {
+    setListening(true);
+    setTimeout(()=>{ setListening(false); send('Find workers'); },2000);
   };
 
   const quickBtns = [
-    { label:'Find Workers', q:'Find workers' },
-    { label:'Post a Job', q:'Post a job' },
-    { label:'Map View', q:'Map nearby' },
-    { label:'My Wallet', q:'Wallet balance' },
-    { label:'Safety Info', q:'Safety features' },
-    { label:'Best Workers', q:'Best worker recommend' },
-    { label:'How It Works', q:'How to use tutorial' },
+    {l:'🔍 Find Workers',q:'Find workers'},
+    {l:'📋 Post Job',q:'Post a job'},
+    {l:'🗺️ Map',q:'Map nearby'},
+    {l:'🩺 Health',q:'Health'},
+    {l:'📚 Learn',q:'Learning'},
+    {l:'🎬 Fun',q:'Entertainment'},
+    {l:'💰 Wallet',q:'Wallet'},
   ];
 
   return (
     <>
-      {/* Floating Button */}
-      <button onClick={() => setOpen(!open)} style={{
-        position:'fixed', bottom:80, right:16, width:56, height:56, borderRadius:'50%',
-        background:`linear-gradient(135deg,${t.accent},#8b5cf6)`, color:'white', border:'none',
-        boxShadow:`0 6px 24px ${t.accentGlow}`, cursor:'pointer', zIndex:9998,
-        display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:700,
-        transition:'transform 0.3s'
+      {/* Floating AI Button — smooth with pulse */}
+      <button onClick={()=>setOpen(!open)} style={{
+        position:'fixed', bottom:76, right:16, width:54, height:54, borderRadius:16,
+        background:`linear-gradient(135deg,${t.accent},#a78bfa)`,
+        color:'white', border:'none', cursor:'pointer', zIndex:9998,
+        boxShadow:`0 4px 20px ${t.accent}50`, display:'flex', alignItems:'center', justifyContent:'center',
+        transition:'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+        transform: open?'scale(0.9) rotate(90deg)':'scale(1)',
       }}>
-        {open ? 'X' : 'AI'}
+        {open ? (
+          <IcoClose size={20} color="white" />
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><path d="M8 9h.01M12 9h.01M16 9h.01" strokeWidth="3"/></svg>
+        )}
       </button>
 
-      {/* Badge */}
+      {/* Tooltip */}
       {!open && (
         <div style={{
-          position:'fixed', bottom:138, right:14, background:t.accent, color:'white',
-          padding:'4px 10px', borderRadius:12, fontSize:10, fontWeight:600, zIndex:9998,
-          boxShadow:'0 2px 8px rgba(0,0,0,0.2)', whiteSpace:'nowrap'
+          position:'fixed', bottom:134, right:16, padding:'6px 14px', borderRadius:12,
+          background:isDark?'rgba(30,30,50,0.95)':'white',
+          color:t.accent, fontSize:11, fontWeight:600, zIndex:9998,
+          boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
+          border:`1px solid ${isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)'}`,
+          animation:'float 3s ease-in-out infinite'
         }}>
-          Ask Dato
+          ✨ Ask Dato
         </div>
       )}
 
       {/* Chat Window */}
       {open && (
         <div style={{
-          position:'fixed', bottom:145, right:16, width:380, maxWidth:'calc(100vw - 32px)',
-          height:520, maxHeight:'calc(100vh - 200px)', borderRadius:20,
-          background:isDark?'#1a1a2e':'#ffffff', border:`1px solid ${t.cardBorder}`,
-          boxShadow:'0 12px 48px rgba(0,0,0,0.25)', zIndex:9999,
-          display:'flex', flexDirection:'column', overflow:'hidden'
+          position:'fixed', bottom:140, right:16, width:400, maxWidth:'calc(100vw - 32px)',
+          height:540, maxHeight:'calc(100vh - 200px)', borderRadius:24,
+          background:isDark?'rgba(16,16,28,0.98)':'rgba(255,255,255,0.98)',
+          border:`1px solid ${isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)'}`,
+          boxShadow:isDark?'0 20px 60px rgba(0,0,0,0.5)':'0 20px 60px rgba(0,0,0,0.15)',
+          backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
+          zIndex:9999, display:'flex', flexDirection:'column', overflow:'hidden',
+          animation:'scaleIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards',
+          transformOrigin:'bottom right'
         }}>
           {/* Header */}
           <div style={{
-            padding:'14px 16px', background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,
-            color:'white', display:'flex', alignItems:'center', gap:10
+            padding:'16px 20px', display:'flex', alignItems:'center', gap:12,
+            background:`linear-gradient(135deg,${t.accent}08,#8b5cf608)`,
+            borderBottom:`1px solid ${isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'}`
           }}>
             <div style={{
-              width:38, height:38, borderRadius:'50%', background:'rgba(255,255,255,0.2)',
-              display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700
-            }}>AI</div>
-            <div style={{ flex:1 }}>
-              <p style={{ fontWeight:700, fontSize:14, margin:0 }}>Dato - AI Assistant</p>
-              <p style={{ fontSize:11, opacity:0.85, margin:0 }}>Always online - Ask me anything</p>
+              width:40, height:40, borderRadius:14,
+              background:`linear-gradient(135deg,${t.accent},#a78bfa)`,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              boxShadow:`0 2px 10px ${t.accent}30`
+            }}>
+              <span style={{fontSize:18}}>🤖</span>
             </div>
-            <button onClick={() => setOpen(false)} style={{ background:'none', border:'none', color:'white', fontSize:18, cursor:'pointer', opacity:0.8 }}>X</button>
+            <div style={{flex:1}}>
+              <p style={{fontWeight:700,fontSize:15,margin:0,color:t.text,letterSpacing:-0.3}}>Dato AI</p>
+              <div style={{display:'flex',alignItems:'center',gap:4}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:'#22c55e'}} />
+                <span style={{fontSize:11,color:t.textMuted,fontWeight:500}}>Always online</span>
+              </div>
+            </div>
+            <button onClick={()=>setOpen(false)} style={{background:'none',border:'none',cursor:'pointer',padding:4}}>
+              <IcoClose size={18} color={t.textMuted} />
+            </button>
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} style={{ flex:1, overflowY:'auto', padding:12, display:'flex', flexDirection:'column', gap:8 }}>
+          <div ref={scrollRef} style={{flex:1,overflowY:'auto',padding:'16px 16px 8px',display:'flex',flexDirection:'column',gap:12}}>
             {msgs.map((m, i) => (
-              <div key={i} style={{ display:'flex', justifyContent:m.fromMe?'flex-end':'flex-start' }}>
-                <div style={{ maxWidth:'85%' }}>
+              <div key={i} style={{display:'flex',gap:8,justifyContent:m.fromMe?'flex-end':'flex-start',alignItems:'flex-end'}}>
+                {!m.fromMe && (
+                  <div style={{width:28,height:28,borderRadius:10,background:`linear-gradient(135deg,${t.accent},#a78bfa)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <span style={{fontSize:14}}>🤖</span>
+                  </div>
+                )}
+                <div style={{maxWidth:'78%'}}>
                   <div style={{
                     padding:'10px 14px',
-                    borderRadius:m.fromMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                    background:m.fromMe?`linear-gradient(135deg,${t.accent},#8b5cf6)`:(isDark?'rgba(255,255,255,0.08)':'#f3f4f6'),
-                    color:m.fromMe?'white':t.text, fontSize:13, lineHeight:1.6, whiteSpace:'pre-line'
+                    borderRadius: m.fromMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    background: m.fromMe
+                      ? `linear-gradient(135deg,${t.accent},#8b5cf6)`
+                      : (isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'),
+                    color: m.fromMe ? 'white' : t.text,
+                    fontSize: 13, lineHeight: 1.65, whiteSpace: 'pre-line',
+                    boxShadow: m.fromMe ? `0 2px 12px ${t.accent}25` : 'none'
                   }}>{m.text}</div>
                   {m.go && !m.fromMe && (
-                    <button onClick={() => { router.push(m.go!); setOpen(false); }} style={{
-                      marginTop:4, padding:'6px 14px', borderRadius:10, background:t.accentLight,
-                      color:t.accent, border:`1px solid ${t.accent}33`, fontSize:11, fontWeight:600, cursor:'pointer'
+                    <button onClick={()=>{router.push(m.go!);setOpen(false);}} style={{
+                      marginTop:6, padding:'7px 16px', borderRadius:12,
+                      background:`${t.accent}10`, color:t.accent,
+                      border:`1px solid ${t.accent}20`, fontSize:11, fontWeight:600,
+                      cursor:'pointer', display:'flex', alignItems:'center', gap:4
                     }}>
-                      Open this page
+                      Open → 
                     </button>
                   )}
+                  <p style={{fontSize:9,color:t.textMuted,marginTop:3,textAlign:m.fromMe?'right':'left',paddingLeft:m.fromMe?0:2,paddingRight:m.fromMe?2:0}}>{m.time}</p>
                 </div>
+                {m.fromMe && (
+                  <div style={{width:28,height:28,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <span style={{fontSize:12,color:'white',fontWeight:700}}>RS</span>
+                  </div>
+                )}
               </div>
             ))}
             {typing && (
-              <div style={{ display:'flex' }}>
-                <div style={{ padding:'10px 18px', borderRadius:'14px 14px 14px 4px', background:isDark?'rgba(255,255,255,0.08)':'#f3f4f6', fontSize:13 }}>
-                  <span className="animate-pulse">...</span>
+              <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+                <div style={{width:28,height:28,borderRadius:10,background:`linear-gradient(135deg,${t.accent},#a78bfa)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{fontSize:14}}>🤖</span>
+                </div>
+                <div style={{padding:'12px 20px',borderRadius:'18px 18px 18px 4px',background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}>
+                  <div style={{display:'flex',gap:4}}>{[0,1,2].map(d=>(<div key={d} style={{width:6,height:6,borderRadius:'50%',background:t.textMuted,animation:`pulse-glow 1.4s ease-in-out ${d*0.2}s infinite`}} />))}</div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Quick action buttons */}
-          <div style={{ padding:'4px 12px 8px', display:'flex', flexWrap:'wrap', gap:4 }}>
-            {quickBtns.map(q => (
-              <button key={q.label} onClick={() => send(q.q)} style={{
-                padding:'5px 12px', borderRadius:20,
-                background:isDark?'rgba(255,255,255,0.06)':'#f3f4f6',
-                color:t.accent, border:`1px solid ${t.accent}22`,
+          {/* Quick Actions */}
+          <div style={{padding:'6px 16px 4px',display:'flex',gap:5,overflowX:'auto',scrollbarWidth:'none' as any}}>
+            {quickBtns.map(q=>(
+              <button key={q.l} onClick={()=>send(q.q)} style={{
+                padding:'6px 12px', borderRadius:20, whiteSpace:'nowrap',
+                background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)',
+                color:t.textMuted, border:`1px solid ${isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'}`,
                 fontSize:11, fontWeight:500, cursor:'pointer'
-              }}>{q.label}</button>
+              }}>{q.l}</button>
             ))}
           </div>
 
-          {/* Input */}
-          <div style={{ padding:'10px 12px 14px', borderTop:`1px solid ${t.cardBorder}` }}>
-            <div style={{ display:'flex', gap:8 }}>
-              <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && send()}
+          {/* Input Bar */}
+          <div style={{padding:'10px 16px 14px',borderTop:`1px solid ${isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'}`}}>
+            <div style={{
+              display:'flex', gap:8, alignItems:'center', padding:'4px 4px 4px 16px',
+              borderRadius:24,
+              background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)',
+              border:`1.5px solid ${isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)'}`,
+              transition:'border-color 0.2s'
+            }}>
+              <input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
+                onKeyDown={e=>e.key==='Enter'&&send()}
                 placeholder="Ask Dato anything..."
-                style={{
-                  flex:1, padding:'10px 14px', borderRadius:20,
-                  border:`1px solid ${t.cardBorder}`,
-                  background:isDark?'rgba(255,255,255,0.06)':'#f9fafb',
-                  color:t.text, fontSize:13, outline:'none'
-                }} />
-              <button onClick={() => send()} style={{
-                width:40, height:40, borderRadius:'50%',
-                background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,
-                color:'white', border:'none', fontSize:14, fontWeight:700,
-                cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
-              }}>Go</button>
+                style={{flex:1,background:'none',border:'none',outline:'none',color:t.text,fontSize:13,fontFamily:'inherit',padding:'8px 0'}}
+              />
+              <button onClick={voiceSearch} style={{
+                width:34,height:34,borderRadius:'50%',border:'none',cursor:'pointer',
+                background:listening?'rgba(239,68,68,0.15)':'transparent',
+                display:'flex',alignItems:'center',justifyContent:'center'
+              }}>
+                <IcoMic size={16} color={listening?'#ef4444':t.textMuted} />
+              </button>
+              <button onClick={()=>send()} style={{
+                width:36,height:36,borderRadius:'50%',border:'none',cursor:'pointer',
+                background:input.trim()?`linear-gradient(135deg,${t.accent},#8b5cf6)`:'transparent',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                transition:'all 0.2s', opacity:input.trim()?1:0.3
+              }}>
+                <IcoSend size={16} color={input.trim()?'white':t.textMuted} />
+              </button>
             </div>
+            {listening && <p style={{textAlign:'center',fontSize:10,color:'#ef4444',marginTop:6,fontWeight:600}}>🎙️ Listening...</p>}
           </div>
         </div>
       )}
+
+      {/* CSS keyframes for typing dots */}
+      <style>{`@keyframes scaleIn{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
     </>
   );
 }

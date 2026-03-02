@@ -2,48 +2,68 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoHome, IcoCommunity, IcoPlus, IcoMarket, IcoJobs, IcoSearch, IcoQR, IcoShield, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
+import { IcoHome, IcoCommunity, IcoPlus, IcoSearch, IcoQR, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
 
 const NAV_MAIN = [
-  { label:'Home', Icon:IcoHome, path:'/home', color:'#6366f1' },
-  { label:'Profile', Icon:IcoUser, path:'/profile', color:'#8b5cf6', hex:true },
-  { label:'Community', Icon:IcoCommunity, path:'/community', color:'#06b6d4' },
-  { label:'Create', Icon:IcoPlus, path:'/create', color:'#22c55e' },
+  { label:'Home', Icon:IcoHome, path:'/home' },
+  { label:'Profile', Icon:IcoUser, path:'/profile' },
+  { label:'Community', Icon:IcoCommunity, path:'/community' },
+  { label:'Create', Icon:IcoPlus, path:'/create' },
 ];
 
 const NAV_HEX = [
-  { label:'Global\nShop', Icon:IcoGlobe, path:'/shopping', color:'#22c55e' },
-  { label:'Near\nBy', Icon:IcoStore, path:'/nearby', color:'#f97316' },
-  { label:'Learn\ning', Icon:IcoBook, path:'/learning', color:'#8b5cf6' },
-  { label:'Entert\nain', Icon:IcoPlay, path:'/entertainment', color:'#ec4899' },
-  { label:'Health', Icon:IcoHealth, path:'/health', color:'#10b981' },
-  { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#ef4444' },
+  { label:'Global Shop', Icon:IcoGlobe, path:'/shopping', color:'#22c55e', g1:'#22c55e', g2:'#16a34a' },
+  { label:'NearBy', Icon:IcoStore, path:'/nearby', color:'#f97316', g1:'#f97316', g2:'#ea580c' },
+  { label:'Learning', Icon:IcoBook, path:'/learning', color:'#8b5cf6', g1:'#8b5cf6', g2:'#7c3aed' },
+  { label:'Entertain', Icon:IcoPlay, path:'/entertainment', color:'#ec4899', g1:'#ec4899', g2:'#db2777' },
+  { label:'Health', Icon:IcoHealth, path:'/health', color:'#10b981', g1:'#10b981', g2:'#059669' },
+  { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#ef4444', g1:'#ef4444', g2:'#dc2626' },
 ];
 
-/* Hexagonal badge — uniform frame for ALL icons */
-function HexBadge({ Icon, label, color, active, onClick }: { Icon:any; label:string; color:string; active:boolean; onClick:()=>void }) {
+/* Premium hexagonal badge with SVG hex shape */
+function HexBadge({ Icon, label, color, g1, g2, active, onClick }: { Icon:any; label:string; color:string; g1:string; g2:string; active:boolean; onClick:()=>void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-0.5 relative" title={label.replace('\n',' ')}>
-      {/* Outer hex frame (border) */}
-      <div style={{
-        width: 44, height: 48, position:'relative',
-        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-        background: active ? color : `${color}55`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all 0.2s ease',
-      }}>
-        {/* Inner hex fill */}
-        <div style={{
-          width: 40, height: 44,
-          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-          background: active ? color : `${color}22`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon size={17} color={active ? '#fff' : color} />
+    <button onClick={onClick} className="flex flex-col items-center gap-[3px] group" title={label} style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
+      <div className="relative" style={{width:42,height:46}}>
+        {/* SVG hex shape — smooth anti-aliased edges */}
+        <svg viewBox="0 0 42 46" width="42" height="46" style={{position:'absolute',top:0,left:0}}>
+          <defs>
+            <linearGradient id={`hg-${label.replace(/\s/g,'')}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={active?g1:`${color}30`}/>
+              <stop offset="100%" stopColor={active?g2:`${color}18`}/>
+            </linearGradient>
+          </defs>
+          {/* Outer hex border */}
+          <polygon points="21,1 40,12 40,34 21,45 2,34 2,12" fill="none" stroke={active?color:`${color}40`} strokeWidth={active?1.5:1} strokeLinejoin="round"/>
+          {/* Inner hex fill */}
+          <polygon points="21,3 38,13.5 38,32.5 21,43 4,32.5 4,13.5" fill={`url(#hg-${label.replace(/\s/g,'')})`} strokeLinejoin="round"/>
+        </svg>
+        {/* Icon centered */}
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:1}}>
+          <Icon size={16} color={active?'#fff':color} />
         </div>
+        {/* Active glow */}
+        {active && <div style={{position:'absolute',inset:-4,borderRadius:'50%',background:`${color}12`,filter:'blur(8px)',zIndex:0}} />}
       </div>
-      {active && <div style={{ position:'absolute', top:-2, right:-2, width:36, height:40, borderRadius:'50%', background:`${color}15`, filter:'blur(8px)', zIndex:-1 }} />}
-      <span style={{ fontSize: 8, fontWeight: 600, color: active ? color : '#888', textAlign: 'center', lineHeight: 1.1, whiteSpace: 'pre-line' }}>{label}</span>
+      <span style={{
+        fontSize: 8, fontWeight: active?700:500, letterSpacing: 0.2,
+        color: active ? color : 'rgba(255,255,255,0.4)',
+        textAlign: 'center', lineHeight: 1.1,
+        transition: 'color 0.2s'
+      }}>{label}</span>
+    </button>
+  );
+}
+
+/* Smooth icon button for right actions */
+function ActionBtn({ Icon, path, badge, router, active, muted }: { Icon:any; path:string; badge?:boolean; router:any; active?:boolean; muted:string }) {
+  return (
+    <button onClick={()=>router.push(path)} className="relative flex items-center justify-center" style={{
+      width:36, height:36, borderRadius:10, background:active?'rgba(99,102,241,0.1)':'transparent',
+      border:'none', cursor:'pointer', transition:'all 0.2s'
+    }}>
+      <Icon size={18} color={active?'#6366f1':muted} />
+      {badge && <span style={{position:'absolute',top:4,right:4,width:7,height:7,borderRadius:'50%',background:'#ef4444',border:'2px solid rgba(15,15,26,0.92)'}} />}
     </button>
   );
 }
@@ -53,43 +73,73 @@ export default function TopNav() {
   const pathname = usePathname();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const muted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+
   return (
-    <nav className="sticky top-0 z-50 hidden md:block" style={{ background:isDark?'rgba(15,15,26,0.92)':'rgba(255,255,255,0.92)', backdropFilter:'blur(20px)', borderBottom:`1px solid ${t.cardBorder}` }}>
-      <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-16">
+    <nav className="sticky top-0 z-50 hidden md:block" style={{
+      background: isDark ? 'rgba(12,12,22,0.88)' : 'rgba(255,255,255,0.88)',
+      backdropFilter: 'blur(24px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+      borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+    }}>
+      <div className="max-w-6xl mx-auto px-5 flex items-center justify-between" style={{height:64}}>
         {/* Logo */}
-        <div onClick={()=>router.push('/home')} className="flex items-center gap-2 cursor-pointer">
-          <img src="/logo-icon.png" alt="Datore" width={32} height={32} style={{ borderRadius:8 }} />
-          <span className="font-bold text-lg" style={{ color:t.accent }}>Datore</span>
+        <div onClick={()=>router.push('/home')} className="flex items-center gap-2.5 cursor-pointer group">
+          <div style={{
+            width:34, height:34, borderRadius:10,
+            background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 2px 10px rgba(99,102,241,0.3)',
+            transition:'transform 0.2s', fontSize:16
+          }}>
+            <span style={{filter:'brightness(0) invert(1)',fontSize:18}}>▶</span>
+          </div>
+          <span style={{
+            fontWeight:800, fontSize:18, letterSpacing:-0.5,
+            background:'linear-gradient(135deg,#6366f1,#a78bfa)',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
+          }}>Datore</span>
         </div>
 
         {/* Main Nav */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {NAV_MAIN.map(item => {
             const active = pathname?.startsWith(item.path);
             return (
-              <button key={item.path} onClick={()=>router.push(item.path)} className="flex flex-col items-center px-3 py-1 rounded-xl text-xs" style={{ background:active?`${item.color}15`:'transparent', color:active?item.color:t.textSecondary }}>
-                <item.Icon size={18} color={active?item.color:t.textSecondary} />
-                <span style={{ fontSize:10, fontWeight:active?600:500 }}>{item.label}</span>
+              <button key={item.path} onClick={()=>router.push(item.path)} style={{
+                display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+                padding:'6px 14px', borderRadius:12, background:active?`${t.accent}10`:'transparent',
+                border:'none', cursor:'pointer', position:'relative',
+                transition:'all 0.2s'
+              }}>
+                <item.Icon size={19} color={active?t.accent:muted} />
+                <span style={{fontSize:10,fontWeight:active?700:500,color:active?t.accent:muted,letterSpacing:0.1}}>{item.label}</span>
+                {active && <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:20,height:2.5,borderRadius:2,background:t.accent}} />}
               </button>
             );
           })}
 
-          {/* Hex Icon Group -- Global Shop, Jobs, Education */}
-          <div className="flex items-end gap-1 ml-2 px-2 py-1 rounded-xl" style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+          {/* Hex Divider */}
+          <div style={{width:1,height:28,background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)',margin:'0 6px',borderRadius:1}} />
+
+          {/* Hex Icon Group */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-2xl" style={{
+            background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+          }}>
             {NAV_HEX.map(item => (
-              <HexBadge key={item.path} Icon={item.Icon} label={item.label} color={item.color} active={!!pathname?.startsWith(item.path)} onClick={()=>router.push(item.path)} />
+              <HexBadge key={item.path} Icon={item.Icon} label={item.label} color={item.color} g1={item.g1} g2={item.g2} active={!!pathname?.startsWith(item.path)} onClick={()=>router.push(item.path)} />
             ))}
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1">
-          <button onClick={()=>router.push('/search')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }} title="Search"><IcoSearch size={18} /></button>
-          <button onClick={()=>router.push('/qr-verify')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:'rgba(6,182,212,0.12)' }} title="QR Verify"><IcoQR size={18} color="#06b6d4" /></button>
-          <button onClick={()=>router.push('/menu')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}><IcoMenu size={18} /></button>
-          <button onClick={()=>router.push('/inbox')} className="w-9 h-9 rounded-xl flex items-center justify-center relative" style={{ color:t.textSecondary }}><IcoChat size={18} /><span style={{ position:'absolute', top:2, right:2, width:8, height:8, borderRadius:'50%', background:'#ef4444' }}></span></button>
-          <button onClick={()=>router.push('/friends')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}><IcoFriends size={18} /></button>
-          <button onClick={()=>router.push('/notifications')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ color:t.textSecondary }}><IcoBell size={18} /></button>
+        <div className="flex items-center gap-0.5">
+          <ActionBtn Icon={IcoSearch} path="/search" router={router} muted={muted} />
+          <ActionBtn Icon={IcoQR} path="/qr-verify" router={router} muted={muted} />
+          <ActionBtn Icon={IcoMenu} path="/menu" router={router} muted={muted} />
+          <ActionBtn Icon={IcoChat} path="/inbox" router={router} badge muted={muted} />
+          <ActionBtn Icon={IcoFriends} path="/friends" router={router} muted={muted} />
+          <ActionBtn Icon={IcoBell} path="/notifications" router={router} muted={muted} />
         </div>
       </div>
     </nav>
