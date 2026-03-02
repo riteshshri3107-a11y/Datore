@@ -32,7 +32,7 @@ const MENU = [
   ]},
   { section: 'Shopping', items: [
     { Icon: IcoMarket, label: 'Global Shop', path: '/shopping', color:'#ec4899', badge:'BR-99' },
-    { Icon: IcoList, label: 'DetoMart (Jobs + Buy/Sell)', path: '/marketplace', color:'#f97316', badge:'Local' },
+    { Icon: IcoList, label: 'NearBy (Local Jobs + Buy/Sell)', path: '/nearby', color:'#f97316', badge:'Local' },
   ]},
   { section: 'Education & Entertainment', items: [
     { Icon: IcoBookmark, label: 'Education Hub', path: '/education', color:'#8b5cf6', badge:'BR-100' },

@@ -13,28 +13,35 @@ const NAV_MAIN = [
 
 const NAV_HEX = [
   { label:'Global\nShop', Icon:IcoGlobe, path:'/shopping', color:'#22c55e' },
-  { label:'Deto\nMart', Icon:IcoStore, path:'/marketplace', color:'#f97316' },
+  { label:'Near\nBy', Icon:IcoStore, path:'/nearby', color:'#f97316' },
   { label:'Educ\nation', Icon:IcoGrad, path:'/education', color:'#8b5cf6' },
   { label:'Games', Icon:IcoGamepad, path:'/games', color:'#ec4899' },
   { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#ef4444' },
 ];
 
-/* Hexagonal badge shape via CSS clip-path */
+/* Hexagonal badge — uniform frame for ALL icons */
 function HexBadge({ Icon, label, color, active, onClick }: { Icon:any; label:string; color:string; active:boolean; onClick:()=>void }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-0.5 relative" title={label.replace('\n',' ')}>
+      {/* Outer hex frame (border) */}
       <div style={{
-        width: 40, height: 44,
+        width: 44, height: 48, position:'relative',
         clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-        background: active ? color : `${color}18`,
+        background: active ? color : `${color}55`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.2s ease',
-        boxShadow: active ? `0 2px 12px ${color}44` : 'none',
       }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%' }}>
-          <Icon size={16} color={active ? '#fff' : color} />
+        {/* Inner hex fill */}
+        <div style={{
+          width: 40, height: 44,
+          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+          background: active ? color : `${color}22`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={17} color={active ? '#fff' : color} />
         </div>
       </div>
+      {active && <div style={{ position:'absolute', top:-2, right:-2, width:36, height:40, borderRadius:'50%', background:`${color}15`, filter:'blur(8px)', zIndex:-1 }} />}
       <span style={{ fontSize: 8, fontWeight: 600, color: active ? color : '#888', textAlign: 'center', lineHeight: 1.1, whiteSpace: 'pre-line' }}>{label}</span>
     </button>
   );
