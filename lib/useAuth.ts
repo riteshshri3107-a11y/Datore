@@ -1,100 +1,75 @@
-/* ═══════════════════════════════════════════════════════════════
-   useAuth — React Hook for Auth State Management
-   ═══════════════════════════════════════════════════════════════
-   Provides: user, session, loading, login, logout, permissions
-   Listens to Supabase auth state changes in real-time
-   ═══════════════════════════════════════════════════════════════ */
-"use client";
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { supabase } from './supabase';
-import type { AuthUser, UserRole } from './auth';
-import { getValidatedSession, hasPermission, secureSignOut } from './auth';
+'use client';
+import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
+import { supabase, getProfile } from './supabase';
 
-interface AuthState {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  hasRole: (role: UserRole) => boolean;
-  isModerator: boolean;
-  isAdmin: boolean;
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  trustScore: number;
+  verified: boolean;
+  avatarUrl: string | null;
 }
 
-const AuthContext = createContext<AuthState>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
-  signOut: async () => {},
-  refreshSession: async () => {},
-  hasRole: () => false,
-  isModerator: false,
-  isAdmin: false,
+interface AuthCtx {
+  user: AuthUser | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthCtx>({
+  user: null, loading: true, signOut: async () => {}, refreshProfile: async () => {},
 });
 
-export function useAuth(): AuthState {
-  return useContext(AuthContext);
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const loadSession = useCallback(async () => {
+  const loadProfile = async (uid: string, email: string) => {
     try {
-      setIsLoading(true);
-      const session = await getValidatedSession();
-      setUser(session.user);
-      setError(session.error);
-    } catch (err: any) {
-      setError(err.message);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+      const p = await getProfile(uid);
+      setUser({
+        id: uid, email,
+        name: p?.full_name || email.split('@')[0],
+        role: p?.role || 'user',
+        trustScore: p?.trust_score || 50,
+        verified: p?.is_verified || false,
+        avatarUrl: p?.avatar_url || null,
+      });
+    } catch {
+      setUser({ id: uid, email, name: email.split('@')[0], role: 'user', trustScore: 50, verified: false, avatarUrl: null });
     }
-  }, []);
-
-  useEffect(() => {
-    loadSession();
-
-    // Listen for auth state changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await loadSession();
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setError(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [loadSession]);
-
-  const handleSignOut = useCallback(async () => {
-    await secureSignOut();
-    setUser(null);
-  }, []);
-
-  const hasRole = useCallback((role: UserRole) => hasPermission(user, role), [user]);
-
-  const value: AuthState = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    error,
-    signOut: handleSignOut,
-    refreshSession: loadSession,
-    hasRole,
-    isModerator: hasPermission(user, 'moderator'),
-    isAdmin: hasPermission(user, 'admin'),
   };
 
-  // Use createElement to avoid JSX in .ts file
-  const { createElement } = require('react');
-  return createElement(AuthContext.Provider, { value }, children);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) loadProfile(session.user.id, session.user.email || '');
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadProfile(session.user.id, session.user.email || '');
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => { await supabase.auth.signOut(); setUser(null); };
+  const refreshProfile = async () => { if (user) await loadProfile(user.id, user.email); };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, signOut: handleSignOut, refreshProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
+
+export function useAuth() { return useContext(AuthContext); }
+export default useAuth;
