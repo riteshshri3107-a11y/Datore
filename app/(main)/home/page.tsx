@@ -77,24 +77,33 @@ export default function HomePage() {
   const cameraRef = useRef<HTMLInputElement>(null);
   const prefs = getProfilePrefs();
   
-  // Fix 7: Load user's saved profile avatar
-  const getUserAvatar = ():{type:'image'|'emoji'|'initials';src:string} => {
+  // Fix: Load user avatar PER AUDIENCE — different photo for Public/Friends/Professional
+  const getUserAvatarForAudience = (audience:string):{type:'image'|'emoji'|'initials';src:string} => {
     try {
       const saved = localStorage.getItem('datore-avatars');
       if (saved) {
         const avatars = JSON.parse(saved);
-        const pub = avatars.public;
-        if (pub && pub.startsWith('data:image')) return {type:'image',src:pub};
-        if (pub && pub.length <= 4) return {type:'emoji',src:pub};
+        // ONLY use the avatar specifically set for THIS audience — no cross-audience fallback
+        const src = avatars[audience];
+        if (src && src.startsWith('data:image')) return {type:'image',src};
+        if (src && src.length <= 4) return {type:'emoji',src};
       }
     } catch {}
+    // Distinct visual per audience so they look different when no custom photo is uploaded
+    const audienceIcons: Record<string,string> = { public:'🌐', friends:'💛', buddy:'👥', professional:'💼' };
+    if (audienceIcons[audience]) return {type:'emoji',src:audienceIcons[audience]};
     return {type:'initials',src:(prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)};
   };
-  const userAvatar = getUserAvatar();
+  const userAvatar = getUserAvatarForAudience('public'); // default for composer
 
   useEffect(() => { setUserPosts(getUserPosts()); }, []);
 
-  const allFeed = [...userPosts.map(p => ({...p, isOwn:true, user: prefs.name || 'You', avatar: userAvatar.src, avatarType: userAvatar.type})), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+  /* Display-time re-censor: Always re-run moderation on render to catch posts saved before moderation existed */
+  const censorForDisplay = (text: string): string => {
+    const r = _moderate(text, 'post');
+    return (r.severity === 'low' || r.severity === 'medium' || r.severity === 'high' || r.severity === 'critical') ? r.cleaned : text;
+  };
+  const allFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -118,11 +127,11 @@ export default function HomePage() {
       setModerationAlert(modResult);
       return; // Block severe content
     }
-    const finalText = modResult.severity === 'mild' ? modResult.cleaned : postText.trim();
+    const finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
     addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
     setUserPosts(getUserPosts());
     setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia();
-    if (modResult.severity === 'mild') setModerationAlert(modResult); // Warn for mild
+    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult); // Warn for censored
   };
 
   const handleLike = (id: string) => setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
@@ -131,7 +140,7 @@ export default function HomePage() {
   const saveEdit = (postId: string) => {
     const modResult = moderatePost(editText);
     if (modResult.severity === 'severe') { setModerationAlert(modResult); return; }
-    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: modResult.severity==='mild'?modResult.cleaned:editText} : p));
+    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText} : p));
     setEditingPost(null); setEditText('');
   };
 
@@ -245,7 +254,7 @@ export default function HomePage() {
               </div>
             </div>
             {moderationAlert.flags.map((f,i)=>(<p key={i} className="text-xs mb-1" style={{ color:t.text }}>• {f}</p>))}
-            {moderationAlert.severity==='mild'&&<p className="text-[10px] mt-2" style={{ color:t.textMuted }}>Profanity has been censored. Your post was published.</p>}
+            {(moderationAlert.severity==='mild'||moderationAlert.severity==='moderate')&&<p className="text-[10px] mt-2" style={{ color:t.textMuted }}>Profanity has been censored. Your post was published.</p>}
             {moderationAlert.severity==='severe'&&<p className="text-[10px] mt-2" style={{ color:'#ef4444' }}>This content violates community guidelines and cannot be posted.</p>}
             <button onClick={()=>setModerationAlert(null)} className="w-full mt-3 py-2 rounded-xl text-xs font-bold text-white" style={{ background:moderationAlert.severity==='severe'?'#ef4444':'#f59e0b' }}>Understood</button>
           </div>

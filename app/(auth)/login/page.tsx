@@ -93,9 +93,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/')}>
-            <div style={{ width:40, height:40, borderRadius:12, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 10px rgba(99,102,241,0.3)' }}>
-              <span style={{ filter:'brightness(0) invert(1)', fontSize:18 }}>▶</span>
-            </div>
+            <img src="/logo-128.png" alt="Datore" style={{ width:40, height:40, borderRadius:12, boxShadow:'0 2px 10px rgba(99,102,241,0.3)' }} />
             <span className="font-extrabold text-xl" style={{ background:'linear-gradient(135deg,#6366f1,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Datore</span>
           </div>
           <button onClick={toggle} className="glass-button p-2.5 rounded-xl" style={{ background:t.surface }}>{isDark ? '☀️' : '🌙'}</button>

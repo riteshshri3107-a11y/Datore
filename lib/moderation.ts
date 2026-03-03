@@ -42,8 +42,8 @@ export interface ModerationFlag {
 const PATTERNS = {
   // Profanity — catches variants, leet speak, partial words
   profanity: {
-    severe: /\b(c[u\*]nt|n[i1!]gg[ae3]r?\w*|f[a4@]gg?[o0]t\w*)\b/gi,
-    moderate: /\b(f[u\*v][ck]+\w*|sh[i1!]+t\w*|b[i1!]tch\w*|d[i1!]ck\w*|c[o0]ck\w*|wh[o0]re\w*|slut\w*|p[u\*]ssy\w*|a[s$]{2}h?\w*)\b/gi,
+    severe: /\b(c[u\*]nt|n[i1!]gg[ae3]r?\w*|f[a4@]gg?[o0]t\w*|m[o0]th[ae3]r\s*f[u\*v][ck]+\w*)\b/gi,
+    moderate: /\b(f[u\*v][ck]+\w*|sh[i1!]+t\w*|b[i1!]tch\w*|d[i1!]ck\w*|c[o0]ck\w*|wh[o0]re\w*|slut\w*|p[u\*]ssy\w*|a[s$]{1,2}h?[o0]?l?e?\b|a[s$]{2}\b|stfu|gtfo)\b/gi,
     mild: /\b(damn\w*|crap\w*|hell|piss\w*|stfu|wtf|lmfao|bastard\w*)\b/gi,
   },
 

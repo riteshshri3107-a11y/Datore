@@ -19,17 +19,20 @@ interface Reel {
   duration: string;
   music: string;
   hashtags: string[];
+  scene: string;  // Large scene emoji
+  gradient: string; // Background gradient for video feel
+  sceneLabel: string; // Scene description overlay
 }
 
 const REELS: Reel[] = [
-  { id:"r1", user:"Anita Sharma", verified:true, caption:"Quick tip: How I organize my cleaning supplies for efficiency!", likes:2340, comments:182, shares:120, saves:89, cat:"Cleaning", duration:"0:45", music:"Chill Vibes - LoFi Beats", hashtags:["cleaning","tips","datore","organization"] },
-  { id:"r2", user:"Mike Chen", verified:true, caption:"Watch me fix a leaky faucet in under 10 minutes", likes:8910, comments:560, shares:430, saves:312, cat:"Plumbing", duration:"0:58", music:"Do It Yourself - Maker Music", hashtags:["plumbing","diy","howto","fixitup"] },
-  { id:"r3", user:"Priya K.", verified:false, caption:"Fun math trick I teach my students! Makes multiplication easy", likes:12030, comments:890, shares:670, saves:445, cat:"Education", duration:"0:32", music:"Study Session - BrainWave", hashtags:["tutoring","education","mathisfun","students"] },
-  { id:"r4", user:"David L.", verified:false, caption:"Spring garden prep - what to plant in March in Toronto", likes:4450, comments:340, shares:210, saves:178, cat:"Gardening", duration:"1:15", music:"Nature Sounds - Ambient", hashtags:["gardening","spring","toronto","plants"] },
-  { id:"r5", user:"Sarah Chen", verified:true, caption:"Behind the scenes: A day in the life of a Datore top worker", likes:21000, comments:1560, shares:890, saves:623, cat:"Lifestyle", duration:"2:30", music:"Hustle Mode - Trap Beats", hashtags:["datorelife","worker","topworker","bts"] },
-  { id:"r6", user:"Tom Rodriguez", verified:false, caption:"Best tacos in the neighborhood! My secret recipe", likes:6780, comments:445, shares:320, saves:256, cat:"Food", duration:"1:05", music:"Cooking Time - Jazz", hashtags:["cooking","tacos","recipe","foodie"] },
-  { id:"r7", user:"Lisa Park", verified:true, caption:"5-minute morning workout you can do anywhere", likes:15400, comments:1120, shares:780, saves:512, cat:"Fitness", duration:"0:48", music:"Pump It Up - Gym Mix", hashtags:["fitness","workout","morning","health"] },
-  { id:"r8", user:"James Wilson", verified:false, caption:"Drone footage of Toronto skyline at sunset", likes:9200, comments:670, shares:540, saves:389, cat:"Photography", duration:"0:35", music:"Sunset Vibes - Chillstep", hashtags:["drone","toronto","skyline","sunset","photography"] },
+  { id:"r1", user:"Anita Sharma", verified:true, caption:"Quick tip: How I organize my cleaning supplies for efficiency!", likes:2340, comments:182, shares:120, saves:89, cat:"Cleaning", duration:"0:45", music:"Chill Vibes - LoFi Beats", hashtags:["cleaning","tips","datore","organization"], scene:"🧹🧼✨", gradient:"linear-gradient(160deg,#0a2e1a 0%,#134e2e 40%,#1a3a2a 100%)", sceneLabel:"Cleaning Organization Tips" },
+  { id:"r2", user:"Mike Chen", verified:true, caption:"Watch me fix a leaky faucet in under 10 minutes", likes:8910, comments:560, shares:430, saves:312, cat:"Plumbing", duration:"0:58", music:"Do It Yourself - Maker Music", hashtags:["plumbing","diy","howto","fixitup"], scene:"🔧💧🚰", gradient:"linear-gradient(160deg,#1a1a3e 0%,#2a2a5e 40%,#1e1e4a 100%)", sceneLabel:"DIY Faucet Repair" },
+  { id:"r3", user:"Priya K.", verified:false, caption:"Fun math trick I teach my students! Makes multiplication easy", likes:12030, comments:890, shares:670, saves:445, cat:"Education", duration:"0:32", music:"Study Session - BrainWave", hashtags:["tutoring","education","mathisfun","students"], scene:"📐✏️🧮", gradient:"linear-gradient(160deg,#2e1a3e 0%,#4a2a6e 40%,#3a1a5a 100%)", sceneLabel:"Math Made Easy" },
+  { id:"r4", user:"David L.", verified:false, caption:"Spring garden prep - what to plant in March in Toronto", likes:4450, comments:340, shares:210, saves:178, cat:"Gardening", duration:"1:15", music:"Nature Sounds - Ambient", hashtags:["gardening","spring","toronto","plants"], scene:"🌱🌻🪴", gradient:"linear-gradient(160deg,#1a2e0a 0%,#2e4e1a 40%,#1a3a0a 100%)", sceneLabel:"Spring Garden Prep" },
+  { id:"r5", user:"Sarah Chen", verified:true, caption:"Behind the scenes: A day in the life of a Datore top worker", likes:21000, comments:1560, shares:890, saves:623, cat:"Lifestyle", duration:"2:30", music:"Hustle Mode - Trap Beats", hashtags:["datorelife","worker","topworker","bts"], scene:"💼🌟📱", gradient:"linear-gradient(160deg,#1a1a2e 0%,#2e2e5a 40%,#3a2a4a 100%)", sceneLabel:"Day In The Life" },
+  { id:"r6", user:"Tom Rodriguez", verified:false, caption:"Best tacos in the neighborhood! My secret recipe", likes:6780, comments:445, shares:320, saves:256, cat:"Food", duration:"1:05", music:"Cooking Time - Jazz", hashtags:["cooking","tacos","recipe","foodie"], scene:"🌮🔥🍳", gradient:"linear-gradient(160deg,#2e1a0a 0%,#4e2e1a 40%,#3a2a1a 100%)", sceneLabel:"Secret Taco Recipe" },
+  { id:"r7", user:"Lisa Park", verified:true, caption:"5-minute morning workout you can do anywhere", likes:15400, comments:1120, shares:780, saves:512, cat:"Fitness", duration:"0:48", music:"Pump It Up - Gym Mix", hashtags:["fitness","workout","morning","health"], scene:"💪🏋️‍♀️⚡", gradient:"linear-gradient(160deg,#0a1a2e 0%,#1a3e5e 40%,#0a2a4a 100%)", sceneLabel:"Morning Workout" },
+  { id:"r8", user:"James Wilson", verified:false, caption:"Drone footage of Toronto skyline at sunset", likes:9200, comments:670, shares:540, saves:389, cat:"Photography", duration:"0:35", music:"Sunset Vibes - Chillstep", hashtags:["drone","toronto","skyline","sunset","photography"], scene:"🏙️🌅📸", gradient:"linear-gradient(160deg,#2e1a1a 0%,#5e3a2a 40%,#4a2a2a 100%)", sceneLabel:"Toronto Sunset Drone" },
 ];
 
 const CATS = ["For You","Following","Trending","Cleaning","Education","Lifestyle","Food","Fitness","Photography"];
@@ -164,10 +167,21 @@ export default function ReelsPage() {
         </p>
       )}
 
-      {/* Full-Screen Reel */}
-      <div onClick={goNext} style={{ height: "calc(100vh - 130px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg," + t.accent + "22,#8b5cf622,#22c55e22)", cursor: "pointer" }}>
-        <div style={{ textAlign: "center", padding: 20 }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg," + t.accent + ",#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28, color: "white", fontWeight: 700 }}>
+      {/* Full-Screen Reel — Video-like scene */}
+      <div onClick={goNext} style={{ height: "calc(100vh - 130px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: reel ? reel.gradient : ("linear-gradient(135deg," + t.accent + "22,#8b5cf622,#22c55e22)"), cursor: "pointer", overflow: "hidden" }}>
+        {/* Scan lines for video feel */}
+        <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.008) 3px,rgba(255,255,255,0.008) 6px)",pointerEvents:"none",zIndex:1}} />
+        {/* Live indicator */}
+        <div style={{position:"absolute",top:14,left:14,display:"flex",alignItems:"center",gap:6,zIndex:10}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:"#ef4444",boxShadow:"0 0 6px #ef4444"}} />
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>PLAYING · {reel ? reel.duration : "0:00"}</span>
+        </div>
+        <div style={{ textAlign: "center", padding: 20, zIndex: 2 }}>
+          {/* Large scene emojis */}
+          <div style={{ fontSize: 56, marginBottom: 12, filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.4))" }}>{reel ? reel.scene : "🎬"}</div>
+          {/* Scene label overlay */}
+          {reel && <div style={{display:"inline-block",padding:"5px 14px",borderRadius:10,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(8px)",marginBottom:12}}><p style={{fontSize:11,fontWeight:700,color:"#fff"}}>{reel.sceneLabel}</p></div>}
+          <div style={{ width: 60, height: 60, borderRadius: "50%", background: "linear-gradient(135deg," + t.accent + ",#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 22, color: "white", fontWeight: 700, boxShadow: "0 2px 15px rgba(99,102,241,0.3)" }}>
             {initials}
           </div>
           <div className="flex items-center justify-center gap-2 mb-1">
@@ -181,10 +195,10 @@ export default function ReelsPage() {
               <p className="animate-pulse" style={{ fontSize: 9, color: t.textMuted }}>{reel.music}</p>
             </div>
           )}
-          <div style={{ width: 120, height: 3, borderRadius: 2, background: t.cardBorder, margin: "16px auto" }}>
-            <div style={{ width: "60%", height: "100%", borderRadius: 2, background: t.accent }} />
+          <div style={{ width: 180, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.15)", margin: "16px auto" }}>
+            <div style={{ width: "60%", height: "100%", borderRadius: 2, background: "linear-gradient(90deg," + t.accent + ",#8b5cf6)", transition: "width 0.5s" }} />
           </div>
-          <p style={{ fontSize: 11, color: t.textMuted }}>Tap for next</p>
+          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>Tap for next · Swipe to browse</p>
         </div>
 
         {/* Right Actions */}

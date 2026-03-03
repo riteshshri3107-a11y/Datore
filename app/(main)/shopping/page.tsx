@@ -65,6 +65,13 @@ export default function ShoppingPage() {
   const [shippingAddr,setShippingAddr] = useState({name:'Rajesh S.',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
   const [cardInfo,setCardInfo] = useState({number:'',expiry:'',cvv:'',name:''});
 
+  /* ═══ ORDER HISTORY — persisted in localStorage ═══ */
+  interface OrderRecord { id:string; items:{name:string;img:string;price:number;qty:number;portal:string}[]; total:number; payMethod:string; status:'confirmed'|'processing'|'shipped'|'delivered'|'cancelled'; date:string; address:string; tracking?:string; }
+  const [orders, setOrders] = useState<OrderRecord[]>(() => {
+    try { const s = localStorage.getItem('datore-orders'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const saveOrders = (o: OrderRecord[]) => { setOrders(o); try { localStorage.setItem('datore-orders', JSON.stringify(o)); } catch {} };
+
   /* TOKEN SYSTEM -- country-based currency, same-country only */
   const TOKEN_RATE:Record<string,{symbol:string;rate:number;name:string}> = {
     'Canada': { symbol:'🍁', rate:1.36, name:'CAD Tokens' },
@@ -106,7 +113,32 @@ export default function ShoppingPage() {
   const toggleCompare = (id:string) => setCompareList(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id].slice(0,3));
   const updateQty = (id:string, delta:number) => setQty(q=>({...q,[id]:Math.max(1,Math.min(10,(q[id]||1)+delta))}));
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setSearch('headphones');setVoiceSrch(false);},2000); };
-  const placeOrder = () => { setOrderPlaced(true); setTimeout(()=>{setProducts(p=>p.map(x=>({...x,inCart:false}))); setQty({}); setShowCheckout(false); setOrderPlaced(false); setTab('shop');},3000); };
+  const placeOrder = () => {
+    const newOrder: OrderRecord = {
+      id: `ORD-${Date.now().toString().slice(-6)}`,
+      items: cart.map(p => ({ name:p.name, img:p.img, price:p.price, qty:getQty(p.id), portal:p.portal })),
+      total: cartTotal,
+      payMethod: payMethod === 'card' ? '💳 Card' : payMethod === 'token' ? `${tokenInfo.symbol} Tokens` : '👛 Wallet',
+      status: 'confirmed',
+      date: new Date().toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
+      address: `${shippingAddr.line1}, ${shippingAddr.city}, ${shippingAddr.province} ${shippingAddr.zip}`,
+      tracking: `TRK${Date.now().toString().slice(-8)}`,
+    };
+    saveOrders([newOrder, ...orders]);
+    setOrderPlaced(true);
+    // Auto-progress order status for demo (confirmed → processing → shipped → delivered)
+    const orderId = newOrder.id;
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'processing' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 5000);
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'shipped' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 15000);
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'delivered' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 30000);
+    setTimeout(() => {
+      setProducts(p => p.map(x => ({...x, inCart:false})));
+      setQty({});
+      setShowCheckout(false);
+      setOrderPlaced(false);
+      setTab('orders'); // Navigate to orders tab after purchase
+    }, 2500);
+  };
 
   const disc = (p:Product) => Math.round((1-p.price/p.orig)*100);
 
@@ -169,11 +201,27 @@ export default function ShoppingPage() {
       {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{background:t.card}}>{(['shop','cart','wishlist','compare'] as const).map(tb=>(
-        <button key={tb} onClick={()=>setTab(tb)} className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold" style={{background:tab===tb?t.accent:'transparent',color:tab===tb?'#fff':t.textMuted}}>
-          {tb==='shop'?`🛍️ Shop`:tb==='cart'?`🛒 Cart (${cart.length})`:tb==='wishlist'?`💾 Saved (${wishlist.length})`:`⚖️ Compare (${compareList.length})`}
+      <div className="flex gap-1 p-1 rounded-xl" style={{background:t.card}}>{(['shop','cart','wishlist','orders','compare'] as const).map(tb=>(
+        <button key={tb} onClick={()=>setTab(tb)} className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold relative" style={{background:tab===tb?t.accent:'transparent',color:tab===tb?'#fff':t.textMuted}}>
+          {tb==='shop'?`🛍️ Shop`:tb==='cart'?`🛒 Cart (${cart.length})`:tb==='wishlist'?`💾 Saved (${wishlist.length})`:tb==='orders'?`📦 Orders (${orders.length})`:`⚖️ Compare (${compareList.length})`}
+          {tb==='orders'&&orders.length>0&&tab!=='orders'&&<span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold text-white" style={{background:'#ef4444'}}>{orders.length}</span>}
         </button>
       ))}</div>
+
+      {/* Active Order Status Banner — always visible when orders exist */}
+      {orders.length > 0 && tab !== 'orders' && (
+        <div onClick={() => setTab('orders')} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer" style={{background:'linear-gradient(135deg,rgba(34,197,94,0.08),rgba(99,102,241,0.08))',border:'1px solid rgba(34,197,94,0.2)'}}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:'rgba(34,197,94,0.12)'}}>
+            <span className="text-lg">{orders[0].status==='delivered'?'📬':orders[0].status==='shipped'?'🚚':orders[0].status==='processing'?'⏳':'📦'}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold">{orders[0].id} — <span className="capitalize" style={{color:orders[0].status==='delivered'?'#22c55e':orders[0].status==='shipped'?'#3b82f6':'#f59e0b'}}>{orders[0].status}</span></p>
+            <p className="text-[9px]" style={{color:t.textMuted}}>{orders[0].items.length} item{orders[0].items.length!==1?'s':''} · ${orders[0].total.toFixed(2)} · {orders[0].payMethod}</p>
+            {orders[0].tracking && <p className="text-[8px]" style={{color:t.textMuted}}>📍 Tracking: {orders[0].tracking}</p>}
+          </div>
+          <span className="text-xs font-bold" style={{color:t.accent}}>View →</span>
+        </div>
+      )}
 
       {tab==='shop'&&(
         <>
@@ -360,6 +408,48 @@ export default function ShoppingPage() {
               <button onClick={()=>toggleSave(p.id)} className="text-xs" style={{color:'#ef4444'}}>✕</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ORDERS — Purchase History & Status */}
+      {tab==='orders'&&(
+        <div className="space-y-2">
+          {orders.length===0?(<div className="text-center py-12"><p className="text-3xl mb-2">📦</p><p className="text-sm font-medium">No orders yet</p><p className="text-xs" style={{color:t.textMuted}}>Your purchase history will appear here</p><button onClick={()=>setTab('shop')} className="mt-3 px-4 py-2 rounded-xl text-xs font-bold text-white" style={{background:t.accent}}>Start Shopping</button></div>):(<>
+            <p className="text-xs font-semibold" style={{color:t.textMuted}}>{orders.length} order{orders.length!==1?'s':''}</p>
+            {orders.map(order => {
+              const sc = order.status==='delivered'?'#22c55e':order.status==='shipped'?'#3b82f6':order.status==='processing'?'#f59e0b':order.status==='cancelled'?'#ef4444':'#8b5cf6';
+              const steps = ['confirmed','processing','shipped','delivered'];
+              const stepIdx = steps.indexOf(order.status);
+              return (
+                <div key={order.id} className="rounded-xl overflow-hidden" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+                  {/* Order Header */}
+                  <div className="flex items-center justify-between p-3" style={{borderBottom:`1px solid ${t.cardBorder}`}}>
+                    <div><p className="text-xs font-bold">{order.id}</p><p className="text-[9px]" style={{color:t.textMuted}}>{order.date}</p></div>
+                    <div className="text-right"><span className="text-[9px] px-2 py-0.5 rounded-full font-bold capitalize" style={{background:`${sc}15`,color:sc}}>{order.status==='confirmed'?'✅ Confirmed':order.status==='processing'?'⏳ Processing':order.status==='shipped'?'🚚 Shipped':order.status==='delivered'?'📬 Delivered':'❌ Cancelled'}</span></div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {order.status!=='cancelled'&&(
+                    <div className="px-3 py-2" style={{background:isDark?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.01)'}}>
+                      <div className="flex items-center gap-1">
+                        {steps.map((s,i) => (<div key={s} className="flex items-center flex-1">{i>0&&<div className="flex-1 h-0.5 rounded" style={{background:i<=stepIdx?sc:`${t.cardBorder}`}}/>}<div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px]" style={{background:i<=stepIdx?sc:t.cardBorder,color:'#fff'}}>{i<=stepIdx?'✓':i+1}</div></div>))}
+                      </div>
+                      <div className="flex justify-between mt-1">{steps.map(s=>(<span key={s} className="text-[7px] capitalize" style={{color:t.textMuted}}>{s}</span>))}</div>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  <div className="px-3 py-2">{order.items.map((item,i)=>(<div key={i} className="flex items-center gap-2 py-1"><span className="text-lg">{item.img}</span><div className="flex-1 min-w-0"><p className="text-[10px] font-semibold truncate">{item.name}</p><p className="text-[8px]" style={{color:t.textMuted}}>{item.portal} × {item.qty}</p></div><span className="text-[10px] font-bold" style={{color:'#22c55e'}}>${(item.price*item.qty).toFixed(2)}</span></div>))}</div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between px-3 py-2" style={{borderTop:`1px solid ${t.cardBorder}`,background:isDark?'rgba(255,255,255,0.02)':'rgba(0,0,0,0.01)'}}>
+                    <div><p className="text-[9px]" style={{color:t.textMuted}}>{order.payMethod} · 📍 {order.address.slice(0,30)}...</p>{order.tracking&&<p className="text-[8px]" style={{color:t.textMuted}}>Tracking: {order.tracking}</p>}</div>
+                    <p className="text-sm font-bold" style={{color:'#22c55e'}}>${order.total.toFixed(2)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </>)}
         </div>
       )}
 

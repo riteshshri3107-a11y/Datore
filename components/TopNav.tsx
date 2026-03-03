@@ -55,15 +55,28 @@ function HexBadge({ Icon, label, color, g1, g2, active, onClick }: { Icon:any; l
   );
 }
 
-/* Smooth icon button for right actions */
-function ActionBtn({ Icon, path, badge, router, active, muted }: { Icon:any; path:string; badge?:boolean; router:any; active?:boolean; muted:string }) {
+/* Smooth hex icon button for right actions — NOW matches nav hex style */
+function ActionBtn({ Icon, path, badge, router, active, muted, color }: { Icon:any; path:string; badge?:boolean; router:any; active?:boolean; muted:string; color?:string }) {
+  const c = color || '#6366f1';
   return (
-    <button onClick={()=>router.push(path)} className="relative flex items-center justify-center" style={{
-      width:36, height:36, borderRadius:10, background:active?'rgba(99,102,241,0.1)':'transparent',
-      border:'none', cursor:'pointer', transition:'all 0.2s'
-    }}>
-      <Icon size={18} color={active?'#6366f1':muted} />
-      {badge && <span style={{position:'absolute',top:4,right:4,width:7,height:7,borderRadius:'50%',background:'#ef4444',border:'2px solid rgba(15,15,26,0.92)'}} />}
+    <button onClick={()=>router.push(path)} className="relative flex flex-col items-center gap-[2px]" title={path.slice(1)} style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
+      <div className="relative" style={{width:38,height:42}}>
+        <svg viewBox="0 0 42 46" width="38" height="42" style={{position:'absolute',top:0,left:0}}>
+          <defs>
+            <linearGradient id={`ha-${path.replace(/\//g,'')}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={active?c:`${c}25`}/>
+              <stop offset="100%" stopColor={active?c:`${c}12`}/>
+            </linearGradient>
+          </defs>
+          <polygon points="21,1 40,12 40,34 21,45 2,34 2,12" fill="none" stroke={active?c:`${c}35`} strokeWidth={active?1.5:1} strokeLinejoin="round"/>
+          <polygon points="21,3 38,13.5 38,32.5 21,43 4,32.5 4,13.5" fill={`url(#ha-${path.replace(/\//g,'')})`} strokeLinejoin="round"/>
+        </svg>
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:1}}>
+          <Icon size={15} color={active?'#fff':muted} />
+        </div>
+        {active && <div style={{position:'absolute',inset:-3,borderRadius:'50%',background:`${c}12`,filter:'blur(6px)',zIndex:0}} />}
+      </div>
+      {badge && <span style={{position:'absolute',top:1,right:1,width:7,height:7,borderRadius:'50%',background:'#ef4444',border:'1.5px solid rgba(15,15,26,0.92)',zIndex:2}} />}
     </button>
   );
 }
@@ -83,19 +96,22 @@ export default function TopNav() {
       borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
     }}>
       <div className="max-w-6xl mx-auto px-5 flex items-center justify-between" style={{height:64}}>
-        {/* Logo */}
+        {/* Logo — Original Datore brand (inline SVG, never changes) */}
         <div onClick={()=>router.push('/home')} className="flex items-center gap-2.5 cursor-pointer group">
           <div style={{
-            width:34, height:34, borderRadius:10,
+            width:36, height:36, borderRadius:10,
             background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
             display:'flex', alignItems:'center', justifyContent:'center',
-            boxShadow:'0 2px 10px rgba(99,102,241,0.3)',
-            transition:'transform 0.2s', fontSize:16
+            boxShadow:'0 2px 12px rgba(99,102,241,0.35)',
+            transition:'transform 0.2s',
           }}>
-            <span style={{filter:'brightness(0) invert(1)',fontSize:18}}>▶</span>
+            {/* Play-button triangle — original Datore mark */}
+            <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
+              <path d="M15 8.134a1 1 0 010 1.732l-13 7.5A1 1 0 010 16.5v-15A1 1 0 012 .634l13 7.5z" fill="white"/>
+            </svg>
           </div>
           <span style={{
-            fontWeight:800, fontSize:18, letterSpacing:-0.5,
+            fontWeight:800, fontSize:19, letterSpacing:-0.5,
             background:'linear-gradient(135deg,#6366f1,#a78bfa)',
             WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
           }}>Datore</span>
@@ -118,14 +134,14 @@ export default function TopNav() {
           </div>
         </div>
 
-        {/* Right Actions */}
+        {/* Right Actions — Hex style matching main nav */}
         <div className="flex items-center gap-0.5">
-          <ActionBtn Icon={IcoSearch} path="/search" router={router} muted={muted} />
-          <ActionBtn Icon={IcoQR} path="/qr-verify" router={router} muted={muted} />
-          <ActionBtn Icon={IcoMenu} path="/menu" router={router} muted={muted} />
-          <ActionBtn Icon={IcoChat} path="/inbox" router={router} badge muted={muted} />
-          <ActionBtn Icon={IcoFriends} path="/friends" router={router} muted={muted} />
-          <ActionBtn Icon={IcoBell} path="/notifications" router={router} muted={muted} />
+          <ActionBtn Icon={IcoSearch} path="/search" router={router} active={!!pathname?.startsWith('/search')} muted={muted} color="#6366f1" />
+          <ActionBtn Icon={IcoQR} path="/qr-verify" router={router} active={!!pathname?.startsWith('/qr')} muted={muted} color="#f59e0b" />
+          <ActionBtn Icon={IcoMenu} path="/menu" router={router} active={!!pathname?.startsWith('/menu')} muted={muted} color="#8b5cf6" />
+          <ActionBtn Icon={IcoChat} path="/inbox" router={router} active={!!pathname?.startsWith('/inbox')} badge muted={muted} color="#06b6d4" />
+          <ActionBtn Icon={IcoFriends} path="/friends" router={router} active={!!pathname?.startsWith('/friends')} muted={muted} color="#22c55e" />
+          <ActionBtn Icon={IcoBell} path="/notifications" router={router} active={!!pathname?.startsWith('/notification')} muted={muted} color="#ef4444" />
         </div>
       </div>
     </nav>

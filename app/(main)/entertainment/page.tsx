@@ -85,6 +85,30 @@ export default function EntertainmentPage() {
   const [saved,setSaved] = useState<string[]>([]);
   const [voiceSrch,setVoiceSrch] = useState(false);
   const [vacTab,setVacTab] = useState<'places'|'bookings'|'restaurants'>('places');
+  const [bookingItem, setBookingItem] = useState<any>(null);
+  const [bookingStep, setBookingStep] = useState<'details'|'payment'|'confirm'>('details');
+  const [bookingPayMethod, setBookingPayMethod] = useState<'card'|'wallet'>('card');
+  const [bookingHistory, setBookingHistory] = useState<any[]>(() => {
+    try { const s = localStorage.getItem('datore-bookings'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const saveBooking = (b: any) => {
+    const updated = [b, ...bookingHistory];
+    setBookingHistory(updated);
+    try { localStorage.setItem('datore-bookings', JSON.stringify(updated)); } catch {}
+  };
+  const handleBook = (item: any) => { setBookingItem(item); setBookingStep('details'); };
+  const [bookingProcessing, setBookingProcessing] = useState(false);
+  const confirmBooking = () => {
+    setBookingProcessing(true);
+    // Simulate payment processing
+    setTimeout(() => {
+      const record = { id:`BK-${Date.now().toString().slice(-6)}`, name:bookingItem.name, type:bookingItem.type, price:bookingItem.price, provider:bookingItem.provider, payMethod:bookingPayMethod==='card'?'💳 Card':'👛 Wallet', status:'confirmed', date:new Date().toLocaleDateString('en-CA',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}), confirmation:`CNF${Date.now().toString().slice(-8)}` };
+      saveBooking(record);
+      setBookingProcessing(false);
+      setBookingStep('confirm');
+      setTimeout(() => { setBookingItem(null); setBookingStep('details'); }, 4000);
+    }, 2000);
+  };
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setVoiceSrch(false);setSearch('action');},2000); };
   const toggleSave = (id:string) => setSaved(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
   const filteredMovies = MOVIES.filter(m=>(genre==='All'||m.genre===genre)&&(!search||m.title.toLowerCase().includes(search.toLowerCase())));
@@ -200,13 +224,67 @@ export default function EntertainmentPage() {
           </div>
         ))}
 
-        {vacTab==='bookings'&&VACATIONS.bookings.map(b=>(
+        {vacTab==='bookings'&&(<>
+          {/* Booking History */}
+          {bookingHistory.length>0&&(<div className="mb-3"><p className="text-[10px] font-bold mb-1" style={{color:'#22c55e'}}>✅ Your Bookings ({bookingHistory.length})</p>
+            {bookingHistory.map((bk:any)=>(<div key={bk.id} className="flex items-center gap-2 p-2 rounded-xl mb-1" style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.15)'}}>
+              <span className="text-lg">{bk.type?.split(' ')[0]||'📋'}</span>
+              <div className="flex-1 min-w-0"><p className="text-[10px] font-bold truncate">{bk.name}</p><p className="text-[8px]" style={{color:t.textMuted}}>{bk.date} · {bk.payMethod} · Conf: {bk.confirmation}</p></div>
+              <div className="text-right"><p className="text-[10px] font-bold" style={{color:'#22c55e'}}>{bk.price}</p><span className="text-[7px] px-1.5 py-0.5 rounded-full font-bold" style={{background:'rgba(34,197,94,0.15)',color:'#22c55e'}}>Confirmed</span></div>
+            </div>))}
+          </div>)}
+
+          <p className="text-[10px] font-bold mb-1">Available Bookings</p>
+          {VACATIONS.bookings.map(b=>(
           <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
             <span className="text-lg">{b.type.split(' ')[0]}</span>
             <div className="flex-1"><p className="text-xs font-bold">{b.name}</p><p className="text-[9px]" style={{color:t.textMuted}}>{b.provider} · ⭐ {b.rating}</p></div>
-            <div className="text-right"><p className="text-xs font-bold" style={{color:'#22c55e'}}>{b.price}</p><button className="text-[8px] px-2 py-0.5 rounded-full text-white mt-0.5" style={{background:t.accent}}>Book</button></div>
+            <div className="text-right"><p className="text-xs font-bold" style={{color:'#22c55e'}}>{b.price}</p><button onClick={()=>handleBook(b)} className="text-[10px] px-4 py-2 rounded-xl text-white mt-1 font-bold" style={{background:`linear-gradient(135deg,${t.accent},#22c55e)`,boxShadow:'0 2px 8px rgba(34,197,94,0.3)'}}>🎟️ Book Now</button></div>
           </div>
-        ))}
+        ))}</>)}
+
+        {/* ═══ BOOKING MODAL ═══ */}
+        {bookingItem&&(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.7)'}} onClick={()=>bookingStep!=='confirm'&&setBookingItem(null)}>
+            <div onClick={e=>e.stopPropagation()} className="w-full max-w-md rounded-2xl p-5 space-y-4" style={{background:isDark?'#1a1a2e':'#fff',color:t.text}}>
+              {bookingStep==='confirm'?(
+                <div className="text-center py-4 space-y-3">
+                  <div className="text-5xl">✅</div>
+                  <h2 className="text-xl font-bold" style={{color:'#22c55e'}}>Booking Confirmed!</h2>
+                  <div className="p-3 rounded-xl text-left space-y-1.5" style={{background:isDark?'rgba(34,197,94,0.05)':'rgba(34,197,94,0.03)',border:'1px solid rgba(34,197,94,0.15)'}}>
+                    <p className="text-xs font-bold">{bookingItem.name}</p>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Type</span><span>{bookingItem.type}</span></div>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Provider</span><span>{bookingItem.provider}</span></div>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Amount</span><span className="font-bold" style={{color:'#22c55e'}}>{bookingItem.price}</span></div>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Payment</span><span>{bookingPayMethod==='card'?'💳 Card':'👛 Wallet'}</span></div>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Confirmation</span><span className="font-mono text-[9px]">CNF{Date.now().toString().slice(-8)}</span></div>
+                    <div className="flex justify-between text-[10px]"><span style={{color:t.textMuted}}>Status</span><span style={{color:'#22c55e'}}>✅ Confirmed</span></div>
+                  </div>
+                  <p className="text-[9px]" style={{color:t.textMuted}}>Check your bookings history for updates · Receipt sent to email</p>
+                </div>
+              ):bookingStep==='payment'?(
+                <><h2 className="text-lg font-bold">💳 Payment</h2>
+                <div className="p-3 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}>
+                  <div className="flex items-center gap-2 mb-2"><span className="text-lg">{bookingItem.type.split(' ')[0]}</span><div><p className="text-xs font-bold">{bookingItem.name}</p><p className="text-[9px]" style={{color:t.textMuted}}>{bookingItem.provider}</p></div></div>
+                  <p className="text-lg font-bold" style={{color:'#22c55e'}}>{bookingItem.price}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">{([{k:'card' as const,l:'💳 Card'},{k:'wallet' as const,l:'👛 Wallet'}]).map(m=>(<button key={m.k} onClick={()=>setBookingPayMethod(m.k)} className="p-3 rounded-xl text-center" style={{background:bookingPayMethod===m.k?t.accent+'15':'transparent',border:`1.5px solid ${bookingPayMethod===m.k?t.accent:t.cardBorder}`}}><p className="text-xs font-bold" style={{color:bookingPayMethod===m.k?t.accent:t.text}}>{m.l}</p></button>))}</div>
+                {bookingPayMethod==='card'&&(<div className="grid grid-cols-2 gap-2"><input placeholder="Card Number" maxLength={19} className="col-span-2 p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/><input placeholder="MM/YY" maxLength={5} className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/><input placeholder="CVV" maxLength={4} type="password" className="p-2 rounded-lg text-xs outline-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/></div>)}
+                <div className="flex gap-2"><button onClick={confirmBooking} disabled={bookingProcessing} className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{background:`linear-gradient(135deg,${t.accent},#22c55e)`}}>{bookingProcessing?'⏳ Processing Payment...':('Confirm & Pay '+bookingItem.price)}</button>{!bookingProcessing&&<button onClick={()=>setBookingItem(null)} className="px-4 py-3 rounded-xl text-xs" style={{border:`1px solid ${t.cardBorder}`}}>Cancel</button>}</div></>
+              ):(
+                <><h2 className="text-lg font-bold">📋 Booking Details</h2>
+                <div className="p-4 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'}}>
+                  <div className="text-center text-3xl mb-2">{bookingItem.type.split(' ')[0]}</div>
+                  <p className="text-sm font-bold text-center">{bookingItem.name}</p>
+                  <p className="text-[10px] text-center" style={{color:t.textMuted}}>{bookingItem.provider} · ⭐ {bookingItem.rating}</p>
+                  <p className="text-xl font-bold text-center mt-2" style={{color:'#22c55e'}}>{bookingItem.price}</p>
+                </div>
+                <div className="space-y-2"><div className="flex justify-between text-xs"><span style={{color:t.textMuted}}>Type</span><span>{bookingItem.type}</span></div><div className="flex justify-between text-xs"><span style={{color:t.textMuted}}>Provider</span><span>{bookingItem.provider}</span></div><div className="flex justify-between text-xs"><span style={{color:t.textMuted}}>Cancellation</span><span style={{color:'#22c55e'}}>Free up to 24hr</span></div></div>
+                <div className="flex gap-2"><button onClick={()=>setBookingStep('payment')} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#22c55e)`}}>Proceed to Payment →</button><button onClick={()=>setBookingItem(null)} className="px-4 py-3 rounded-xl text-xs" style={{border:`1px solid ${t.cardBorder}`}}>Cancel</button></div></>
+              )}
+            </div>
+          </div>
+        )}
 
         {vacTab==='restaurants'&&VACATIONS.restaurants.map(r=>(
           <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
