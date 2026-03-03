@@ -62,6 +62,14 @@ export default function ProfilePage() {
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
   // Avatar system
   const [avatars,setAvatars] = useState<Record<AvatarMode,string|null>>({public:null,friends:null,buddy:null,professional:null});
+  // Load saved avatars from localStorage
+  useState(()=>{try{const s=localStorage.getItem('datore-avatars');if(s)setAvatars(JSON.parse(s));}catch{}});
+  // Save avatars when they change
+  const updateAvatar = (mode:AvatarMode, val:string|null) => {
+    const newA = {...avatars,[mode]:val};
+    setAvatars(newA);
+    try{localStorage.setItem('datore-avatars',JSON.stringify(newA));}catch{}
+  };
   const [activeAvatarMode,setActiveAvatarMode] = useState<AvatarMode>('public');
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
@@ -69,10 +77,10 @@ export default function ProfilePage() {
   const handleAvatarUpload = (e:React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if(!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => { setAvatars(a=>({...a,[activeAvatarMode]:ev.target?.result as string})); setShowAvatarPicker(false); };
+    reader.onload = (ev) => { updateAvatar(activeAvatarMode, ev.target?.result as string); setShowAvatarPicker(false); };
     reader.readAsDataURL(file);
   };
-  const setEmojiAvatar = (emoji:string) => { setAvatars(a=>({...a,[activeAvatarMode]:emoji})); setShowAvatarPicker(false); };
+  const setEmojiAvatar = (emoji:string) => { updateAvatar(activeAvatarMode, emoji); setShowAvatarPicker(false); };
   const currentAvatar = avatars[activeAvatarMode];
 
   const canRate = myRating >= 4.0 && myFriends >= 10;
@@ -140,7 +148,7 @@ export default function ProfilePage() {
             <button onClick={()=>avatarRef.current?.click()} className="w-full py-3 rounded-xl text-xs font-bold text-white" style={{background:t.accent}}>📷 Upload Photo</button>
             <p className="text-[9px] text-center" style={{color:t.textMuted}}>-- or pick an avatar --</p>
             <div className="grid grid-cols-6 gap-2">{DEFAULT_AVATARS.map(em=>(<button key={em} onClick={()=>setEmojiAvatar(em)} className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:scale-110 transition-transform" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)'}}>{em}</button>))}</div>
-            {currentAvatar&&<button onClick={()=>{setAvatars(a=>({...a,[activeAvatarMode]:null}));setShowAvatarPicker(false);}} className="w-full py-2 rounded-xl text-xs" style={{color:'#ef4444'}}>Remove Current Avatar</button>}
+            {currentAvatar&&<button onClick={()=>{updateAvatar(activeAvatarMode,null);setShowAvatarPicker(false);}} className="w-full py-2 rounded-xl text-xs" style={{color:'#ef4444'}}>Remove Current Avatar</button>}
           </div>
         </div>
       )}

@@ -5,10 +5,10 @@ import { getTheme } from '@/lib/theme';
 import { IcoHome, IcoCommunity, IcoPlus, IcoSearch, IcoQR, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
 
 const NAV_MAIN = [
-  { label:'Home', Icon:IcoHome, path:'/home' },
-  { label:'Profile', Icon:IcoUser, path:'/profile' },
-  { label:'Community', Icon:IcoCommunity, path:'/community' },
-  { label:'Create', Icon:IcoPlus, path:'/create' },
+  { label:'Home', Icon:IcoHome, path:'/home', color:'#6366f1', g1:'#6366f1', g2:'#4f46e5' },
+  { label:'Profile', Icon:IcoUser, path:'/profile', color:'#a78bfa', g1:'#a78bfa', g2:'#8b5cf6' },
+  { label:'Community', Icon:IcoCommunity, path:'/community', color:'#06b6d4', g1:'#06b6d4', g2:'#0891b2' },
+  { label:'Create', Icon:IcoPlus, path:'/create', color:'#22c55e', g1:'#22c55e', g2:'#16a34a' },
 ];
 
 const NAV_HEX = [
@@ -101,31 +101,17 @@ export default function TopNav() {
           }}>Datore</span>
         </div>
 
-        {/* Main Nav */}
-        <div className="flex items-center gap-0.5">
-          {NAV_MAIN.map(item => {
-            const active = pathname?.startsWith(item.path);
-            return (
-              <button key={item.path} onClick={()=>router.push(item.path)} style={{
-                display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-                padding:'6px 14px', borderRadius:12, background:active?`${t.accent}10`:'transparent',
-                border:'none', cursor:'pointer', position:'relative',
-                transition:'all 0.2s'
-              }}>
-                <item.Icon size={19} color={active?t.accent:muted} />
-                <span style={{fontSize:10,fontWeight:active?700:500,color:active?t.accent:muted,letterSpacing:0.1}}>{item.label}</span>
-                {active && <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:20,height:2.5,borderRadius:2,background:t.accent}} />}
-              </button>
-            );
-          })}
+        {/* Main Nav — Same hex badge style */}
+        <div className="flex items-center gap-1">
+          {NAV_MAIN.map(item => (
+            <HexBadge key={item.path} Icon={item.Icon} label={item.label} color={item.color} g1={item.g1} g2={item.g2} active={!!pathname?.startsWith(item.path)} onClick={()=>router.push(item.path)} />
+          ))}
 
           {/* Hex Divider */}
           <div style={{width:1,height:28,background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)',margin:'0 6px',borderRadius:1}} />
 
           {/* Hex Icon Group */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-2xl" style={{
-            background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
-          }}>
+          <div className="flex items-center gap-1">
             {NAV_HEX.map(item => (
               <HexBadge key={item.path} Icon={item.Icon} label={item.label} color={item.color} g1={item.g1} g2={item.g2} active={!!pathname?.startsWith(item.path)} onClick={()=>router.push(item.path)} />
             ))}

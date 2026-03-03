@@ -5,32 +5,48 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
-import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch } from '@/components/Icons';
+import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag } from '@/components/Icons';
 
 /* ═══════════════════════════════════════
    AI CONTENT MODERATION ENGINE
    Detects profanity, hate, abuse in posts
    ═══════════════════════════════════════ */
-const PROFANITY = /\b(fuck|shit|ass\s?hole|bitch|bastard|damn|crap|dick|piss|slut|whore|cock|cunt|nigger|faggot|retard)\b/gi;
-const HATE_PAT = /\b(kill\s+(all|them|yourself)|go\s+die|kys|hate\s+(all|every)\s+\w+|supremac|n[i1]gg[ae3]r|f[a4]gg?[o0]t)\b/gi;
-const THREAT_PAT = /\b(bomb|shoot\s+up|attack|massacre|terrorism|blow\s+up|stab|murder)\b/gi;
+/* Enhanced profanity filter — catches variants, partial words, leet speak */
+const PROFANITY_WORDS = ['fuck','fck','fuk','fuq','fack','sh[i1!]t','a[s$]{2}','a[s$]{2}hole','b[i1!]tch','bastard','d[i1!]ck','p[i1!]ss','slut','wh[o0]re','c[o0]ck','cunt','tit[s$]','boob','p[o0]rn','xxx','nude','naked','sexy','d[a@]mn','crap','stfu','wtf','lmao','lmfao'];
+const PROFANITY = new RegExp('\\b(' + PROFANITY_WORDS.join('|') + ')\\w*\\b','gi');
+const HATE_PAT = /\b(kill\s+(all|them|yourself)|go\s+die|kys|hate\s+(all|every)\s+\w+|supremac|n[i1!]gg[ae3]r?s?|f[a4@]gg?[o0]t|r[e3]tard)\w*\b/gi;
+const THREAT_PAT = /\b(bomb|shoot\s+up|attack|massacre|terrorism|blow\s+up|stab|murder)\w*\b/gi;
+const ADULT_PAT = /\b(p[o0]rn|xxx|nsfw|hentai|onlyfans|stripper|escort|prostitut|explicit|adult\s*content|18\+)\w*\b/gi;
 
-interface ModerationResult { safe:boolean; severity:'none'|'mild'|'moderate'|'severe'; flags:string[]; cleaned:string; }
+interface ModerationResult { safe:boolean; severity:'none'|'mild'|'moderate'|'severe'; flags:string[]; cleaned:string; blocked:boolean; }
 
 function moderateContent(text:string):ModerationResult {
   const flags:string[] = [];
   let severity:'none'|'mild'|'moderate'|'severe' = 'none';
   let cleaned = text;
+  let blocked = false;
 
-  if (THREAT_PAT.test(text)) { flags.push('Threat/Violence detected'); severity = 'severe'; }
-  if (HATE_PAT.test(text)) { flags.push('Hate speech detected'); severity = 'severe'; }
+  if (THREAT_PAT.test(text)) { flags.push('Threat/Violence detected'); severity = 'severe'; blocked = true; }
+  THREAT_PAT.lastIndex = 0;
+  if (HATE_PAT.test(text)) { flags.push('Hate speech detected'); severity = 'severe'; blocked = true; }
+  HATE_PAT.lastIndex = 0;
+  if (ADULT_PAT.test(text)) { flags.push('Adult content detected'); severity = 'severe'; blocked = true; }
+  ADULT_PAT.lastIndex = 0;
   if (PROFANITY.test(text)) {
     flags.push('Profanity detected');
     if (severity === 'none') severity = 'mild';
-    cleaned = text.replace(PROFANITY, (m) => m[0] + '*'.repeat(m.length-1));
+    PROFANITY.lastIndex = 0;
+    cleaned = text.replace(PROFANITY, (m) => m[0] + '★'.repeat(Math.max(1,m.length-1)));
   }
+  PROFANITY.lastIndex = 0;
 
-  return { safe: flags.length === 0, severity, flags, cleaned };
+  return { safe: flags.length === 0, severity, flags, cleaned, blocked };
+}
+
+/* Image content check — flags suspicious filenames/types */
+function isImageSafe(fileName:string):boolean {
+  const bad = /(nsfw|porn|xxx|nude|naked|adult|explicit|18\+|hentai)/i;
+  return !bad.test(fileName);
 }
 
 /* ═══════════════════════════════════════
@@ -86,13 +102,32 @@ export default function HomePage() {
   const videoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const prefs = getProfilePrefs();
+  
+  // Fix 7: Load user's saved profile avatar
+  const getUserAvatar = ():{type:'image'|'emoji'|'initials';src:string} => {
+    try {
+      const saved = localStorage.getItem('datore-avatars');
+      if (saved) {
+        const avatars = JSON.parse(saved);
+        const pub = avatars.public;
+        if (pub && pub.startsWith('data:image')) return {type:'image',src:pub};
+        if (pub && pub.length <= 4) return {type:'emoji',src:pub};
+      }
+    } catch {}
+    return {type:'initials',src:(prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)};
+  };
+  const userAvatar = getUserAvatar();
 
   useEffect(() => { setUserPosts(getUserPosts()); }, []);
 
-  const allFeed = [...userPosts.map(p => ({...p, isOwn:true, user: prefs.name || 'You', avatar: (prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)})), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience}))];
+  const allFeed = [...userPosts.map(p => ({...p, isOwn:true, user: prefs.name || 'You', avatar: userAvatar.src, avatarType: userAvatar.type})), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
+    if (!isImageSafe(file.name)) {
+      setModerationAlert({ safe:false, severity:'severe', flags:['Adult/explicit content detected in filename'], cleaned:'', blocked:true });
+      return;
+    }
     setPostType(type); setMediaName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => { setMediaPreview(ev.target?.result as string); };
@@ -256,7 +291,9 @@ export default function HomePage() {
       {/* Create Post Bar */}
       <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowPost(true)}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style={{ background:`linear-gradient(135deg,${t.accent}44,#8b5cf644)`, color:t.accent }}>{(prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)}</div>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden" style={{ background:`linear-gradient(135deg,${t.accent}44,#8b5cf644)`, color:t.accent }}>
+            {userAvatar.type==='image' ? <img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/> : userAvatar.type==='emoji' ? <span className="text-xl">{userAvatar.src}</span> : userAvatar.src}
+          </div>
           <p className="flex-1 text-sm" style={{ color:t.textMuted }}>Share what's on your mind...</p>
           <button onClick={e => { e.stopPropagation(); photoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e' }}>📷 Photo</button>
           <button onClick={e => { e.stopPropagation(); videoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>🎥 Video</button>
@@ -280,7 +317,9 @@ export default function HomePage() {
             <div key={post.id} className="rounded-2xl p-4" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
               {/* Post Header */}
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>{post.avatar}</div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>
+                  {(post as any).avatarType==='image'?<img src={post.avatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>:(post as any).avatarType==='emoji'?<span className="text-xl">{post.avatar}</span>:post.avatar}
+                </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{post.user}</p>
                   <div className="flex items-center gap-2">
@@ -326,15 +365,18 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Action Bar: Like, Comment, Share, Emojis */}
-              <div className="flex items-center gap-3 pt-3" style={{ borderTop:`1px solid ${t.cardBorder}` }}>
+              {/* Action Bar: Right-aligned — Like, Comment, Share, Report, Emoji */}
+              <div className="flex items-center gap-3 pt-3 justify-end" style={{ borderTop:`1px solid ${t.cardBorder}` }}>
                 <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 text-xs" style={{ color:likedPosts.includes(post.id)?'#ef4444':t.textMuted }}>
                   <IcoHeart size={14} color={likedPosts.includes(post.id)?'#ef4444':t.textMuted} fill={likedPosts.includes(post.id)?'#ef4444':'none'} />
                   Like ({post.likes + (likedPosts.includes(post.id)?1:0)})
                 </button>
                 <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1 text-xs" style={{ color:openComments===post.id?t.accent:t.textMuted }}>💬 Comment ({commentCount})</button>
                 <button onClick={() => setShowShare(showShare===post.id?null:post.id)} className="text-xs" style={{ color:t.textMuted }}>↗ Share</button>
-                <button onClick={() => setShowEmoji(showEmoji===post.id?null:post.id)} className="ml-auto" style={{ color:t.textMuted }}>
+                <button onClick={() => { if(confirm('Report this post for inappropriate content?')) alert('Post reported. Our team will review it within 24 hours.'); }} className="flex items-center gap-1 text-xs" style={{ color:t.textMuted }}>
+                  <IcoFlag size={12} color={t.textMuted} /> Report
+                </button>
+                <button onClick={() => setShowEmoji(showEmoji===post.id?null:post.id)} style={{ color:t.textMuted }}>
                   <IcoEmoji size={16} color={showEmoji===post.id?t.accent:t.textMuted} />
                 </button>
               </div>

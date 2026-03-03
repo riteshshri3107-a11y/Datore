@@ -34,24 +34,24 @@ const ZONES: Record<DistanceZone, {label:string;range:string;color:string;icon:s
 
 // Discovery profiles — privacy-safe: only public avatars + interests + zone
 interface DiscoverProfile {
-  id:string; avatar:string; zone:DistanceZone; interests:string[];
+  id:string; avatar:string; avatarName:string; zone:DistanceZone; interests:string[];
   memberSince:string; mutualFriends:number; rating:number; verified:boolean;
   activityHint:string; // vague — e.g. "Active today", not "Online at 3pm"
 }
 
 const DISCOVER_PROFILES: DiscoverProfile[] = [
-  {id:'d1',avatar:'👨‍🔧',zone:'nearby',interests:['Home Repair','Plumbing','Electrical'],memberSince:'2024',mutualFriends:3,rating:4.8,verified:true,activityHint:'Active today'},
-  {id:'d2',avatar:'👩‍🏫',zone:'nearby',interests:['Tutoring','Education','Math'],memberSince:'2023',mutualFriends:5,rating:4.9,verified:true,activityHint:'Active today'},
-  {id:'d3',avatar:'🧑‍🍳',zone:'close',interests:['Cooking','Meal Prep','Vegetarian'],memberSince:'2024',mutualFriends:1,rating:4.5,verified:false,activityHint:'Active this week'},
-  {id:'d4',avatar:'👩‍💻',zone:'close',interests:['Tech Help','Web Design','App Dev'],memberSince:'2023',mutualFriends:7,rating:4.7,verified:true,activityHint:'Active today'},
-  {id:'d5',avatar:'🧑‍🌾',zone:'area',interests:['Gardening','Landscaping','Spring Cleanup'],memberSince:'2024',mutualFriends:0,rating:4.3,verified:false,activityHint:'Active this week'},
-  {id:'d6',avatar:'👨‍🎨',zone:'area',interests:['Painting','Interior Design','Murals'],memberSince:'2025',mutualFriends:2,rating:4.6,verified:true,activityHint:'Active today'},
-  {id:'d7',avatar:'👩‍⚕️',zone:'district',interests:['Pet Care','Dog Walking','Cat Sitting'],memberSince:'2023',mutualFriends:4,rating:4.8,verified:true,activityHint:'Active today'},
-  {id:'d8',avatar:'🧑‍🔬',zone:'district',interests:['STEM Education','Robotics','Science'],memberSince:'2024',mutualFriends:2,rating:4.4,verified:false,activityHint:'Active this week'},
-  {id:'d9',avatar:'👷',zone:'city',interests:['Moving Help','Furniture Assembly','Heavy Lifting'],memberSince:'2024',mutualFriends:1,rating:4.2,verified:true,activityHint:'Active recently'},
-  {id:'d10',avatar:'👩‍🎤',zone:'city',interests:['Music Lessons','Piano','Guitar'],memberSince:'2023',mutualFriends:0,rating:4.7,verified:false,activityHint:'Active this week'},
-  {id:'d11',avatar:'🧑‍✈️',zone:'nearby',interests:['Driving','Airport Rides','Errands'],memberSince:'2024',mutualFriends:6,rating:4.9,verified:true,activityHint:'Active today'},
-  {id:'d12',avatar:'👨‍🍳',zone:'close',interests:['Baking','Catering','Event Food'],memberSince:'2025',mutualFriends:0,rating:4.1,verified:false,activityHint:'Active recently'},
+  {id:'d1',avatar:'👨‍🔧',avatarName:'FixerPro',zone:'nearby',interests:['Home Repair','Plumbing','Electrical'],memberSince:'2024',mutualFriends:3,rating:4.8,verified:true,activityHint:'Active today'},
+  {id:'d2',avatar:'👩‍🏫',avatarName:'EduStar',zone:'nearby',interests:['Tutoring','Education','Math'],memberSince:'2023',mutualFriends:5,rating:4.9,verified:true,activityHint:'Active today'},
+  {id:'d3',avatar:'🧑‍🍳',avatarName:'ChefVibes',zone:'close',interests:['Cooking','Meal Prep','Vegetarian'],memberSince:'2024',mutualFriends:1,rating:4.5,verified:false,activityHint:'Active this week'},
+  {id:'d4',avatar:'👩‍💻',avatarName:'TechWiz',zone:'close',interests:['Tech Help','Web Design','App Dev'],memberSince:'2023',mutualFriends:7,rating:4.7,verified:true,activityHint:'Active today'},
+  {id:'d5',avatar:'🧑‍🌾',avatarName:'GreenThumb',zone:'area',interests:['Gardening','Landscaping','Spring Cleanup'],memberSince:'2024',mutualFriends:0,rating:4.3,verified:false,activityHint:'Active this week'},
+  {id:'d6',avatar:'👨‍🎨',avatarName:'ArtistX',zone:'area',interests:['Painting','Interior Design','Murals'],memberSince:'2025',mutualFriends:2,rating:4.6,verified:true,activityHint:'Active today'},
+  {id:'d7',avatar:'👩‍⚕️',avatarName:'PetPal',zone:'district',interests:['Pet Care','Dog Walking','Cat Sitting'],memberSince:'2023',mutualFriends:4,rating:4.8,verified:true,activityHint:'Active today'},
+  {id:'d8',avatar:'🧑‍🔬',avatarName:'SciKid',zone:'district',interests:['STEM Education','Robotics','Science'],memberSince:'2024',mutualFriends:2,rating:4.4,verified:false,activityHint:'Active this week'},
+  {id:'d9',avatar:'👷',avatarName:'StrongArm',zone:'city',interests:['Moving Help','Furniture Assembly','Heavy Lifting'],memberSince:'2024',mutualFriends:1,rating:4.2,verified:true,activityHint:'Active recently'},
+  {id:'d10',avatar:'👩‍🎤',avatarName:'MelodyMaker',zone:'city',interests:['Music Lessons','Piano','Guitar'],memberSince:'2023',mutualFriends:0,rating:4.7,verified:false,activityHint:'Active this week'},
+  {id:'d11',avatar:'🧑‍✈️',avatarName:'RideReady',zone:'nearby',interests:['Driving','Airport Rides','Errands'],memberSince:'2024',mutualFriends:6,rating:4.9,verified:true,activityHint:'Active today'},
+  {id:'d12',avatar:'👨‍🍳',avatarName:'BakeKing',zone:'close',interests:['Baking','Catering','Event Food'],memberSince:'2025',mutualFriends:0,rating:4.1,verified:false,activityHint:'Active recently'},
 ];
 
 export default function FriendsPage() {
@@ -114,10 +114,13 @@ export default function FriendsPage() {
       </div>
       {voiceSrch&&<p className="text-[10px] text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
 
-      {/* Search */}
+      {/* Search with Mic */}
       <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <IcoSearch size={14} color={t.textMuted}/>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==='discover'?'Search by interest (e.g. tutoring, plumbing)...':'Search friends...'} className="flex-1 text-sm outline-none bg-transparent" style={{color:t.text}}/>
+        <button onClick={()=>{setVoiceSrch(true);setTimeout(()=>{setVoiceSrch(false);setSearch('tutoring');},2000);}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.12)':'rgba(139,92,246,0.08)'}}>
+          <IcoMic size={14} color={voiceSrch?'#ef4444':'#8b5cf6'}/>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -256,7 +259,7 @@ export default function FriendsPage() {
                     fontSize:12,zIndex:6+i,cursor:'pointer',
                     transition:'all 0.3s ease',
                     boxShadow:sentRequests.includes(p.id)?`0 0 8px rgba(245,158,11,0.4)`:`0 2px 6px ${z.color}22`,
-                  }} title={`${z.label} · ${z.range} — ${p.interests.join(', ')}`}>
+                  }} title={`${p.avatarName} · ${z.label} · ${z.range}`}>
                     {p.avatar}
                   </div>
                 );
@@ -313,16 +316,22 @@ export default function FriendsPage() {
               const z = ZONES[p.zone];
               const isPending = sentRequests.includes(p.id);
               return (
-                <div key={p.id} className="rounded-xl p-3" style={{background:t.card,border:`1px solid ${isPending?'rgba(245,158,11,0.25)':t.cardBorder}`}}>
+                <div key={p.id} className="rounded-xl p-3 group" style={{background:t.card,border:`1px solid ${isPending?'rgba(245,158,11,0.25)':t.cardBorder}`,transition:'all 0.2s'}}>
                   <div className="flex items-center gap-3">
-                    {/* Avatar Only — No Name Ever */}
-                    <div className="w-13 h-13 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style={{width:52,height:52,background:`linear-gradient(135deg,${z.color}22,${z.color}11)`,border:`2.5px solid ${z.color}44`}}>
-                      {p.avatar}
+                    {/* Avatar Only — Name visible on hover via tooltip */}
+                    <div className="relative">
+                      <div className="w-13 h-13 rounded-full flex items-center justify-center text-2xl flex-shrink-0 cursor-pointer" style={{width:52,height:52,background:`linear-gradient(135deg,${z.color}22,${z.color}11)`,border:`2.5px solid ${z.color}44`,transition:'all 0.3s'}} title={p.avatarName}>
+                        {p.avatar}
+                      </div>
+                      {/* Hover tooltip — shows avatar name only */}
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-10">
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:isDark?'rgba(30,30,50,0.95)':'white',color:z.color,boxShadow:'0 2px 10px rgba(0,0,0,0.2)',border:`1px solid ${z.color}33`}}>{p.avatarName}</span>
+                      </div>
                     </div>
                     <div className="flex-1">
-                      {/* Anonymous ID + Zone badge */}
+                      {/* Avatar Name (visible on hover) + Zone badge */}
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-bold" style={{color:t.text}}>User #{p.id.replace('d','')}</span>
+                        <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity" style={{color:z.color}}>{p.avatarName}</span>
                         {p.verified&&<span className="text-[7px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">✓ Verified</span>}
                       </div>
                       <div className="flex items-center gap-1 mb-1">
@@ -348,8 +357,8 @@ export default function FriendsPage() {
                           <button onClick={()=>cancelRequest(p.id)} className="text-[8px]" style={{color:'#ef4444'}}>Cancel</button>
                         </div>
                       ) : (
-                        <button onClick={()=>sendRequest(p.id)} className="px-3 py-2.5 rounded-xl text-[9px] font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>
-                          👋 Add
+                        <button onClick={()=>sendRequest(p.id)} className="px-4 py-2.5 rounded-xl text-[10px] font-bold text-white flex items-center gap-1.5" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,boxShadow:`0 2px 10px ${t.accent}30`}}>
+                          👋 Send Friend Request
                         </button>
                       )}
                     </div>

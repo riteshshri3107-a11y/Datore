@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { getJoinedCommunities, toggleCommunity } from '@/lib/demoData';
-import { IcoBack, IcoShield, IcoSearch } from '@/components/Icons';
+import { IcoBack, IcoShield, IcoSearch, IcoMic } from '@/components/Icons';
 
 /* ─── AI SAFETY ENGINE ─── */
 const THREAT_DB: Record<string,string[]> = {
@@ -199,7 +199,13 @@ export default function CommunityPage() {
           </div>
 
           {(tab==='discover'||tab==='joined')&&(<>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search buddy groups..." className="w-full text-sm py-2.5 px-3 rounded-xl bg-transparent outline-none" style={{border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+            <div className="flex items-center gap-2 rounded-xl px-3" style={{border:`1px solid ${t.cardBorder}`}}>
+              <IcoSearch size={14} color={t.textMuted}/>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search buddy groups..." className="flex-1 text-sm py-2.5 bg-transparent outline-none" style={{color:t.text}}/>
+              <button onClick={()=>{}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(139,92,246,0.08)'}}>
+                <IcoMic size={14} color="#8b5cf6"/>
+              </button>
+            </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
               <button onClick={()=>setTypeF('all')} className="text-[10px] px-3 py-1.5 rounded-full whitespace-nowrap font-medium" style={{background:typeF==='all'?t.accent+'20':'transparent',color:typeF==='all'?t.accent:t.textMuted,border:`1px solid ${typeF==='all'?t.accent+'40':t.cardBorder}`}}>All</button>
               {(Object.keys(GT) as GType[]).map(g=><button key={g} onClick={()=>setTypeF(g)} className="text-[10px] px-3 py-1.5 rounded-full whitespace-nowrap font-medium" style={{background:typeF===g?GT[g].c+'20':'transparent',color:typeF===g?GT[g].c:t.textMuted,border:`1px solid ${typeF===g?GT[g].c+'40':t.cardBorder}`}}>{GT[g].i} {GT[g].l}</button>)}
