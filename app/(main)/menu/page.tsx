@@ -17,6 +17,18 @@ const MENU = [
     { Icon: IcoQR, label: 'QR Verification', path: '/qr-verify', color:'#06b6d4', badge:'' },
     { Icon: IcoShield, label: 'Safety Center', path: '/safety', color:'#22c55e', badge:'' },
   ]},
+  { section: 'Admin & Security', items: [
+    { Icon: IcoShield, label: 'Moderation Dashboard', path: '/admin/moderation', color:'#ef4444', badge:'NEW' },
+    { Icon: IcoDashboard, label: 'Observability & SLOs', path: '/admin/observability', color:'#06b6d4', badge:'NEW' },
+    { Icon: IcoSettings, label: 'Infrastructure', path: '/admin/infrastructure', color:'#8b5cf6', badge:'NEW' },
+    { Icon: IcoStar, label: 'Feature Flags', path: '/admin/features', color:'#f59e0b', badge:'NEW' },
+    { Icon: IcoDashboard, label: 'Auth Audit Log', path: '/admin/audit', color:'#f59e0b', badge:'' },
+  ]},
+  { section: 'Discovery & Privacy', items: [
+    { Icon: IcoSearch, label: 'Universal Search', path: '/search', color:'#8b5cf6', badge:'NEW' },
+    { Icon: IcoUser, label: 'Onboarding & Trust', path: '/onboarding', color:'#22c55e', badge:'NEW' },
+    { Icon: IcoShield, label: 'Privacy Center', path: '/privacy', color:'#06b6d4', badge:'GDPR' },
+  ]},
   { section: 'Social', items: [
     { Icon: IcoFriends, label: 'Friends', path: '/friends', color:'#ec4899', badge:'' },
     { Icon: IcoCalendar, label: 'Events', path: '/events', color:'#8b5cf6', badge:'' },

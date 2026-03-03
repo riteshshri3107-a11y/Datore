@@ -4,321 +4,208 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, DEMO_JOBS, MARKETPLACE_LISTINGS, SEARCH_SUGGESTIONS, HASHTAGS } from '@/lib/demoData';
-import { JOB_CATEGORIES } from '@/types';
+import { search, indexBulk, suggest, getTrending, recordSearch, getIndexStats, type SearchableType, type SearchFilters } from '@/lib/search';
+import { DEMO_WORKERS, DEMO_JOBS } from '@/lib/demoData';
+import { IcoBack, IcoSearch, IcoMic, IcoClose } from '@/components/Icons';
 
-// Relevance scoring
-function scoreWorker(w: any, q: string): number {
-  let s = 0;
-  if (w.full_name.toLowerCase().includes(q)) s += 10;
-  if (w.skills.some((sk: string) => sk.toLowerCase().includes(q))) s += 8;
-  if (w.city.toLowerCase().includes(q)) s += 5;
-  if (w.availability === 'available') s += 3;
-  s += w.rating;
-  s += w.trust_score / 20;
-  return s;
-}
-function scoreJob(j: any, q: string): number {
-  let s = 0;
-  if (j.title.toLowerCase().includes(q)) s += 10;
-  if (j.category.toLowerCase().includes(q)) s += 8;
-  if (j.desc.toLowerCase().includes(q)) s += 4;
-  const urgMap: Record<string,number> = { immediate:5, today:4, tomorrow:3, by_date:2, no_rush:1 };
-  s += urgMap[j.urgency] || 0;
-  return s;
-}
-
-const SMART_SUGGEST: Record<string, string[]> = {
-  babysit: ['Also try: "childcare", "nanny", "after-school care"'],
-  plumb: ['Also try: "pipe repair", "drain cleaning", "water heater"'],
-  clean: ['Also try: "deep clean", "move-out clean", "laundry"'],
-  tutor: ['Also try: "math help", "homework", "test prep"'],
-  pet: ['Also try: "dog walking", "cat sitting", "grooming"'],
-  move: ['Also try: "packing", "furniture assembly", "junk removal"'],
-  cook: ['Also try: "meal prep", "personal chef", "catering"'],
+const TYPE_COLORS: Record<SearchableType, {color:string;icon:string}> = {
+  worker: { color:'#22c55e', icon:'👷' },
+  job: { color:'#6366f1', icon:'💼' },
+  listing: { color:'#ec4899', icon:'🛒' },
+  community: { color:'#06b6d4', icon:'👥' },
+  post: { color:'#8b5cf6', icon:'📝' },
+  service: { color:'#f59e0b', icon:'⚡' },
 };
 
-export default function SearchPage() {
+export default function UniversalSearch() {
   const router = useRouter();
-  const { isDark, glassLevel, accentColor } = useThemeStore();
-  const t = getTheme(isDark, glassLevel, accentColor);
-  const [search, setSearch] = useState('');
-  const [listening, setListening] = useState(false);
-  const [voiceText, setVoiceText] = useState('');
-  const [tab, setTab] = useState<'all'|'workers'|'jobs'|'marketplace'>('all');
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'relevance'|'rating'|'price'>('relevance');
+  const { isDark } = useThemeStore();
+  const t = getTheme(isDark);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ReturnType<typeof search> | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [filters, setFilters] = useState<SearchFilters>({});
+  const [voiceSrch, setVoiceSrch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Build index on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try { setRecentSearches(JSON.parse(localStorage.getItem('datore-recent-search') || '[]')); } catch {}
-    }
-    inputRef.current?.focus();
+    const docs = [
+      ...DEMO_WORKERS.map(w => ({
+        id:`w_${w.id}`, type:'worker' as SearchableType, title:w.full_name,
+        body:`${w.bio} ${w.skills.join(' ')}`, tags:w.skills,
+        category:'Workers', location:w.city, rating:w.rating,
+        metadata:{ hourly:w.hourly_rate, path:`/jobplace/providers/${w.id}` },
+      })),
+      ...DEMO_JOBS.map(j => ({
+        id:`j_${j.id}`, type:'job' as SearchableType, title:j.title,
+        body:j.desc, tags:[j.category], category:j.category,
+        location:j.location, rating:undefined,
+        metadata:{ amount:j.amount, payment:j.payment, path:`/jobplace/job/${j.id}` },
+      })),
+      ...[
+        { id:'s1', type:'service' as SearchableType, title:'Home Cleaning', body:'Professional deep cleaning, regular maintenance, move-in/out cleaning', tags:['cleaning','home'], category:'Services', location:'Toronto', rating:4.7, metadata:{path:'/jobplace?cat=cleaning'} },
+        { id:'s2', type:'service' as SearchableType, title:'Math Tutoring', body:'Grade 1-12 math tutoring, exam prep, homework help', tags:['tutoring','math','education'], category:'Education', location:'Toronto', rating:4.9, metadata:{path:'/jobplace?cat=tutoring'} },
+        { id:'s3', type:'service' as SearchableType, title:'Pet Care', body:'Dog walking, cat sitting, pet grooming, veterinary transport', tags:['pets','dog','cat'], category:'Pet Care', location:'Toronto', rating:4.8, metadata:{path:'/jobplace?cat=petcare'} },
+        { id:'c1', type:'community' as SearchableType, title:'Toronto Tech Workers', body:'Community for tech professionals in the GTA area', tags:['tech','toronto','networking'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
+        { id:'c2', type:'community' as SearchableType, title:'GTA Parents Network', body:'Support group for parents, playdates, childcare sharing', tags:['parents','childcare','family'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
+      ],
+    ];
+    indexBulk(docs);
   }, []);
 
-  const saveSearch = (q: string) => {
-    const u = [q, ...recentSearches.filter(s => s !== q)].slice(0, 10);
-    setRecentSearches(u);
-    if (typeof window !== 'undefined') try { localStorage.setItem('datore-recent-search', JSON.stringify(u)); } catch {}
+  const doSearch = (q: string) => {
+    if (!q.trim()) { setResults(null); return; }
+    const res = search(q, filters, 20);
+    setResults(res);
+    recordSearch(q);
+    setSuggestions([]);
   };
 
-  const startVoice = () => {
-    setListening(true);
-    setVoiceText('Listening...');
-    // Try real Web Speech API first
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SR) {
-      const rec = new SR();
-      rec.lang = 'en-US'; rec.interimResults = true;
-      rec.onresult = (e: any) => {
-        const t = Array.from(e.results).map((r: any) => r[0].transcript).join('');
-        setVoiceText(t);
-        setSearch(t);
-      };
-      rec.onend = () => { setListening(false); if (search) saveSearch(search); };
-      rec.onerror = () => {
-        // Fallback to simulation
-        setTimeout(() => {
-          const phrases = ['babysitter near me','plumber today','house cleaner this week','dog walker weekend','tutor for math'];
-          const r = phrases[Math.floor(Math.random()*phrases.length)];
-          setSearch(r); setVoiceText(r); saveSearch(r); setListening(false);
-        }, 2000);
-      };
-      rec.start();
-    } else {
-      setTimeout(() => {
-        const phrases = ['babysitter near me','plumber today','house cleaner this week','dog walker weekend','tutor for math'];
-        const r = phrases[Math.floor(Math.random()*phrases.length)];
-        setSearch(r); setVoiceText(r); saveSearch(r); setListening(false);
-      }, 2000);
-    }
+  const handleInputChange = (val: string) => {
+    setQuery(val);
+    if (val.length >= 2) setSuggestions(suggest(val));
+    else setSuggestions([]);
   };
 
-  const q = search.toLowerCase().trim();
-  const isHashtag = q.startsWith('#');
-  const hashtagMatches = isHashtag ? HASHTAGS.filter(h => h.includes(q)).slice(0,8) : [];
-  const suggestions = !isHashtag && q.length >= 1 ? SEARCH_SUGGESTIONS.filter(s => s.toLowerCase().includes(q)).slice(0,5) : [];
-
-  // Smart AI suggestion
-  const smartHint = Object.entries(SMART_SUGGEST).find(([k]) => q.includes(k));
-
-  // Scored + sorted results
-  const matchedWorkers = q.length >= 2 ? DEMO_WORKERS.filter(w => scoreWorker(w, q) > 5).sort((a,b) => {
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'price') return a.hourly_rate - b.hourly_rate;
-    return scoreWorker(b, q) - scoreWorker(a, q);
-  }) : [];
-  const matchedJobs = q.length >= 2 ? DEMO_JOBS.filter(j => scoreJob(j, q) > 3).sort((a,b) => scoreJob(b, q) - scoreJob(a, q)) : [];
-  const matchedListings = q.length >= 2 ? MARKETPLACE_LISTINGS.filter(l => l.title.toLowerCase().includes(q) || l.category.toLowerCase().includes(q)) : [];
-
-  const total = matchedWorkers.length + matchedJobs.length + matchedListings.length;
-  const urgColors: Record<string,string> = { immediate:'#ef4444', today:'#f97316', tomorrow:'#eab308', by_date:'#3b82f6', no_rush:'#22c55e' };
+  const trending = getTrending(6);
+  const stats = getIndexStats();
 
   return (
-    <div className="space-y-4 animate-fade-in ">
+    <div className="space-y-4 animate-fade-in pb-10">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <img src="/logo-icon.png" alt="" width={28} height={28} style={{ borderRadius:7 }} />
-        <h1 className="text-xl font-bold flex-1">Search</h1>
+        <button onClick={() => router.back()} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:t.card }}><IcoBack size={18} color={t.textMuted} /></button>
+        <h1 className="text-xl font-bold flex-1">🔍 Search Everything</h1>
+        <span className="text-[9px] px-2 py-1 rounded-lg" style={{ background:t.card, color:t.textMuted }}>{stats.documents} indexed</span>
       </div>
 
-      {/* Search bar with voice */}
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
-          <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => { if (e.key==='Enter' && search) saveSearch(search); }}
-            placeholder="Search workers, jobs, items, #hashtags..."
-            className="w-full p-3 pl-4 pr-10 rounded-xl text-sm outline-none"
-            style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold" style={{ color:t.textMuted }}>X</button>}
+      {/* Search Bar */}
+      <div className="relative">
+        <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background:t.card, border:`1px solid ${query?t.accent+'44':t.cardBorder}`, boxShadow:query?`0 0 0 3px ${t.accent}11`:'none', transition:'all 0.2s' }}>
+          <IcoSearch size={18} color={query?t.accent:t.textMuted} />
+          <input ref={inputRef} value={query} onChange={e => handleInputChange(e.target.value)} onKeyDown={e => e.key==='Enter' && doSearch(query)} placeholder="Search workers, jobs, services, communities..." className="flex-1 text-sm outline-none bg-transparent" style={{ color:t.text }} autoFocus />
+          {query && <button onClick={() => { setQuery(''); setResults(null); setSuggestions([]); inputRef.current?.focus(); }}><IcoClose size={16} color={t.textMuted} /></button>}
+          <button onClick={() => { setVoiceSrch(true); setTimeout(() => { setVoiceSrch(false); setQuery('plumber'); doSearch('plumber'); }, 2000); }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.06)' }}>
+            <IcoMic size={16} color={voiceSrch?'#ef4444':'#8b5cf6'} />
+          </button>
         </div>
-        <button onClick={startVoice} className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{
-          background: listening ? 'rgba(239,68,68,0.15)' : `linear-gradient(135deg,${t.accent},#8b5cf6)`,
-          color: listening ? '#ef4444' : 'white', border: listening ? '2px solid #ef4444' : 'none',
-        }}>
-          <span className={`text-xs font-bold ${listening ? 'animate-pulse' : ''}`}>{listening ? 'REC' : 'MIC'}</span>
-        </button>
-      </div>
+        {voiceSrch && <p className="text-[10px] text-center mt-1 animate-pulse" style={{ color:'#ef4444' }}>🎙️ Listening...</p>}
 
-      {/* Voice listening UI */}
-      {listening && (
-        <div className="glass-card rounded-xl p-4 text-center" style={{ background:'rgba(239,68,68,0.08)', borderColor:'#ef444433' }}>
-          <div className="flex items-center justify-center gap-1 mb-2">
-            {[1,2,3,4,5,6,7].map(i => (
-              <div key={i} className="w-1 rounded-full" style={{ height: 6 + Math.random()*24, background:'#ef4444', animation:`pulse ${0.3+i*0.1}s ease-in-out infinite alternate` }}></div>
+        {/* Suggestions Dropdown */}
+        {suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-20" style={{ background:t.card, border:`1px solid ${t.cardBorder}`, boxShadow:'0 8px 30px rgba(0,0,0,0.2)' }}>
+            {suggestions.map(s => (
+              <button key={s} onClick={() => { setQuery(s); doSearch(s); }} className="w-full text-left px-4 py-2.5 text-xs hover:opacity-80" style={{ borderBottom:`1px solid ${t.cardBorder}` }}>
+                <IcoSearch size={12} color={t.textMuted} /> <span className="ml-2">{s}</span>
+              </button>
             ))}
           </div>
-          <p className="text-sm font-medium" style={{ color:'#ef4444' }}>{voiceText || 'Listening...'}</p>
-          <p className="text-[10px] mt-1" style={{ color:t.textMuted }}>Say "Find babysitter near me" or "Post a job"</p>
-          <button onClick={() => setListening(false)} className="mt-2 text-[10px] px-3 py-1 rounded-full" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>Cancel</button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Auto-suggestions + hashtag matches */}
-      {(suggestions.length > 0 || hashtagMatches.length > 0) && !listening && (
-        <div className="glass-card rounded-xl overflow-hidden" style={{ background:t.card, borderColor:t.cardBorder }}>
-          {hashtagMatches.length > 0 && (
-            <div className="p-3 flex flex-wrap gap-1.5" style={{ borderBottom: suggestions.length ? `1px solid ${t.cardBorder}` : 'none' }}>
-              {hashtagMatches.map(h => (
-                <button key={h} onClick={() => { setSearch(h); saveSearch(h); }} className="px-2.5 py-1 rounded-lg text-xs font-medium" style={{ background:t.accentLight, color:t.accent }}>{h}</button>
-              ))}
-            </div>
-          )}
-          {suggestions.map((s, i) => (
-            <button key={i} onClick={() => { setSearch(s); saveSearch(s); }} className="w-full p-3 text-left text-sm flex items-center gap-3 hover:opacity-80" style={{ borderBottom:i<suggestions.length-1?`1px solid ${t.cardBorder}`:'none', color:t.text }}>
-              <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', color:t.textMuted }}>Q</span>
-              <span className="flex-1">{s}</span>
-              <span className="text-[10px]" style={{ color:t.textMuted }}>search</span>
+      {/* Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth:'none' }}>
+        <button onClick={() => setShowFilters(!showFilters)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap" style={{ background:showFilters?`${t.accent}15`:t.card, color:showFilters?t.accent:t.textMuted, border:`1px solid ${showFilters?t.accent+'33':t.cardBorder}` }}>⚙️ Filters</button>
+        {Object.entries(TYPE_COLORS).map(([type, { color, icon }]) => {
+          const active = filters.types?.includes(type as SearchableType);
+          return (
+            <button key={type} onClick={() => {
+              const newTypes = active ? filters.types?.filter(t => t !== type) : [...(filters.types || []), type as SearchableType];
+              setFilters({...filters, types: newTypes?.length ? newTypes : undefined });
+              if (query) doSearch(query);
+            }} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap capitalize" style={{ background:active?`${color}15`:t.card, color:active?color:t.textMuted, border:`1px solid ${active?color+'33':t.cardBorder}` }}>
+              {icon} {type}s
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
-      {/* Smart AI suggestion */}
-      {smartHint && q.length >= 3 && (
-        <div className="p-3 rounded-xl flex items-center gap-2" style={{ background:`${t.accent}11`, border:`1px solid ${t.accent}22` }}>
-          <span className="text-xs font-bold" style={{ color:t.accent }}>AI</span>
-          <p className="text-xs" style={{ color:t.accent }}>{smartHint[1][0]}</p>
+      {/* Rating Filter */}
+      {showFilters && (
+        <div className="p-3 rounded-xl" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+          <p className="text-[10px] font-bold mb-2">Min Rating</p>
+          <div className="flex gap-2">
+            {[0,3,4,4.5].map(r => (
+              <button key={r} onClick={() => { setFilters({...filters, minRating:r||undefined}); if(query) doSearch(query); }} className="px-3 py-1 rounded-lg text-[10px]" style={{ background:filters.minRating===r?`${t.accent}15`:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', color:filters.minRating===r?t.accent:t.textMuted }}>{r === 0 ? 'Any' : `${r}+ ⭐`}</button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Results */}
-      {q.length >= 2 && total > 0 && !listening && (
+      {results ? (
         <div className="space-y-3">
-          {/* Tabs + sort */}
           <div className="flex items-center justify-between">
-            <div className="flex gap-1 overflow-x-auto">
-              {(['all','workers','jobs','marketplace'] as const).map(tb => {
-                const c = tb==='workers'?matchedWorkers.length:tb==='jobs'?matchedJobs.length:tb==='marketplace'?matchedListings.length:total;
-                return <button key={tb} onClick={() => setTab(tb)} className="px-3 py-1.5 rounded-xl text-[11px] font-medium whitespace-nowrap capitalize" style={{ background:tab===tb?t.accentLight:'transparent', color:tab===tb?t.accent:t.textSecondary }}>{tb} ({c})</button>;
-              })}
-            </div>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="text-[10px] px-2 py-1 rounded-lg outline-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', color:t.textSecondary, border:`1px solid ${t.cardBorder}` }}>
-              <option value="relevance">Relevance</option>
-              <option value="rating">Rating</option>
-              <option value="price">Price Low</option>
-            </select>
-          </div>
-
-          {/* Workers */}
-          {(tab==='all'||tab==='workers') && matchedWorkers.length > 0 && (
-            <div>
-              {tab==='all' && <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color:t.textMuted }}>Workers ({matchedWorkers.length})</h3>}
-              <div className="space-y-2">{matchedWorkers.map(w => (
-                <div key={w.id} className="glass-card rounded-xl p-3 flex items-center gap-3" style={{ background:t.card, borderColor:t.cardBorder }}>
-                  <div onClick={() => router.push(`/worker/${w.id}`)} className="w-11 h-11 rounded-xl flex items-center justify-center text-xs font-bold cursor-pointer" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>{w.full_name.split(' ').map((n:string)=>n[0]).join('')}</div>
-                  <div className="flex-1 cursor-pointer" onClick={() => router.push(`/worker/${w.id}`)}>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{w.full_name}</p>
-                      {w.is_police_verified && <span className="text-[9px] px-1 py-0.5 rounded" style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e' }}>Verified</span>}
-                    </div>
-                    <p className="text-[10px]" style={{ color:t.textMuted }}>{w.skills.join(', ')} - {w.city}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="w-2 h-2 rounded-full" style={{ background:w.availability==='available'?'#22c55e':'#f59e0b' }}></span>
-                      <span className="text-[10px]" style={{ color:t.textMuted }}>{w.availability} | Trust: {w.trust_score}</span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-bold" style={{ color:'#f59e0b' }}>{w.rating}</span>
-                    <p className="text-xs font-bold" style={{ color:t.accent }}>${w.hourly_rate}/hr</p>
-                    <button onClick={() => router.push(`/chat/${w.id}`)} className="mt-1 text-[10px] px-2 py-0.5 rounded-lg font-medium" style={{ background:t.accentLight, color:t.accent }}>Chat</button>
-                  </div>
-                </div>
-              ))}</div>
-            </div>
-          )}
-
-          {/* Jobs - with urgency badges */}
-          {(tab==='all'||tab==='jobs') && matchedJobs.length > 0 && (
-            <div>
-              {tab==='all' && <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color:t.textMuted }}>Jobs ({matchedJobs.length})</h3>}
-              <div className="space-y-2">{matchedJobs.map(j => (
-                <div key={j.id} onClick={() => router.push(`/jobplace/job/${j.id}`)} className="glass-card rounded-xl p-3 flex items-center gap-3 cursor-pointer" style={{ background:t.card, borderColor:t.cardBorder }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{j.title}</p>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium capitalize" style={{ background:`${urgColors[j.urgency]||t.accent}15`, color:urgColors[j.urgency]||t.accent }}>{j.urgency}</span>
-                    </div>
-                    <p className="text-[10px]" style={{ color:t.textMuted }}>{j.category} - {j.location}</p>
-                  </div>
-                  <span className="font-bold text-sm shrink-0" style={{ color:t.accent }}>${j.amount}{j.payment==='hourly'?'/hr':''}</span>
-                </div>
-              ))}</div>
-            </div>
-          )}
-
-          {/* Marketplace */}
-          {(tab==='all'||tab==='marketplace') && matchedListings.length > 0 && (
-            <div>
-              {tab==='all' && <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color:t.textMuted }}>Marketplace ({matchedListings.length})</h3>}
-              <div className="space-y-2">{matchedListings.map(l => (
-                <div key={l.id} onClick={() => router.push(`/marketplace/listing/${l.id}`)} className="glass-card rounded-xl p-3 flex items-center gap-3 cursor-pointer" style={{ background:t.card, borderColor:t.cardBorder }}>
-                  <div className="flex-1"><p className="text-sm font-semibold">{l.title}</p><p className="text-[10px]" style={{ color:t.textMuted }}>{l.category} - {l.condition}</p></div>
-                  <span className="font-bold text-sm" style={{ color:t.accent }}>${l.price}</span>
-                </div>
-              ))}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* No results */}
-      {q.length >= 2 && total === 0 && !listening && (
-        <div className="text-center py-10 glass-card rounded-2xl" style={{ background:t.card, borderColor:t.cardBorder }}>
-          <p className="text-lg font-bold mb-1">No results</p>
-          <p className="text-sm" style={{ color:t.textSecondary }}>Nothing found for "{search}"</p>
-          <p className="text-xs mt-2" style={{ color:t.textMuted }}>Try a different term, use #hashtags, or voice search</p>
-          <button onClick={() => router.push('/jobplace/create')} className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>Post a Job Instead</button>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {q.length < 2 && !listening && (
-        <div className="space-y-4">
-          {recentSearches.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[10px] font-semibold uppercase tracking-wider" style={{ color:t.textMuted }}>Recent Searches</h3>
-                <button onClick={() => { setRecentSearches([]); localStorage.removeItem('datore-recent-search'); }} className="text-[10px]" style={{ color:t.accent }}>Clear all</button>
-              </div>
-              <div className="flex flex-wrap gap-1.5">{recentSearches.map((s, i) => (
-                <button key={i} onClick={() => setSearch(s)} className="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', color:t.textSecondary, border:`1px solid ${t.cardBorder}` }}>
-                  {s}
-                  <span onClick={e => { e.stopPropagation(); const u=recentSearches.filter((_,j)=>j!==i); setRecentSearches(u); localStorage.setItem('datore-recent-search',JSON.stringify(u)); }} className="ml-1 opacity-50">x</span>
-                </button>
-              ))}</div>
-            </div>
-          )}
-
-          {/* Trending */}
-          <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color:t.textMuted }}>Trending</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {HASHTAGS.slice(0,12).map((h,i) => (
-                <button key={h} onClick={() => setSearch(h)} className="px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1" style={{ background:t.accentLight, color:t.accent }}>
-                  {h}
-                  {i < 3 && <span className="text-[9px] px-1 py-0 rounded" style={{ background:'rgba(239,68,68,0.12)', color:'#ef4444' }}>HOT</span>}
-                </button>
+            <p className="text-xs font-semibold">{results.total} results <span style={{ color:t.textMuted }}>in {results.took.toFixed(1)}ms</span></p>
+            {/* Facets */}
+            <div className="flex gap-1">
+              {Object.entries(results.facets.types).map(([type, count]) => (
+                <span key={type} className="text-[8px] px-1.5 py-0.5 rounded capitalize" style={{ background:`${TYPE_COLORS[type as SearchableType]?.color || '#888'}15`, color:TYPE_COLORS[type as SearchableType]?.color || '#888' }}>{type}: {count}</span>
               ))}
             </div>
           </div>
 
-          {/* Quick category access */}
+          {results.results.map(r => {
+            const tc = TYPE_COLORS[r.document.type] || { color:'#888', icon:'📄' };
+            return (
+              <div key={r.document.id} onClick={() => r.document.metadata?.path && router.push(r.document.metadata.path)} className="rounded-xl p-3.5 cursor-pointer" style={{ background:t.card, border:`1px solid ${t.cardBorder}`, transition:'all 0.2s' }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background:`${tc.color}12` }}>{tc.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[8px] px-1.5 py-0.5 rounded capitalize font-semibold" style={{ background:`${tc.color}15`, color:tc.color }}>{r.document.type}</span>
+                      {r.document.rating && <span className="text-[9px]" style={{ color:'#f59e0b' }}>⭐ {r.document.rating}</span>}
+                      <span className="text-[8px]" style={{ color:t.textMuted }}>Score: {r.score.toFixed(2)}</span>
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{r.document.title}</h4>
+                    <p className="text-xs truncate mt-0.5" style={{ color:t.textSecondary }}>{r.document.body.slice(0, 120)}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {r.document.location && <span className="text-[9px]" style={{ color:t.textMuted }}>📍 {r.document.location}</span>}
+                      {r.document.tags.slice(0,3).map(tag => <span key={tag} className="text-[8px] px-1.5 py-0.5 rounded" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', color:t.textMuted }}>{tag}</span>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {results.results.length === 0 && (
+            <div className="text-center py-12 rounded-2xl" style={{ background:t.card }}>
+              <p className="text-3xl mb-2">🔍</p>
+              <p className="text-sm font-medium">No results found</p>
+              <p className="text-xs" style={{ color:t.textMuted }}>Try different keywords or remove filters</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Trending & Quick Access */
+        <div className="space-y-4">
           <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color:t.textMuted }}>Browse by Category</h3>
-            <div className="grid grid-cols-3 gap-2">{JOB_CATEGORIES.slice(0,12).map(c => (
-              <button key={c} onClick={() => { setSearch(c); saveSearch(c); }} className="glass-card rounded-xl p-2.5 text-left text-xs font-medium" style={{ background:t.card, borderColor:t.cardBorder }}>{c}</button>
-            ))}</div>
+            <p className="text-xs font-bold mb-2">🔥 Popular Searches</p>
+            <div className="flex flex-wrap gap-2">
+              {['plumber','babysitter','tutoring','cleaning','dog walker','electrician','moving','cooking','pet care','painter'].map(q => (
+                <button key={q} onClick={() => { setQuery(q); doSearch(q); }} className="px-3 py-1.5 rounded-lg text-xs" style={{ background:t.card, border:`1px solid ${t.cardBorder}`, color:t.textSecondary }}>{q}</button>
+              ))}
+            </div>
           </div>
-
-          {/* Quick actions */}
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => router.push('/jobplace/map')} className="p-3 rounded-xl text-xs font-medium text-center" style={{ background:`${t.accent}11`, color:t.accent, border:`1px solid ${t.accent}22` }}>
-              Open Map View
-            </button>
-            <button onClick={() => router.push('/compare')} className="p-3 rounded-xl text-xs font-medium text-center" style={{ background:'rgba(139,92,246,0.08)', color:'#8b5cf6', border:'1px solid rgba(139,92,246,0.2)' }}>
-              Compare Workers
-            </button>
+          <div>
+            <p className="text-xs font-bold mb-2">📂 Browse by Category</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label:'Workers', icon:'👷', q:'worker', color:'#22c55e' },
+                { label:'Jobs', icon:'💼', q:'job', color:'#6366f1' },
+                { label:'Services', icon:'⚡', q:'service', color:'#f59e0b' },
+                { label:'Communities', icon:'👥', q:'community', color:'#06b6d4' },
+                { label:'Education', icon:'📚', q:'tutoring education', color:'#8b5cf6' },
+                { label:'Home', icon:'🏠', q:'cleaning plumbing repair', color:'#ec4899' },
+              ].map(c => (
+                <button key={c.label} onClick={() => { setQuery(c.q); doSearch(c.q); }} className="flex flex-col items-center gap-1.5 p-3 rounded-xl" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+                  <span className="text-xl">{c.icon}</span>
+                  <span className="text-[10px] font-semibold" style={{ color:c.color }}>{c.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

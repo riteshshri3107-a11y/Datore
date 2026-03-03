@@ -7,46 +7,20 @@ import { getTheme } from '@/lib/theme';
 import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag } from '@/components/Icons';
 
-/* ═══════════════════════════════════════
-   AI CONTENT MODERATION ENGINE
-   Detects profanity, hate, abuse in posts
-   ═══════════════════════════════════════ */
-/* Enhanced profanity filter — catches variants, partial words, leet speak */
-const PROFANITY_WORDS = ['fuck','fck','fuk','fuq','fack','sh[i1!]t','a[s$]{2}','a[s$]{2}hole','b[i1!]tch','bastard','d[i1!]ck','p[i1!]ss','slut','wh[o0]re','c[o0]ck','cunt','tit[s$]','boob','p[o0]rn','xxx','nude','naked','sexy','d[a@]mn','crap','stfu','wtf','lmao','lmfao'];
-const PROFANITY = new RegExp('\\b(' + PROFANITY_WORDS.join('|') + ')\\w*\\b','gi');
-const HATE_PAT = /\b(kill\s+(all|them|yourself)|go\s+die|kys|hate\s+(all|every)\s+\w+|supremac|n[i1!]gg[ae3]r?s?|f[a4@]gg?[o0]t|r[e3]tard)\w*\b/gi;
-const THREAT_PAT = /\b(bomb|shoot\s+up|attack|massacre|terrorism|blow\s+up|stab|murder)\w*\b/gi;
-const ADULT_PAT = /\b(p[o0]rn|xxx|nsfw|hentai|onlyfans|stripper|escort|prostitut|explicit|adult\s*content|18\+)\w*\b/gi;
+/* ═══ Content Moderation — Uses centralized engine ═══ */
+import { moderateContent as _moderate, isImageSafe, type ModerationResult as _ModResult } from '@/lib/moderation';
 
-interface ModerationResult { safe:boolean; severity:'none'|'mild'|'moderate'|'severe'; flags:string[]; cleaned:string; blocked:boolean; }
-
-function moderateContent(text:string):ModerationResult {
-  const flags:string[] = [];
-  let severity:'none'|'mild'|'moderate'|'severe' = 'none';
-  let cleaned = text;
-  let blocked = false;
-
-  if (THREAT_PAT.test(text)) { flags.push('Threat/Violence detected'); severity = 'severe'; blocked = true; }
-  THREAT_PAT.lastIndex = 0;
-  if (HATE_PAT.test(text)) { flags.push('Hate speech detected'); severity = 'severe'; blocked = true; }
-  HATE_PAT.lastIndex = 0;
-  if (ADULT_PAT.test(text)) { flags.push('Adult content detected'); severity = 'severe'; blocked = true; }
-  ADULT_PAT.lastIndex = 0;
-  if (PROFANITY.test(text)) {
-    flags.push('Profanity detected');
-    if (severity === 'none') severity = 'mild';
-    PROFANITY.lastIndex = 0;
-    cleaned = text.replace(PROFANITY, (m) => m[0] + '★'.repeat(Math.max(1,m.length-1)));
-  }
-  PROFANITY.lastIndex = 0;
-
-  return { safe: flags.length === 0, severity, flags, cleaned, blocked };
-}
-
-/* Image content check — flags suspicious filenames/types */
-function isImageSafe(fileName:string):boolean {
-  const bad = /(nsfw|porn|xxx|nude|naked|adult|explicit|18\+|hentai)/i;
-  return !bad.test(fileName);
+/* Backward-compatible wrapper for page-level moderation calls */
+interface ModerationAlert { safe:boolean; severity:string; flags:string[]; cleaned:string; blocked:boolean; }
+function moderatePost(text:string): ModerationAlert {
+  const r = _moderate(text, 'post');
+  return {
+    safe: r.safe,
+    severity: r.severity === 'critical' || r.severity === 'high' ? 'severe' : r.severity === 'medium' ? 'moderate' : r.severity === 'low' ? 'mild' : 'none',
+    flags: r.flags.map(f => f.description),
+    cleaned: r.cleaned,
+    blocked: r.action === 'block',
+  };
 }
 
 /* ═══════════════════════════════════════
@@ -95,7 +69,7 @@ export default function HomePage() {
   const [editText, setEditText] = useState('');
   const [showEmoji, setShowEmoji] = useState<string|null>(null);
   const [postReactions, setPostReactions] = useState<Record<string,string[]>>({});
-  const [moderationAlert, setModerationAlert] = useState<ModerationResult|null>(null);
+  const [moderationAlert, setModerationAlert] = useState<ModerationAlert|null>(null);
   const [voiceSearch, setVoiceSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
   const photoRef = useRef<HTMLInputElement>(null);
@@ -139,7 +113,7 @@ export default function HomePage() {
   /* AI-moderated post submission */
   const handlePost = () => {
     if (!postText.trim() && !mediaPreview) return;
-    const modResult = moderateContent(postText);
+    const modResult = moderatePost(postText);
     if (modResult.severity === 'severe') {
       setModerationAlert(modResult);
       return; // Block severe content
@@ -155,7 +129,7 @@ export default function HomePage() {
 
   /* BR-101: Edit own post */
   const saveEdit = (postId: string) => {
-    const modResult = moderateContent(editText);
+    const modResult = moderatePost(editText);
     if (modResult.severity === 'severe') { setModerationAlert(modResult); return; }
     setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: modResult.severity==='mild'?modResult.cleaned:editText} : p));
     setEditingPost(null); setEditText('');

@@ -1,9 +1,37 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
-export async function GET(req: NextRequest) {
-  return NextResponse.json({ message: 'bookings endpoint', data: [] });
-}
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  return NextResponse.json({ message: 'bookings created', data: body });
-}
+import { withApiGuard, schemas } from '@/lib/apiGuard';
+import { track, trackTiming } from '@/lib/observability';
+
+export const GET = withApiGuard(async (req, ctx) => {
+  const start = Date.now();
+  const url = new URL(req.url);
+  const category = url.searchParams.get('category') || '';
+  const search = url.searchParams.get('q') || '';
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
+
+  // TODO: Replace with real Supabase query
+  const data: any[] = [];
+  
+  trackTiming('api_bookings_latency', Date.now() - start, { method:'GET' });
+  return NextResponse.json({ data, page, limit, total:0 });
+}, { requireAuth: true, rateLimit: 60 });
+
+export const POST = withApiGuard(async (req, ctx) => {
+  const start = Date.now();
+  const { body, userId } = ctx;
+
+  // TODO: Replace with real Supabase insert
+  const created = { id: Date.now().toString(), ...body, created_by:userId, created_at:new Date().toISOString() };
+  
+  track('bookings_created', { userId });
+  trackTiming('api_bookings_latency', Date.now() - start, { method:'POST' });
+  return NextResponse.json({ data:created, message:'Created successfully' }, { status:201 });
+}, {
+  requireAuth: true,
+  rateLimit: 10,
+  bodySchema: undefined,
+  moderateFields: ['title','description','name','text','content'],
+  moderateAs: 'post',
+});
