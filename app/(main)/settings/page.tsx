@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { signOut } from '@/lib/supabase';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor, toggle, setGlass, setAccent } = useThemeStore();
+  const performLogout = useAuthStore(s => s.performLogout);
   const t = getTheme(isDark, glassLevel, accentColor);
   const ACCENTS = ['#6366f1', '#ec4899', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'];
 
@@ -54,7 +55,7 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <button onClick={async () => { await signOut(); router.push('/login'); }}
+      <button onClick={async () => { await performLogout(); router.replace('/login'); }}
         className="glass-card rounded-2xl p-4 w-full text-center font-medium text-sm"
         style={{ background: 'rgba(239,68,68,0.1)', color: t.danger, borderColor: 'rgba(239,68,68,0.2)' }}>
         🚪 Log Out

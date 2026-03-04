@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { signOut } from '@/lib/supabase';
+import { useAuthStore } from '@/store/useAuthStore';
 import { IcoUser, IcoSettings, IcoWallet, IcoDashboard, IcoQR, IcoShield, IcoFriends, IcoCalendar, IcoCommunity, IcoChat, IcoJobs, IcoMap, IcoCompare, IcoStar, IcoMarket, IcoList, IcoBell, IcoSearch, IcoBookmark, IcoBack, IcoLogout, IcoMic } from '@/components/Icons';
 
 const MENU = [
@@ -23,6 +23,7 @@ const MENU = [
     { Icon: IcoSettings, label: 'Infrastructure', path: '/admin/infrastructure', color:'#8b5cf6', badge:'NEW' },
     { Icon: IcoStar, label: 'Feature Flags', path: '/admin/features', color:'#f59e0b', badge:'NEW' },
     { Icon: IcoDashboard, label: 'Auth Audit Log', path: '/admin/audit', color:'#f59e0b', badge:'' },
+    { Icon: IcoStar, label: 'Ad Manager (Datore Org)', path: '/admin/ads', color:'#6366f1', badge:'CR-07' },
   ]},
   { section: 'Discovery & Privacy', items: [
     { Icon: IcoSearch, label: 'Universal Search', path: '/search', color:'#8b5cf6', badge:'NEW' },
@@ -69,6 +70,7 @@ export default function MenuPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const performLogout = useAuthStore(s => s.performLogout);
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-3">
@@ -91,7 +93,7 @@ export default function MenuPage() {
           </div>
         </div>
       ))}
-      <button onClick={async () => { await signOut(); router.push('/auth/login'); }} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background:'rgba(239,68,68,0.06)' }}>
+      <button onClick={async () => { await performLogout(); router.replace('/login'); }} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background:'rgba(239,68,68,0.06)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(239,68,68,0.15)' }}><IcoLogout size={16} color="#ef4444" /></div>
         <span className="text-sm font-medium" style={{ color:'#ef4444' }}>Sign Out</span>
       </button>

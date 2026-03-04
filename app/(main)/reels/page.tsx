@@ -63,6 +63,9 @@ export default function ReelsPage() {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Record<string, Array<{ user: string; text: string; likes: number; time: string }>>>({});
   const [voiceSrch, setVoiceSrch] = useState(false);
+  /* CR-02: Auto-play muted by default, user can unmute */
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [createStep, setCreateStep] = useState<string>("upload");
   const [reelCaption, setReelCaption] = useState("");
   const [reelDuration, setReelDuration] = useState("30s");
@@ -171,11 +174,19 @@ export default function ReelsPage() {
       <div onClick={goNext} style={{ height: "calc(100vh - 130px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: reel ? reel.gradient : ("linear-gradient(135deg," + t.accent + "22,#8b5cf622,#22c55e22)"), cursor: "pointer", overflow: "hidden" }}>
         {/* Scan lines for video feel */}
         <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.008) 3px,rgba(255,255,255,0.008) 6px)",pointerEvents:"none",zIndex:1}} />
-        {/* Live indicator */}
+        {/* CR-02: Playback controls — mute/unmute + play/pause indicators */}
         <div style={{position:"absolute",top:14,left:14,display:"flex",alignItems:"center",gap:6,zIndex:10}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:"#ef4444",boxShadow:"0 0 6px #ef4444"}} />
-          <span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>PLAYING · {reel ? reel.duration : "0:00"}</span>
+          <div style={{width:7,height:7,borderRadius:"50%",background:isPlaying?"#ef4444":"#f59e0b",boxShadow:isPlaying?"0 0 6px #ef4444":"none"}} />
+          <span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>{isPlaying?"PLAYING":"PAUSED"} · {reel ? reel.duration : "0:00"}</span>
         </div>
+        {/* Mute/Unmute toggle */}
+        <button onClick={function(e){e.stopPropagation();setIsMuted(!isMuted);}} style={{position:"absolute",top:14,right:14,zIndex:10,width:32,height:32,borderRadius:10,background:"rgba(0,0,0,0.5)",backdropFilter:"blur(8px)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:14}}>
+          {isMuted?"🔇":"🔊"}
+        </button>
+        {/* Play/pause overlay on center tap */}
+        <button onClick={function(e){e.stopPropagation();setIsPlaying(!isPlaying);}} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:8,width:60,height:60,borderRadius:30,background:isPlaying?"transparent":"rgba(0,0,0,0.5)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:isPlaying?0:1,transition:"opacity 0.2s"}}>
+          <span style={{fontSize:28,color:"white"}}>▶</span>
+        </button>
         <div style={{ textAlign: "center", padding: 20, zIndex: 2 }}>
           {/* Large scene emojis */}
           <div style={{ fontSize: 56, marginBottom: 12, filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.4))" }}>{reel ? reel.scene : "🎬"}</div>

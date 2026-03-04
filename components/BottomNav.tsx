@@ -4,12 +4,13 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoHome, IcoSearch, IcoPlus, IcoChat, IcoUser } from './Icons';
 
+/* CR-11: Hex color parity for mobile bottom nav */
 const NAV = [
-  { label:'Home', Icon:IcoHome, path:'/home' },
-  { label:'Explore', Icon:IcoSearch, path:'/search' },
-  { label:'', Icon:IcoPlus, path:'/create', isCenter:true },
-  { label:'Messages', Icon:IcoChat, path:'/inbox', badge:true },
-  { label:'Profile', Icon:IcoUser, path:'/profile' },
+  { label:'Home', Icon:IcoHome, path:'/home', hexColor:'#5B2D8E' },
+  { label:'Explore', Icon:IcoSearch, path:'/search', hexColor:'#5B2D8E' },
+  { label:'', Icon:IcoPlus, path:'/create', isCenter:true, hexColor:'#22c55e' },
+  { label:'Messages', Icon:IcoChat, path:'/inbox', badge:true, hexColor:'#00BCD4' },
+  { label:'Profile', Icon:IcoUser, path:'/profile', hexColor:'#607D8B' },
 ];
 
 export default function BottomNav() {
@@ -49,11 +50,11 @@ export default function BottomNav() {
               transition:'all 0.2s'
             }}>
               <div className="relative">
-                <item.Icon size={22} color={active ? t.accent : muted} />
+                <item.Icon size={22} color={active ? (item.hexColor || t.accent) : muted} />
                 {item.badge && <span style={{position:'absolute',top:-2,right:-4,width:7,height:7,borderRadius:'50%',background:'#ef4444',border:`2px solid ${isDark?'rgba(12,12,22,0.92)':'rgba(255,255,255,0.92)'}`}} />}
               </div>
-              <span style={{fontSize:9,fontWeight:active?700:400,color:active?t.accent:muted,letterSpacing:0.2}}>{item.label}</span>
-              {active && <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',width:16,height:2.5,borderRadius:2,background:t.accent}} />}
+              <span style={{fontSize:9,fontWeight:active?700:400,color:active?(item.hexColor||t.accent):muted,letterSpacing:0.2}}>{item.label}</span>
+              {active && <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',width:16,height:2.5,borderRadius:2,background:item.hexColor||t.accent}} />}
             </button>
           );
         })}

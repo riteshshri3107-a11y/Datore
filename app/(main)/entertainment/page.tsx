@@ -6,12 +6,15 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic, IcoPlay, IcoBookmark } from '@/components/Icons';
 
-type Section = 'games'|'movies'|'tvshows'|'live'|'vacations';
+/* CR-10: Added Gossips & Magazines sections */
+type Section = 'games'|'movies'|'tvshows'|'live'|'vacations'|'gossips'|'magazines';
 const SECTIONS:{key:Section;label:string;icon:string;color:string}[] = [
   {key:'games',label:'Games',icon:'🎮',color:'#ec4899'},
   {key:'movies',label:'Movies',icon:'🎬',color:'#ef4444'},
   {key:'tvshows',label:'TV Shows',icon:'📺',color:'#3b82f6'},
   {key:'live',label:'Live Matches',icon:'🏟️',color:'#22c55e'},
+  {key:'gossips',label:'Gossips',icon:'💬',color:'#f97316'},
+  {key:'magazines',label:'Magazines',icon:'📖',color:'#8b5cf6'},
   {key:'vacations',label:'Vacations',icon:'✈️',color:'#f59e0b'},
 ];
 
@@ -75,6 +78,40 @@ const VACATIONS = {
   ],
 };
 
+/* CR-10: Gossips — Celebrity news, trending stories, viral videos, social media buzz */
+type GossipCategory = 'all'|'bollywood'|'hollywood'|'sports'|'tech'|'viral';
+const GOSSIPS: {id:string;title:string;source:string;time:string;category:GossipCategory;img:string;likes:number;comments:number;trending?:boolean;viral?:boolean}[] = [
+  {id:'g1',title:'Shah Rukh Khan Announces Next Blockbuster Film with Marvel Studios Collab',source:'Bollywood Buzz',time:'1h ago',category:'bollywood',img:'🎬',likes:45000,comments:8900,trending:true},
+  {id:'g2',title:'Taylor Swift Breaks All-Time Streaming Record with New Album Release',source:'Entertainment Weekly',time:'2h ago',category:'hollywood',img:'🎤',likes:89000,comments:12300,trending:true},
+  {id:'g3',title:'Virat Kohli\'s Incredible Comeback Century Sends Fans Into Frenzy',source:'Sports Insider',time:'3h ago',category:'sports',img:'🏏',likes:67000,comments:15600,viral:true},
+  {id:'g4',title:'Elon Musk Reveals Surprising New AI Project That Could Change Everything',source:'TechCrunch',time:'4h ago',category:'tech',img:'🤖',likes:34000,comments:7800,trending:true},
+  {id:'g5',title:'Drake and Rihanna Spotted Together at Toronto Restaurant',source:'TMZ',time:'5h ago',category:'hollywood',img:'💕',likes:56000,comments:11200},
+  {id:'g6',title:'Cat Riding Roomba While Wearing Sunglasses Goes Viral',source:'Reddit/TikTok',time:'2h ago',category:'viral',img:'😂',likes:234000,comments:45000,viral:true},
+  {id:'g7',title:'Deepika Padukone Launches New Tech Startup in Silicon Valley',source:'Film Companion',time:'6h ago',category:'bollywood',img:'💼',likes:23000,comments:4500},
+  {id:'g8',title:'NBA Star LeBron James Opens First School for Underprivileged Kids in Canada',source:'ESPN',time:'8h ago',category:'sports',img:'🏀',likes:78000,comments:6700},
+  {id:'g9',title:'Google CEO Sundar Pichai Makes Surprise Announcement About Quantum AI',source:'The Verge',time:'10h ago',category:'tech',img:'💡',likes:45000,comments:5600},
+  {id:'g10',title:'Baby Elephant Learning to Walk Video Melts 10 Million Hearts',source:'Twitter/X',time:'1h ago',category:'viral',img:'🐘',likes:567000,comments:89000,viral:true},
+  {id:'g11',title:'Chris Hemsworth Returns as Thor in Unexpected Crossover Event',source:'Marvel News',time:'12h ago',category:'hollywood',img:'⚡',likes:123000,comments:34000,trending:true},
+  {id:'g12',title:'MS Dhoni Makes Cryptic Social Media Post About Cricket Comeback',source:'Cricket Buzz',time:'4h ago',category:'sports',img:'🎯',likes:89000,comments:23000,trending:true},
+];
+
+/* CR-10: Magazines — Digital magazine reader */
+type MagazineCategory = 'all'|'fashion'|'business'|'technology'|'lifestyle'|'health'|'travel';
+const MAGAZINES: {id:string;title:string;publisher:string;category:MagazineCategory;cover:string;issue:string;pages:number;rating:number;free:boolean;downloadable:boolean;desc:string}[] = [
+  {id:'mag1',title:'Vogue India',publisher:'Conde Nast',category:'fashion',cover:'👗',issue:'March 2026',pages:180,rating:4.8,free:false,downloadable:false,desc:'The latest in fashion, beauty, and culture from India\'s leading fashion magazine.'},
+  {id:'mag2',title:'Forbes India',publisher:'Forbes Media',category:'business',cover:'💰',issue:'March 2026',pages:120,rating:4.7,free:false,downloadable:true,desc:'Business, entrepreneurship, technology, and lifestyle for India\'s elite.'},
+  {id:'mag3',title:'Wired',publisher:'Conde Nast',category:'technology',cover:'💻',issue:'Q1 2026',pages:96,rating:4.9,free:false,downloadable:true,desc:'The future is already here. Cutting-edge tech, science, and culture.'},
+  {id:'mag4',title:'National Geographic',publisher:'National Geographic Society',category:'lifestyle',cover:'🌍',issue:'March 2026',pages:140,rating:4.9,free:false,downloadable:false,desc:'Explore the world through stunning photography and compelling stories.'},
+  {id:'mag5',title:'Men\'s Health',publisher:'Hearst',category:'health',cover:'💪',issue:'March 2026',pages:100,rating:4.6,free:true,downloadable:true,desc:'Fitness, nutrition, health, sex, style, and weight loss tips for men.'},
+  {id:'mag6',title:'Lonely Planet',publisher:'Red Ventures',category:'travel',cover:'✈️',issue:'Spring 2026',pages:130,rating:4.8,free:false,downloadable:true,desc:'Your guide to the world\'s best destinations, hidden gems, and travel hacks.'},
+  {id:'mag7',title:'Elle India',publisher:'Hearst India',category:'fashion',cover:'👠',issue:'March 2026',pages:160,rating:4.7,free:false,downloadable:false,desc:'Fashion, beauty, and celebrity news for the modern Indian woman.'},
+  {id:'mag8',title:'Harvard Business Review',publisher:'Harvard',category:'business',cover:'📊',issue:'Mar-Apr 2026',pages:90,rating:4.9,free:false,downloadable:true,desc:'Ideas and advice for leaders in business and management.'},
+  {id:'mag9',title:'MIT Technology Review',publisher:'MIT',category:'technology',cover:'🔬',issue:'Q1 2026',pages:80,rating:4.8,free:true,downloadable:true,desc:'The authority on the future of technology with in-depth analysis and reviews.'},
+  {id:'mag10',title:'Cosmopolitan',publisher:'Hearst',category:'lifestyle',cover:'💄',issue:'March 2026',pages:150,rating:4.5,free:false,downloadable:false,desc:'Fashion, beauty, politics, and empowerment for young women.'},
+  {id:'mag11',title:'GQ India',publisher:'Conde Nast',category:'fashion',cover:'🕴️',issue:'March 2026',pages:140,rating:4.6,free:false,downloadable:false,desc:'Men\'s fashion, grooming, culture, and lifestyle.'},
+  {id:'mag12',title:'Conde Nast Traveller',publisher:'Conde Nast',category:'travel',cover:'🏝️',issue:'Spring 2026',pages:110,rating:4.8,free:false,downloadable:true,desc:'Luxury travel, hotels, resorts, and destination guides.'},
+];
+
 export default function EntertainmentPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
@@ -84,6 +121,11 @@ export default function EntertainmentPage() {
   const [search,setSearch] = useState('');
   const [saved,setSaved] = useState<string[]>([]);
   const [voiceSrch,setVoiceSrch] = useState(false);
+  /* CR-10: Gossips & Magazines state */
+  const [gossipCat,setGossipCat] = useState<GossipCategory>('all');
+  const [magCat,setMagCat] = useState<MagazineCategory>('all');
+  const [readingMag,setReadingMag] = useState<string|null>(null);
+  const [magPage,setMagPage] = useState(1);
   const [vacTab,setVacTab] = useState<'places'|'bookings'|'restaurants'>('places');
   const [bookingItem, setBookingItem] = useState<any>(null);
   const [bookingStep, setBookingStep] = useState<'details'|'payment'|'confirm'>('details');
@@ -206,6 +248,118 @@ export default function EntertainmentPage() {
             <span className="text-[9px] px-2 py-1 rounded-full font-bold" style={{background:m.status.includes('Live')?'rgba(239,68,68,0.15)':m.status.includes('Ticket')?'rgba(34,197,94,0.15)':'rgba(59,130,246,0.15)',color:m.status.includes('Live')?'#ef4444':m.status.includes('Ticket')?'#22c55e':'#3b82f6'}}>{m.status}</span>
           </div>
         ))}
+      </div>)}
+
+      {/* ═══ CR-10: GOSSIPS — Celebrity news, trending stories, viral videos ═══ */}
+      {section==='gossips'&&(<div className="space-y-2">
+        <div className="flex gap-1 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+          {([{k:'all' as GossipCategory,l:'All'},{k:'bollywood' as GossipCategory,l:'Bollywood'},{k:'hollywood' as GossipCategory,l:'Hollywood'},{k:'sports' as GossipCategory,l:'Sports Stars'},{k:'tech' as GossipCategory,l:'Tech Icons'},{k:'viral' as GossipCategory,l:'Viral'}]).map(c=>(
+            <button key={c.k} onClick={()=>setGossipCat(c.k)} className="px-3 py-1.5 rounded-full text-[9px] font-semibold whitespace-nowrap" style={{background:gossipCat===c.k?'#f9731620':t.card,color:gossipCat===c.k?'#f97316':t.textMuted,border:`1px solid ${gossipCat===c.k?'#f9731644':t.cardBorder}`}}>{c.l}</button>
+          ))}
+        </div>
+
+        {/* Trending Banner */}
+        {gossipCat==='all'&&!search&&(
+          <div><h2 className="text-xs font-bold mb-1.5">🔥 Trending Now</h2>
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+              {GOSSIPS.filter(g=>g.trending).slice(0,4).map(g=>(
+                <div key={g.id} className="flex-shrink-0 w-44 p-3 rounded-xl" style={{background:`linear-gradient(135deg,#f9731612,${t.card})`,border:`1px solid ${t.cardBorder}`}}>
+                  <div className="text-2xl mb-1">{g.img}</div>
+                  <p className="text-[10px] font-bold leading-tight">{g.title.slice(0,60)}...</p>
+                  <p className="text-[8px] mt-1" style={{color:t.textMuted}}>{g.source} · {g.time}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feed */}
+        {GOSSIPS.filter(g=>{
+          if(gossipCat!=='all'&&g.category!==gossipCat) return false;
+          if(search&&!g.title.toLowerCase().includes(search.toLowerCase())) return false;
+          return true;
+        }).map(g=>(
+          <div key={g.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${g.viral?'rgba(249,115,22,0.25)':t.cardBorder}`}}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{background:g.viral?'rgba(249,115,22,0.12)':'rgba(139,92,246,0.08)'}}>{g.img}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  {g.trending&&<span className="text-[7px] px-1.5 py-0.5 rounded-full font-bold" style={{background:'rgba(239,68,68,0.12)',color:'#ef4444'}}>TRENDING</span>}
+                  {g.viral&&<span className="text-[7px] px-1.5 py-0.5 rounded-full font-bold" style={{background:'rgba(249,115,22,0.12)',color:'#f97316'}}>VIRAL</span>}
+                </div>
+                <p className="text-xs font-bold leading-tight">{g.title}</p>
+                <p className="text-[9px] mt-0.5" style={{color:t.textMuted}}>{g.source} · {g.time}</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <button className="flex items-center gap-1 text-[9px]" style={{color:t.textMuted}}>❤️ {g.likes>=1000?(g.likes/1000).toFixed(1)+'K':g.likes}</button>
+                  <button className="flex items-center gap-1 text-[9px]" style={{color:t.textMuted}}>💬 {g.comments>=1000?(g.comments/1000).toFixed(1)+'K':g.comments}</button>
+                  <button className="text-[9px]" style={{color:t.textMuted}}>↗️ Share</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>)}
+
+      {/* ═══ CR-10: MAGAZINES — Digital magazine reader ═══ */}
+      {section==='magazines'&&(<div className="space-y-2">
+        <div className="flex gap-1 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+          {([{k:'all' as MagazineCategory,l:'All'},{k:'fashion' as MagazineCategory,l:'Fashion'},{k:'business' as MagazineCategory,l:'Business'},{k:'technology' as MagazineCategory,l:'Technology'},{k:'lifestyle' as MagazineCategory,l:'Lifestyle'},{k:'health' as MagazineCategory,l:'Health'},{k:'travel' as MagazineCategory,l:'Travel'}]).map(c=>(
+            <button key={c.k} onClick={()=>setMagCat(c.k)} className="px-3 py-1.5 rounded-full text-[9px] font-semibold whitespace-nowrap" style={{background:magCat===c.k?'#8b5cf620':t.card,color:magCat===c.k?'#8b5cf6':t.textMuted,border:`1px solid ${magCat===c.k?'#8b5cf644':t.cardBorder}`}}>{c.l}</button>
+          ))}
+        </div>
+
+        {/* Magazine Grid */}
+        <div className="grid grid-cols-2 gap-2">
+          {MAGAZINES.filter(m=>{
+            if(magCat!=='all'&&m.category!==magCat) return false;
+            if(search&&!m.title.toLowerCase().includes(search.toLowerCase())) return false;
+            return true;
+          }).map(m=>(
+            <div key={m.id} className="rounded-xl p-3 cursor-pointer" style={{background:t.card,border:`1px solid ${t.cardBorder}`}} onClick={()=>{setReadingMag(m.id);setMagPage(1);}}>
+              <div className="w-full h-28 rounded-xl flex items-center justify-center text-4xl mb-2" style={{background:isDark?'rgba(139,92,246,0.08)':'rgba(139,92,246,0.05)'}}>{m.cover}</div>
+              <p className="text-[10px] font-bold truncate">{m.title}</p>
+              <p className="text-[8px]" style={{color:t.textMuted}}>{m.publisher} · {m.issue}</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-[8px]">⭐ {m.rating}</span>
+                <span className="text-[7px]" style={{color:t.textMuted}}>{m.pages} pages</span>
+                {m.free&&<span className="text-[7px] px-1 py-0.5 rounded font-bold" style={{background:'rgba(34,197,94,0.15)',color:'#22c55e'}}>FREE</span>}
+              </div>
+              <div className="flex gap-1 mt-1.5">
+                <button onClick={e=>{e.stopPropagation();setReadingMag(m.id);setMagPage(1);}} className="flex-1 py-1.5 rounded-lg text-[8px] font-bold text-white" style={{background:'linear-gradient(135deg,#8b5cf6,#6366f1)'}}>Read</button>
+                {m.downloadable&&<button onClick={e=>{e.stopPropagation();}} className="px-2 py-1.5 rounded-lg text-[8px]" style={{border:`1px solid ${t.cardBorder}`,color:t.textMuted}}>⬇</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Magazine Reader (Flipbook) */}
+        {readingMag&&(()=>{
+          const mag = MAGAZINES.find(m=>m.id===readingMag);
+          if(!mag) return null;
+          return (
+            <div className="fixed inset-0 z-[9999] flex flex-col" style={{background:isDark?'#0c0c16':'#f5f5f5'}}>
+              <div className="flex items-center gap-3 p-3" style={{background:isDark?'rgba(20,20,35,0.95)':'rgba(255,255,255,0.95)',backdropFilter:'blur(16px)',borderBottom:`1px solid ${t.cardBorder}`}}>
+                <button onClick={()=>setReadingMag(null)} style={{background:'none',border:'none',color:t.text,cursor:'pointer',fontSize:16}}>✕</button>
+                <div className="flex-1"><p className="text-xs font-bold">{mag.title}</p><p className="text-[9px]" style={{color:t.textMuted}}>{mag.issue} · Page {magPage} of {mag.pages}</p></div>
+                {mag.downloadable&&<button className="px-3 py-1.5 rounded-lg text-[9px] font-medium" style={{background:t.accentLight,color:t.accent}}>Download PDF</button>}
+              </div>
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="w-full max-w-md aspect-[3/4] rounded-2xl flex flex-col items-center justify-center" style={{background:isDark?'rgba(255,255,255,0.04)':'white',border:`1px solid ${t.cardBorder}`,boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
+                  <div className="text-5xl mb-4">{mag.cover}</div>
+                  <h2 className="text-lg font-bold text-center px-4">{mag.title}</h2>
+                  <p className="text-xs text-center mt-1" style={{color:t.textMuted}}>{mag.publisher}</p>
+                  <p className="text-[10px] text-center mt-2 px-6" style={{color:t.textSecondary}}>{mag.desc}</p>
+                  <p className="text-[9px] mt-4" style={{color:t.textMuted}}>Page {magPage} of {mag.pages}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3" style={{background:isDark?'rgba(20,20,35,0.95)':'rgba(255,255,255,0.95)',borderTop:`1px solid ${t.cardBorder}`}}>
+                <button onClick={()=>setMagPage(p=>Math.max(1,p-1))} disabled={magPage<=1} className="px-4 py-2 rounded-xl text-xs font-medium disabled:opacity-30" style={{border:`1px solid ${t.cardBorder}`}}>← Previous</button>
+                <div className="flex gap-0.5">{Array.from({length:Math.min(5,mag.pages)},(_,i)=>(<div key={i} className="w-1.5 h-1.5 rounded-full" style={{background:i+1===magPage?t.accent:t.cardBorder}}/>))}</div>
+                <button onClick={()=>setMagPage(p=>Math.min(mag.pages,p+1))} disabled={magPage>=mag.pages} className="px-4 py-2 rounded-xl text-xs font-medium disabled:opacity-30" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,color:'white'}}>Next →</button>
+              </div>
+            </div>
+          );
+        })()}
       </div>)}
 
       {/* ═══ VACATIONS ═══ */}

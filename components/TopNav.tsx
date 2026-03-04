@@ -4,20 +4,21 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoHome, IcoCommunity, IcoPlus, IcoSearch, IcoQR, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
 
+/* CR-11: Hexagonal color parity — consistent color mapping across all nav icons */
 const NAV_MAIN = [
-  { label:'Home', Icon:IcoHome, path:'/home', color:'#6366f1', g1:'#6366f1', g2:'#4f46e5' },
-  { label:'Profile', Icon:IcoUser, path:'/profile', color:'#a78bfa', g1:'#a78bfa', g2:'#8b5cf6' },
-  { label:'Community', Icon:IcoCommunity, path:'/community', color:'#06b6d4', g1:'#06b6d4', g2:'#0891b2' },
+  { label:'Home', Icon:IcoHome, path:'/home', color:'#5B2D8E', g1:'#5B2D8E', g2:'#4A2377' },
+  { label:'Profile', Icon:IcoUser, path:'/profile', color:'#607D8B', g1:'#607D8B', g2:'#546E7A' },
+  { label:'Community', Icon:IcoCommunity, path:'/community', color:'#2196F3', g1:'#2196F3', g2:'#1976D2' },
   { label:'Create', Icon:IcoPlus, path:'/create', color:'#22c55e', g1:'#22c55e', g2:'#16a34a' },
 ];
 
 const NAV_HEX = [
   { label:'Global Shop', Icon:IcoGlobe, path:'/shopping', color:'#22c55e', g1:'#22c55e', g2:'#16a34a' },
-  { label:'NearBy', Icon:IcoStore, path:'/nearby', color:'#f97316', g1:'#f97316', g2:'#ea580c' },
-  { label:'Learning', Icon:IcoBook, path:'/learning', color:'#8b5cf6', g1:'#8b5cf6', g2:'#7c3aed' },
-  { label:'Entertain', Icon:IcoPlay, path:'/entertainment', color:'#ec4899', g1:'#ec4899', g2:'#db2777' },
-  { label:'Health', Icon:IcoHealth, path:'/health', color:'#10b981', g1:'#10b981', g2:'#059669' },
-  { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#ef4444', g1:'#ef4444', g2:'#dc2626' },
+  { label:'NearBy', Icon:IcoStore, path:'/nearby', color:'#4CAF50', g1:'#4CAF50', g2:'#388E3C' },
+  { label:'Learning', Icon:IcoBook, path:'/learning', color:'#FFC107', g1:'#FFC107', g2:'#FFA000' },
+  { label:'Entertain', Icon:IcoPlay, path:'/entertainment', color:'#E91E63', g1:'#E91E63', g2:'#C2185B' },
+  { label:'Health', Icon:IcoHealth, path:'/health', color:'#00C853', g1:'#00C853', g2:'#00A844' },
+  { label:'Reels', Icon:IcoFilm, path:'/reels', color:'#FF6B35', g1:'#FF6B35', g2:'#E55A2B' },
 ];
 
 /* Premium hexagonal badge with SVG hex shape */
@@ -135,13 +136,14 @@ export default function TopNav() {
         </div>
 
         {/* Right Actions — Hex style matching main nav */}
+        {/* CR-11: Right actions with consistent hex color fills */}
         <div className="flex items-center gap-0.5">
-          <ActionBtn Icon={IcoSearch} path="/search" router={router} active={!!pathname?.startsWith('/search')} muted={muted} color="#6366f1" />
-          <ActionBtn Icon={IcoQR} path="/qr-verify" router={router} active={!!pathname?.startsWith('/qr')} muted={muted} color="#f59e0b" />
-          <ActionBtn Icon={IcoMenu} path="/menu" router={router} active={!!pathname?.startsWith('/menu')} muted={muted} color="#8b5cf6" />
-          <ActionBtn Icon={IcoChat} path="/inbox" router={router} active={!!pathname?.startsWith('/inbox')} badge muted={muted} color="#06b6d4" />
-          <ActionBtn Icon={IcoFriends} path="/friends" router={router} active={!!pathname?.startsWith('/friends')} muted={muted} color="#22c55e" />
-          <ActionBtn Icon={IcoBell} path="/notifications" router={router} active={!!pathname?.startsWith('/notification')} muted={muted} color="#ef4444" />
+          <ActionBtn Icon={IcoSearch} path="/search" router={router} active={!!pathname?.startsWith('/search')} muted={muted} color="#5B2D8E" />
+          <ActionBtn Icon={IcoQR} path="/qr-verify" router={router} active={!!pathname?.startsWith('/qr')} muted={muted} color="#FFC107" />
+          <ActionBtn Icon={IcoMenu} path="/menu" router={router} active={!!pathname?.startsWith('/menu')} muted={muted} color="#607D8B" />
+          <ActionBtn Icon={IcoChat} path="/inbox" router={router} active={!!pathname?.startsWith('/inbox')} badge muted={muted} color="#00BCD4" />
+          <ActionBtn Icon={IcoFriends} path="/friends" router={router} active={!!pathname?.startsWith('/friends')} muted={muted} color="#2196F3" />
+          <ActionBtn Icon={IcoBell} path="/notifications" router={router} active={!!pathname?.startsWith('/notification')} muted={muted} color="#FF5252" />
         </div>
       </div>
     </nav>

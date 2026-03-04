@@ -53,7 +53,10 @@ export default function HomePage() {
   const [tab, setTab] = useState<'feed'|'discover'>('feed');
   const [showPost, setShowPost] = useState(false);
   const [postText, setPostText] = useState('');
-  const [postType, setPostType] = useState<'text'|'photo'|'video'>('text');
+  const [postType, setPostType] = useState<'text'|'photo'|'video'|'audio'|'live'|'feeling'>('text');
+  const [postFeeling, setPostFeeling] = useState('');
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [postAudience, setPostAudience] = useState<Audience>('public');
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [showShare, setShowShare] = useState<string|null>(null);
@@ -103,7 +106,32 @@ export default function HomePage() {
     const r = _moderate(text, 'post');
     return (r.severity === 'low' || r.severity === 'medium' || r.severity === 'high' || r.severity === 'critical') ? r.cleaned : text;
   };
-  const allFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+  /* CR-07: Sponsored ad posts from Datore organization */
+  const SPONSORED_ADS = [
+    { id:'ad1', user:'Datore', avatar:'DA', avatarType:'initials' as const, text:'Hire trusted local workers in minutes. Post a job on Datore today — verified workers, real reviews, instant booking. #DatoreJobs #HireLocal', time:'Sponsored', likes:142, comments:18, type:'text' as const, isOwn:false, audience:'public' as Audience, isSponsored:true, adLabel:'Sponsored · Datore', adCTA:'Post a Job', adCTAPath:'/jobplace/create', adCampaign:'job-posting-q1', media:'' },
+    { id:'ad2', user:'Datore Learning', avatar:'DL', avatarType:'initials' as const, text:'Unlock your child\'s potential with AI & Robotics classes for ages 3-14. AARNAIT-certified curriculum, hands-on projects, expert instructors. Enroll today! #AIForKids #STEM', time:'Sponsored', likes:89, comments:7, type:'text' as const, isOwn:false, audience:'public' as Audience, isSponsored:true, adLabel:'Sponsored · Datore Learning', adCTA:'Explore Classes', adCTAPath:'/learning', adCampaign:'learning-ai-robotics', media:'' },
+    { id:'ad3', user:'Datore Premium', avatar:'DP', avatarType:'initials' as const, text:'Go Premium! Unlimited job postings, priority worker matching, advanced analytics, and 0% service fees. Start your free trial now. #DatorePremium', time:'Sponsored', likes:234, comments:32, type:'text' as const, isOwn:false, audience:'public' as Audience, isSponsored:true, adLabel:'Sponsored · Datore', adCTA:'Try Premium Free', adCTAPath:'/subscription', adCampaign:'premium-trial', media:'' },
+  ];
+  const [hiddenAds, setHiddenAds] = useState<string[]>([]);
+  const [adImpressions, setAdImpressions] = useState<Record<string,number>>({});
+
+  const organicFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+  // Inject sponsored ads every 3rd post (non-disruptive)
+  const allFeed: any[] = [];
+  let adIdx = 0;
+  organicFeed.forEach((post, i) => {
+    allFeed.push(post);
+    if ((i + 1) % 3 === 0 && adIdx < SPONSORED_ADS.length) {
+      const ad = SPONSORED_ADS[adIdx];
+      if (!hiddenAds.includes(ad.id)) {
+        allFeed.push(ad);
+        adIdx++;
+      }
+    }
+  });
+
+  const dismissAd = (adId: string) => { setHiddenAds(p => [...p, adId]); };
+  const trackAdClick = (campaign: string) => { setAdImpressions(p => ({...p, [campaign]: (p[campaign]||0)+1})); };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -119,19 +147,54 @@ export default function HomePage() {
   };
   const clearMedia = () => { setMediaPreview(null); setMediaName(''); };
 
+  /* CR-06: Voice-to-text for status composer */
+  const startVoiceInput = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setVoiceRecording(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results).map((r: any) => r[0].transcript).join('');
+        setVoiceTranscript(transcript);
+        setPostText(prev => prev + ' ' + transcript);
+      };
+      recognition.onend = () => { setVoiceRecording(false); };
+      recognition.onerror = () => { setVoiceRecording(false); };
+      recognition.start();
+    } else {
+      // Fallback simulation for browsers without speech API
+      setVoiceRecording(true);
+      if (!showPost) setShowPost(true);
+      setTimeout(() => {
+        const sample = 'Just having a great day! Love using Datore for everything.';
+        setPostText(prev => prev + (prev ? ' ' : '') + sample);
+        setVoiceTranscript(sample);
+        setVoiceRecording(false);
+      }, 2500);
+    }
+  };
+
+  /* CR-06: Feeling/activity options */
+  const FEELINGS = ['Happy','Excited','Grateful','Motivated','Relaxed','Thoughtful','Celebrating','Working','Traveling','Learning'];
+
   /* AI-moderated post submission */
   const handlePost = () => {
-    if (!postText.trim() && !mediaPreview) return;
-    const modResult = moderatePost(postText);
+    if (!postText.trim() && !mediaPreview && !postFeeling) return;
+    const fullText = postFeeling ? `${postText.trim()} - Feeling ${postFeeling}` : postText.trim();
+    const modResult = moderatePost(fullText);
     if (modResult.severity === 'severe') {
       setModerationAlert(modResult);
-      return; // Block severe content
+      return;
     }
-    const finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
-    addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
+    const finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : fullText;
+    addUserPost({ text: finalText, type: postType === 'feeling' || postType === 'audio' || postType === 'live' ? 'text' : postType, media: mediaPreview || undefined, audience: postAudience });
     setUserPosts(getUserPosts());
-    setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia();
-    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult); // Warn for censored
+    setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia(); setPostFeeling(''); setVoiceTranscript('');
+    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult);
   };
 
   const handleLike = (id: string) => setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
@@ -291,11 +354,46 @@ export default function HomePage() {
 
       {tab === 'feed' ? (
         <div className="space-y-3">
+          {/* CR-06: "What's on your mind?" composer bar pinned at top of feed */}
+          <div onClick={()=>setShowPost(true)} className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>
+              {userAvatar.type==='image'?<img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>:userAvatar.src}
+            </div>
+            <div className="flex-1 py-2 px-3 rounded-xl text-sm" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)',color:t.textMuted}}>What&apos;s on your mind?</div>
+            <div className="flex gap-1">
+              <button onClick={e=>{e.stopPropagation();setPostType('photo');setShowPost(true);}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(34,197,94,0.1)'}}>📷</button>
+              <button onClick={e=>{e.stopPropagation();setPostType('video');setShowPost(true);}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(239,68,68,0.1)'}}>🎬</button>
+              <button onClick={e=>{e.stopPropagation();startVoiceInput();setShowPost(true);}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:voiceRecording?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.1)'}}><IcoMic size={14} color={voiceRecording?'#ef4444':'#8b5cf6'}/></button>
+            </div>
+          </div>
+
           {allFeed.map(post => {
             const comments = commentData[post.id] || [];
             const commentCount = (post.comments||0) + comments.length;
             const reactions = postReactions[post.id] || [];
             const aud = AUDIENCES.find(a => a.key === (post as any).audience) || AUDIENCES[0];
+            /* CR-07: Render sponsored ad posts */
+            if ((post as any).isSponsored) {
+              return (
+                <div key={post.id} className="rounded-2xl p-4 relative" style={{ background:`linear-gradient(135deg,${t.card},${isDark?'rgba(99,102,241,0.04)':'rgba(99,102,241,0.02)'})`, border:`1px solid ${isDark?'rgba(99,102,241,0.15)':'rgba(99,102,241,0.1)'}` }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold" style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white' }}>{post.avatar}</div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">{post.user}</p>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background:'rgba(99,102,241,0.12)', color:'#6366f1' }}>{(post as any).adLabel}</span>
+                    </div>
+                    <button onClick={()=>dismissAd(post.id)} className="text-[9px] px-2 py-1 rounded-lg" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)',color:t.textMuted}}>Hide</button>
+                  </div>
+                  <p className="text-sm mb-3" style={{color:t.text,lineHeight:1.5}}>{renderHashText(post.text, t.accent, router)}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px]" style={{color:t.textMuted}}>{post.likes} likes · {post.comments} comments</span>
+                  </div>
+                  <button onClick={()=>{trackAdClick((post as any).adCampaign);router.push((post as any).adCTAPath);}} className="w-full py-2.5 rounded-xl text-xs font-bold text-white" style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+                    {(post as any).adCTA} →
+                  </button>
+                </div>
+              );
+            }
             return (
             <div key={post.id} className="rounded-2xl p-4" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
               {/* Post Header */}
@@ -466,12 +564,30 @@ export default function HomePage() {
               <p className="text-[9px] mt-1 text-center" style={{ color:audienceInfo.color }}>{audienceInfo.desc}</p>
             </div>
 
-            {/* Post Type Toggle */}
-            <div className="flex gap-2">
-              {(['text','photo','video'] as const).map(pt => (
-                <button key={pt} onClick={() => { setPostType(pt); if(pt==='text') clearMedia(); }} className="flex-1 py-2 rounded-xl text-xs font-medium capitalize" style={{ background:postType===pt?t.accentLight:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', color:postType===pt?t.accent:t.textSecondary, border:`1px solid ${postType===pt?t.accent+'33':t.cardBorder}` }}>{pt}</button>
+            {/* CR-06: Enhanced Post Type Toggle with audio, live, feeling */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+              {([{k:'text',l:'Text',i:'📝'},{k:'photo',l:'Photo',i:'📷'},{k:'video',l:'Video',i:'🎬'},{k:'audio',l:'Audio',i:'🎵'},{k:'live',l:'Live',i:'🔴'},{k:'feeling',l:'Feeling',i:'😊'}] as const).map(pt => (
+                <button key={pt.k} onClick={() => { setPostType(pt.k as any); if(pt.k==='text') clearMedia(); }} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-semibold whitespace-nowrap" style={{ background:postType===pt.k?t.accentLight:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)', color:postType===pt.k?t.accent:t.textSecondary, border:`1px solid ${postType===pt.k?t.accent+'33':t.cardBorder}` }}><span>{pt.i}</span>{pt.l}</button>
               ))}
             </div>
+
+            {/* CR-06: Feeling selector */}
+            {postType==='feeling'&&(<div className="flex flex-wrap gap-1.5">{FEELINGS.map(f=>(<button key={f} onClick={()=>setPostFeeling(f)} className="px-3 py-1.5 rounded-full text-[10px] font-semibold" style={{background:postFeeling===f?t.accent+'20':'transparent',color:postFeeling===f?t.accent:t.textMuted,border:`1px solid ${postFeeling===f?t.accent+'44':t.cardBorder}`}}>{f}</button>))}</div>)}
+
+            {/* CR-06: Voice recording for audio posts */}
+            {postType==='audio'&&(<div className="text-center p-4 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${t.cardBorder}`}}>
+              <button onClick={startVoiceInput} className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2" style={{background:voiceRecording?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.12)',border:`2px solid ${voiceRecording?'#ef4444':'#8b5cf6'}`,animation:voiceRecording?'pulse 1.5s infinite':'none'}}><IcoMic size={28} color={voiceRecording?'#ef4444':'#8b5cf6'}/></button>
+              <p className="text-xs font-medium" style={{color:voiceRecording?'#ef4444':t.textMuted}}>{voiceRecording?'Recording... Speak now':'Tap to record audio post'}</p>
+              {voiceTranscript&&<p className="text-[10px] mt-2 p-2 rounded-lg" style={{background:t.card,color:t.textSecondary}}>Transcript: {voiceTranscript}</p>}
+            </div>)}
+
+            {/* CR-06: Live post placeholder */}
+            {postType==='live'&&(<div className="text-center p-4 rounded-xl" style={{background:'rgba(239,68,68,0.05)',border:'1px solid rgba(239,68,68,0.15)'}}>
+              <div className="text-3xl mb-2">🔴</div>
+              <p className="text-xs font-bold" style={{color:'#ef4444'}}>Go Live</p>
+              <p className="text-[10px]" style={{color:t.textMuted}}>Start a live broadcast to your {postAudience} audience</p>
+              <button onClick={()=>{setPostText(postText + ' [LIVE STREAM]'); setPostType('text');}} className="mt-3 px-6 py-2 rounded-xl text-xs font-bold text-white" style={{background:'linear-gradient(135deg,#ef4444,#dc2626)'}}>Start Live</button>
+            </div>)}
 
             {/* Media Upload */}
             {postType !== 'text' && (
@@ -494,18 +610,23 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Text Area */}
-            <div>
+            {/* Text Area with voice input */}
+            <div className="relative">
               <HashDropdown inputId="post" />
-              <textarea value={postText} onChange={e => handleTextChange(e.target.value, 'post')} rows={4} placeholder="What's happening? Use #hashtags..." className="w-full p-3 rounded-xl text-sm outline-none resize-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+              <textarea value={postText} onChange={e => handleTextChange(e.target.value, 'post')} rows={4} placeholder="What's on your mind? Use #hashtags..." className="w-full p-3 pr-12 rounded-xl text-sm outline-none resize-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+              {/* CR-06: Voice-to-text button inside textarea */}
+              <button onClick={startVoiceInput} className="absolute right-2 bottom-2 w-8 h-8 rounded-lg flex items-center justify-center" style={{background:voiceRecording?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.1)'}}>
+                <IcoMic size={14} color={voiceRecording?'#ef4444':'#8b5cf6'}/>
+              </button>
             </div>
+            {voiceRecording&&<p className="text-[10px] text-center animate-pulse" style={{color:'#ef4444'}}>Listening... speak to add text</p>}
 
             {/* Post / Cancel */}
             <div className="flex gap-2">
-              <button onClick={handlePost} disabled={!postText.trim() && !mediaPreview} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>
+              <button onClick={handlePost} disabled={!postText.trim() && !mediaPreview && !postFeeling} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>
                 Post to {audienceInfo.label} {audienceInfo.icon}
               </button>
-              <button onClick={() => { setShowPost(false); clearMedia(); }} className="px-6 py-3 rounded-xl text-sm" style={{ color:t.textMuted, border:`1px solid ${t.cardBorder}` }}>Cancel</button>
+              <button onClick={() => { setShowPost(false); clearMedia(); setPostFeeling(''); }} className="px-6 py-3 rounded-xl text-sm" style={{ color:t.textMuted, border:`1px solid ${t.cardBorder}` }}>Cancel</button>
             </div>
           </div>
         </div>
