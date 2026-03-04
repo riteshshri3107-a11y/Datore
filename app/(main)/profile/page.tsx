@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
+import { getMyPosts, getMyJobs, getMyListings } from '@/lib/supabase';
 import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
 
 /* BR-101: User Content Ownership -- edit/delete own posts, jobs, products, communities, groups
@@ -25,38 +27,39 @@ interface UserJob { id:string; title:string; status:string; applicants:number; p
 interface UserProduct { id:string; name:string; price:number; status:string; views:number; }
 interface UserCommunity { id:string; name:string; members:number; }
 
-const MY_POSTS:UserPost[] = [
-  {id:'mp1',text:'Just launched AARNAIT AI robotics program in Raipur! 🤖',time:'2h ago',likes:34,audience:'Public'},
-  {id:'mp2',text:'Looking for experienced React developers in Toronto area',time:'1d ago',likes:12,audience:'Professional'},
-  {id:'mp3',text:'Weekend hike with the dog walkers group! 🐕🌿',time:'3d ago',likes:56,audience:'Buddy Group'},
-];
-const MY_JOBS:UserJob[] = [
-  {id:'mj1',title:'House Cleaner Needed -- Brampton',status:'Active',applicants:8,posted:'2d ago',budget:'$35/hr'},
-  {id:'mj2',title:'Math Tutor for Grade 10',status:'Active',applicants:3,posted:'5d ago',budget:'$40/hr'},
-  {id:'mj3',title:'Dog Walker -- Weekend Only',status:'Closed',applicants:12,posted:'2w ago',budget:'$20/hr'},
-];
-const MY_PRODUCTS:UserProduct[] = [
-  {id:'mpd1',name:'Used MacBook Pro 2023',price:1200,status:'Active',views:89},
-  {id:'mpd2',name:'STEM Robot Kit (Educational)',price:149,status:'Active',views:234},
-];
-const MY_COMMUNITIES:UserCommunity[] = [
-  {id:'mc1',name:'Toronto Dog Walkers',members:127},
-  {id:'mc2',name:'AARNAIT AI Community',members:45},
-];
 
 export default function ProfilePage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user, loading: authLoading } = useAuth();
   const [tab,setTab] = useState<'overview'|'posts'|'jobs'|'products'|'communities'|'ratings'>('overview');
-  const [posts,setPosts] = useState(MY_POSTS);
-  const [jobs,setJobs] = useState(MY_JOBS);
-  const [products,setProducts] = useState(MY_PRODUCTS);
-  const [communities,setCommunities] = useState(MY_COMMUNITIES);
+  const [posts,setPosts] = useState<UserPost[]>([]);
+  const [jobs,setJobs] = useState<UserJob[]>([]);
+  const [products,setProducts] = useState<UserProduct[]>([]);
+  const [communities,setCommunities] = useState<UserCommunity[]>([]);
   const [editingPost,setEditingPost] = useState<string|null>(null);
   const [editText,setEditText] = useState('');
   const [myRating] = useState(4.6);
   const [myFriends] = useState(48);
+
+  // Fetch user's own data from Supabase
+  useEffect(() => {
+    if (!user) return;
+    getMyPosts(user.id).then(data => setPosts(data.map((p:any) => ({
+      id: p.id, text: p.text || '', time: p.created_at ? new Date(p.created_at).toLocaleDateString() : '', likes: p.likes_count || 0, audience: p.audience || 'Public'
+    }))));
+    getMyJobs(user.id).then(data => setJobs(data.map((j:any) => ({
+      id: j.id, title: j.title || '', status: j.status === 'open' ? 'Active' : 'Closed', applicants: j.applicants_count || 0, posted: j.created_at ? new Date(j.created_at).toLocaleDateString() : '', budget: j.budget || ''
+    }))));
+    getMyListings(user.id).then(data => setProducts(data.map((p:any) => ({
+      id: p.id, name: p.title || '', price: p.price || 0, status: p.status === 'active' ? 'Active' : p.status || '', views: p.views || 0
+    }))));
+  }, [user]);
+
+  // Derive display name and initials from authenticated user
+  const displayName = user?.name || 'User';
+  const initials = displayName.split(' ').map((w:string) => w[0]).join('').toUpperCase().slice(0, 2);
   const [ratingTarget,setRatingTarget] = useState('');
   const [ratingValue,setRatingValue] = useState(5);
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
@@ -94,6 +97,9 @@ export default function ProfilePage() {
     setTimeout(()=>setRatingMsg(null),3000);
   };
 
+  if (authLoading) return <div className="flex items-center justify-center py-20"><p className="text-sm" style={{color:t.textMuted}}>Loading profile...</p></div>;
+  if (!user) { router.push('/'); return null; }
+
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">My Profile</h1></div>
@@ -109,11 +115,11 @@ export default function ProfilePage() {
             ) : currentAvatar && currentAvatar.length <= 4 ? (
               <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,border:`2px solid ${t.accent}`}}>{currentAvatar}</div>
             ) : (
-              <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>RS</div>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>{initials}</div>
             )}
             <button onClick={()=>setShowAvatarPicker(true)} className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{background:t.accent,border:`2px solid ${isDark?'#1a1a2e':'#fff'}`}}><IcoCamera size={10} color="white"/></button>
           </div>
-          <div className="flex-1"><h2 className="text-base font-bold">Rajesh S.</h2><p className="text-[10px]" style={{color:t.textMuted}}>CEO & Founder, AARNAIT AI</p><p className="text-[10px]" style={{color:t.textMuted}}>📍 Toronto, ON · Raipur, India</p></div>
+          <div className="flex-1"><h2 className="text-base font-bold">{displayName}</h2><p className="text-[10px]" style={{color:t.textMuted}}>{user?.email || ''}</p></div>
           <button onClick={()=>router.push('/profile/edit')} className="px-3 py-1 rounded-lg text-[9px] font-semibold" style={{background:t.accent+'15',color:t.accent}}>Edit</button>
         </div>
 
@@ -161,8 +167,7 @@ export default function ProfilePage() {
       {/* OVERVIEW */}
       {tab==='overview'&&(
         <div className="space-y-2">
-          <div className="p-3 rounded-xl" style={{background:t.card}}><p className="text-xs font-bold mb-1">About</p><p className="text-[10px]">Passionate about AI education and making robotics accessible. Building hands-on STEM learning for ages 3-14 across India and Canada.</p></div>
-          <div className="p-3 rounded-xl" style={{background:t.card}}><p className="text-xs font-bold mb-1">Skills</p><div className="flex flex-wrap gap-1">{['AI/ML','React','Next.js','TypeScript','Robotics','Education','Product Management','Cloud'].map(s=>(<span key={s} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:t.accent+'15',color:t.accent}}>{s}</span>))}</div></div>
+          <div className="p-3 rounded-xl" style={{background:t.card}}><p className="text-xs font-bold mb-1">About</p><p className="text-[10px]">{displayName}&apos;s profile on Datore</p></div>
         </div>
       )}
 

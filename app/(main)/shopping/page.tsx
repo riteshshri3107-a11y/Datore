@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic } from '@/components/Icons';
 
 /* BR-99: GLOBAL SHOPPING AGGREGATION -- Amazon/Instacart/Walmart Feature Parity
@@ -62,7 +63,8 @@ export default function ShoppingPage() {
   const [showCheckout,setShowCheckout] = useState(false);
   const [payMethod,setPayMethod] = useState<'card'|'token'|'wallet'>('card');
   const [orderPlaced,setOrderPlaced] = useState(false);
-  const [shippingAddr,setShippingAddr] = useState({name:'Rajesh S.',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
+  const { user } = useAuth();
+  const [shippingAddr,setShippingAddr] = useState({name:user?.name || '',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
   const [cardInfo,setCardInfo] = useState({number:'',expiry:'',cvv:'',name:''});
 
   /* ═══ ORDER HISTORY — persisted in localStorage ═══ */

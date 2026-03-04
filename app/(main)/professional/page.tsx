@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
 import { IcoBack, IcoSearch, IcoBookmark, IcoStar, IcoMic, IcoUser, IcoSend } from '@/components/Icons';
 
 /* BR-98: PROFESSIONAL PROFILE -- LinkedIn/Monster/Indeed Feature Parity + Gaps Filled
@@ -109,8 +110,11 @@ export default function ProfessionalPage() {
   const [careerBreak,setCareerBreak] = useState(false);
   const [resumeScore] = useState(78);
   const [appTrack,setAppTrack] = useState(APP_TRACKER);
+  const { user } = useAuth();
   const [editProfile,setEditProfile] = useState(false);
-  const [profileData,setProfileData] = useState({name:'Rajesh S.',headline:'CEO & Founder at AARNAIT AI | AI/Robotics Education',location:'Toronto, ON',about:'Passionate about AI education and making robotics accessible to everyone. Building the future of hands-on STEM learning for ages 3-14.',experience:[{title:'CEO & Founder',company:'AARNAIT AI',period:'2023 - Present',desc:'Leading AI and Robotics Education startup with 35+ programs'},{title:'Senior PM',company:'TechCorp',period:'2020 - 2023',desc:'Led cross-functional teams for AI products'}],education:[{school:'University of Toronto',degree:'M.Sc. Computer Science',year:'2020'},{school:'IIT Delhi',degree:'B.Tech Computer Science',year:'2017'}],certifications:['AWS Solutions Architect','Google Cloud ML','PMP Certified','Scrum Master']});
+  const userName = user?.name || 'User';
+  const userInitials = userName.split(' ').map((w:string) => w[0]).join('').toUpperCase().slice(0, 2);
+  const [profileData,setProfileData] = useState({name:userName,headline:'Professional on Datore',location:'',about:'',experience:[] as {title:string;company:string;period:string;desc:string}[],education:[] as {school:string;degree:string;year:string}[],certifications:[] as string[]});
 
   const filteredJobs = jobs.filter(j => {
     if(jobFilter==='remote') return j.remote;
@@ -149,7 +153,7 @@ export default function ProfessionalPage() {
             {/* BR-101: Edit own profile */}
             <button onClick={()=>setEditProfile(!editProfile)} className="absolute top-3 right-3 text-[9px] px-2 py-0.5 rounded" style={{background:t.accent+'20',color:t.accent}}>{editProfile?'Done':'Edit'}</button>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>RS</div>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>{userInitials}</div>
               <div>
                 <h2 className="text-base font-bold">{profileData.name}</h2>
                 <p className="text-xs" style={{color:t.textMuted}}>{profileData.headline}</p>

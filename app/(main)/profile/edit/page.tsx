@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
+import { updateProfile } from '@/lib/supabase';
 import { getProfilePrefs, saveProfilePrefs, JOB_DISPLAY_OPTIONS } from '@/lib/demoData';
 import { IcoBack, IcoCamera } from '@/components/Icons';
 
@@ -19,6 +21,7 @@ export default function ProfileEditPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, refreshProfile } = useAuth();
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -50,7 +53,7 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     const prefs = getProfilePrefs();
-    setName(prefs.name || '');
+    setName(user?.name || prefs.name || '');
     setDisplayPref(prefs.displayPref || 'card');
     const fp = getFullProfile();
     if (fp.bio) setBio(fp.bio);
@@ -86,9 +89,14 @@ export default function ProfileEditPage() {
 
   const selectAvatar = (a: string) => { setSelectedAvatar(a); setProfilePhoto(null); setShowAvatars(false); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     saveProfilePrefs({ displayPref, setupDone: true, name: name || 'Demo User' });
     saveFullProfile({ bio, city, phone, skills, profilePhoto, selectedAvatar, street, province, postalCode, country, school, degree, fieldOfStudy, gradYear, languages, emergencyName, emergencyPhone, linkedin, instagram });
+    // Also persist name to Supabase profiles table
+    if (user) {
+      await updateProfile(user.id, { full_name: name || 'Demo User' });
+      await refreshProfile();
+    }
     setSaved(true);
     setTimeout(() => { setSaved(false); router.push('/profile'); }, 1500);
   };

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 import ChatBot from '@/components/ChatBot';
+import { AuthProvider } from '@/lib/useAuth';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 
@@ -26,12 +27,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           pointerEvents:'none', zIndex:0
         }} />
       )}
+      <AuthProvider>
       <TopNav />
       <main className="relative z-10 w-full max-w-5xl mx-auto px-4 py-5 pb-24 md:pb-6" style={{minHeight:'calc(100vh - 70px)'}}>
         {children}
       </main>
       <BottomNav />
       <ChatBot />
+      </AuthProvider>
     </div>
   );
 }
