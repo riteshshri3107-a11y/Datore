@@ -65,13 +65,14 @@ export default function ProfilePage() {
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
   // Avatar system
   const [avatars,setAvatars] = useState<Record<AvatarMode,string|null>>({public:null,friends:null,buddy:null,professional:null});
-  // Load saved avatars from localStorage
-  useState(()=>{try{const s=localStorage.getItem('datore-avatars');if(s)setAvatars(JSON.parse(s));}catch{}});
+  // Load saved avatars from localStorage (scoped per user)
+  const avatarKey = `datore-avatars-${user?.id || 'anon'}`;
+  useEffect(()=>{try{const s=localStorage.getItem(avatarKey);if(s)setAvatars(JSON.parse(s));}catch{}},[user]);
   // Save avatars when they change
   const updateAvatar = (mode:AvatarMode, val:string|null) => {
     const newA = {...avatars,[mode]:val};
     setAvatars(newA);
-    try{localStorage.setItem('datore-avatars',JSON.stringify(newA));}catch{}
+    try{localStorage.setItem(avatarKey,JSON.stringify(newA));}catch{}
   };
   const [activeAvatarMode,setActiveAvatarMode] = useState<AvatarMode>('public');
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
@@ -98,7 +99,7 @@ export default function ProfilePage() {
   };
 
   if (authLoading) return <div className="flex items-center justify-center py-20"><p className="text-sm" style={{color:t.textMuted}}>Loading profile...</p></div>;
-  if (!user) { router.push('/'); return null; }
+  if (!user) { router.push('/login'); return null; }
 
   return (
     <div className="space-y-3 animate-fade-in">

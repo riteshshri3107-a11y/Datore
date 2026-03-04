@@ -39,7 +39,7 @@ export default function WalletPage() {
   }, [user]);
 
   if (authLoading) return <div className="flex items-center justify-center py-20"><p className="text-sm">Loading wallet...</p></div>;
-  if (!user) { router.push('/'); return null; }
+  if (!user) { router.push('/login'); return null; }
 
   const handleAddTokens = () => {
     const amt = parseFloat(amount);

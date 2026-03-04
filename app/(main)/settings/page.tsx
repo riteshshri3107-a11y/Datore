@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { signOut } from '@/lib/supabase';
+import { useAuth } from '@/lib/useAuth';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor, toggle, setGlass, setAccent } = useThemeStore();
+  const { signOut } = useAuth();
   const t = getTheme(isDark, glassLevel, accentColor);
   const ACCENTS = ['#6366f1', '#ec4899', '#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'];
 

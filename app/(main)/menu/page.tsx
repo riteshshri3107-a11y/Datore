@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { signOut } from '@/lib/supabase';
+import { useAuth } from '@/lib/useAuth';
 import { IcoUser, IcoSettings, IcoWallet, IcoDashboard, IcoQR, IcoShield, IcoFriends, IcoCalendar, IcoCommunity, IcoChat, IcoJobs, IcoMap, IcoCompare, IcoStar, IcoMarket, IcoList, IcoBell, IcoSearch, IcoBookmark, IcoBack, IcoLogout, IcoMic } from '@/components/Icons';
 
 const MENU = [
@@ -69,6 +69,7 @@ export default function MenuPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { signOut } = useAuth();
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-3">
@@ -91,7 +92,7 @@ export default function MenuPage() {
           </div>
         </div>
       ))}
-      <button onClick={async () => { await signOut(); router.push('/auth/login'); }} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background:'rgba(239,68,68,0.06)' }}>
+      <button onClick={async () => { await signOut(); router.push('/login'); }} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ background:'rgba(239,68,68,0.06)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(239,68,68,0.15)' }}><IcoLogout size={16} color="#ef4444" /></div>
         <span className="text-sm font-medium" style={{ color:'#ef4444' }}>Sign Out</span>
       </button>
