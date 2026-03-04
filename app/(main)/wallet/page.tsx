@@ -1,16 +1,19 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
+import { getWalletBalance, getTransactions } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 
 export default function WalletPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const [balance, setBalance] = useState({ available: 125, escrowed: 25, pending: 0, earned: 250 });
+  const { user, loading: authLoading } = useAuth();
+  const [balance, setBalance] = useState({ available: 0, escrowed: 0, pending: 0, earned: 0 });
   const [showAdd, setShowAdd] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [amount, setAmount] = useState('');
@@ -20,13 +23,23 @@ export default function WalletPage() {
   const [bankAcc, setBankAcc] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState('');
-  const [txns, setTxns] = useState([
-    { id:'1', type:'purchase', desc:'Token Purchase', amount:100, date:'2/27/2026' },
-    { id:'2', type:'escrow', desc:'Escrow: Babysitting Job', amount:-25, date:'2/27/2026' },
-    { id:'3', type:'completed', desc:'Completed: House Cleaning', amount:45, date:'2/26/2026' },
-    { id:'4', type:'tip', desc:'Tip received', amount:5, date:'2/25/2026' },
-    { id:'5', type:'withdraw', desc:'Withdrawal to bank', amount:-50, date:'2/24/2026' },
-  ]);
+  const [txns, setTxns] = useState<{id:string;type:string;desc:string;amount:number;date:string}[]>([]);
+
+  // Load wallet data from Supabase for the authenticated user
+  useEffect(() => {
+    if (!user) return;
+    getWalletBalance(user.id).then((data:any) => {
+      setBalance({ available: data.available || 0, escrowed: data.escrowed || 0, pending: data.pending || 0, earned: (data.available||0) + (data.escrowed||0) + (data.pending||0) });
+    });
+    getTransactions(user.id).then((data:any[]) => {
+      if (data.length > 0) {
+        setTxns(data.map((t:any) => ({ id:t.id, type:t.type||'purchase', desc:t.description||'Transaction', amount:t.amount||0, date:t.created_at ? new Date(t.created_at).toLocaleDateString() : '' })));
+      }
+    });
+  }, [user]);
+
+  if (authLoading) return <div className="flex items-center justify-center py-20"><p className="text-sm">Loading wallet...</p></div>;
+  if (!user) { router.push('/'); return null; }
 
   const handleAddTokens = () => {
     const amt = parseFloat(amount);

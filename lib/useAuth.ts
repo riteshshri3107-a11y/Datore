@@ -61,7 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignOut = async () => { await supabase.auth.signOut(); setUser(null); };
+  const handleSignOut = async () => {
+    // Clear user-scoped localStorage data to prevent leakage between users on shared devices
+    if (typeof window !== 'undefined') {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('datore-')) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    }
+    await supabase.auth.signOut();
+    setUser(null);
+  };
   const refreshProfile = async () => { if (user) await loadProfile(user.id, user.email); };
 
   return (

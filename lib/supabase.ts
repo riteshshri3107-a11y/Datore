@@ -45,6 +45,60 @@ export async function getAllFeedPosts(limit: number = 50) {
     .order('created_at', { ascending: false }).limit(limit);
   return data || [];
 }
+
+/**
+ * Get feed posts visible to a specific user based on audience rules:
+ * - 'public' posts: visible to everyone
+ * - 'friends' posts: visible only if current user is friends with the author
+ * - 'buddy' posts: visible only if current user is in the same buddy group
+ * - 'professional' posts: visible to professional network
+ * - Own posts: always visible regardless of audience
+ */
+export async function getVisibleFeedPosts(userId: string, limit: number = 50) {
+  // 1. Get all public posts + user's own posts
+  const { data: publicPosts } = await supabase.from('posts').select('*')
+    .or(`audience.eq.public,author_id.eq.${userId}`)
+    .order('created_at', { ascending: false }).limit(limit);
+
+  // 2. Get friend IDs for the current user
+  const { data: friendReqs } = await supabase.from('friend_requests').select('from_user_id,to_user_id')
+    .eq('status', 'accepted')
+    .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`);
+  const friendIds = (friendReqs || []).map(r => r.from_user_id === userId ? r.to_user_id : r.from_user_id);
+
+  // 3. Get friends-only posts from friends
+  let friendsPosts: any[] = [];
+  if (friendIds.length > 0) {
+    const { data } = await supabase.from('posts').select('*')
+      .eq('audience', 'friends')
+      .in('author_id', friendIds)
+      .order('created_at', { ascending: false }).limit(limit);
+    friendsPosts = data || [];
+  }
+
+  // 4. Get buddy group posts where user is a member
+  const { data: buddyGroups } = await supabase.from('buddy_groups').select('member_ids')
+    .contains('member_ids', [userId]);
+  const buddyMemberIds = new Set<string>();
+  (buddyGroups || []).forEach((g: any) => (g.member_ids || []).forEach((id: string) => buddyMemberIds.add(id)));
+  buddyMemberIds.delete(userId);
+
+  let buddyPosts: any[] = [];
+  if (buddyMemberIds.size > 0) {
+    const { data } = await supabase.from('posts').select('*')
+      .eq('audience', 'buddy')
+      .in('author_id', Array.from(buddyMemberIds))
+      .order('created_at', { ascending: false }).limit(limit);
+    buddyPosts = data || [];
+  }
+
+  // 5. Merge, deduplicate by id, sort by created_at
+  const allPosts = [...(publicPosts || []), ...friendsPosts, ...buddyPosts];
+  const seen = new Set<string>();
+  const unique = allPosts.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+  unique.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return unique.slice(0, limit);
+}
 export async function getMyPosts(userId: string) {
   const { data } = await supabase.from('posts').select('*').eq('author_id', userId)
     .order('created_at', { ascending: false });

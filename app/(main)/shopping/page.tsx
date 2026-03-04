@@ -67,12 +67,13 @@ export default function ShoppingPage() {
   const [shippingAddr,setShippingAddr] = useState({name:user?.name || '',line1:'123 Main St',city:'Toronto',province:'ON',zip:'M5V 1A1',country:'Canada'});
   const [cardInfo,setCardInfo] = useState({number:'',expiry:'',cvv:'',name:''});
 
-  /* ═══ ORDER HISTORY — persisted in localStorage ═══ */
+  /* ═══ ORDER HISTORY — persisted in localStorage per user ═══ */
   interface OrderRecord { id:string; items:{name:string;img:string;price:number;qty:number;portal:string}[]; total:number; payMethod:string; status:'confirmed'|'processing'|'shipped'|'delivered'|'cancelled'; date:string; address:string; tracking?:string; }
+  const orderKey = `datore-orders-${user?.id || 'anon'}`;
   const [orders, setOrders] = useState<OrderRecord[]>(() => {
-    try { const s = localStorage.getItem('datore-orders'); return s ? JSON.parse(s) : []; } catch { return []; }
+    try { const s = localStorage.getItem(orderKey); return s ? JSON.parse(s) : []; } catch { return []; }
   });
-  const saveOrders = (o: OrderRecord[]) => { setOrders(o); try { localStorage.setItem('datore-orders', JSON.stringify(o)); } catch {} };
+  const saveOrders = (o: OrderRecord[]) => { setOrders(o); try { localStorage.setItem(orderKey, JSON.stringify(o)); } catch {} };
 
   /* TOKEN SYSTEM -- country-based currency, same-country only */
   const TOKEN_RATE:Record<string,{symbol:string;rate:number;name:string}> = {
@@ -130,9 +131,9 @@ export default function ShoppingPage() {
     setOrderPlaced(true);
     // Auto-progress order status for demo (confirmed → processing → shipped → delivered)
     const orderId = newOrder.id;
-    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'processing' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 5000);
-    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'shipped' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 15000);
-    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'delivered' as const} : o); try{localStorage.setItem('datore-orders',JSON.stringify(u));}catch{} return u; }); }, 30000);
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'processing' as const} : o); try{localStorage.setItem(orderKey,JSON.stringify(u));}catch{} return u; }); }, 5000);
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'shipped' as const} : o); try{localStorage.setItem(orderKey,JSON.stringify(u));}catch{} return u; }); }, 15000);
+    setTimeout(() => { setOrders(prev => { const u = prev.map(o => o.id === orderId ? {...o, status:'delivered' as const} : o); try{localStorage.setItem(orderKey,JSON.stringify(u));}catch{} return u; }); }, 30000);
     setTimeout(() => {
       setProducts(p => p.map(x => ({...x, inCart:false})));
       setQty({});

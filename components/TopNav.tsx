@@ -2,6 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
 import { IcoHome, IcoCommunity, IcoPlus, IcoSearch, IcoQR, IcoMenu, IcoChat, IcoFriends, IcoBell, IcoUser, IcoGlobe, IcoStore, IcoBook, IcoPlay, IcoFilm, IcoHealth } from './Icons';
 
 const NAV_MAIN = [
@@ -87,6 +88,8 @@ export default function TopNav() {
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const muted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const { user } = useAuth();
+  const userInitials = user?.name ? user.name.split(' ').map((w:string)=>w[0]).join('').toUpperCase().slice(0,2) : '?';
 
   return (
     <nav className="sticky top-0 z-50 hidden md:block" style={{
@@ -142,6 +145,13 @@ export default function TopNav() {
           <ActionBtn Icon={IcoChat} path="/inbox" router={router} active={!!pathname?.startsWith('/inbox')} badge muted={muted} color="#06b6d4" />
           <ActionBtn Icon={IcoFriends} path="/friends" router={router} active={!!pathname?.startsWith('/friends')} muted={muted} color="#22c55e" />
           <ActionBtn Icon={IcoBell} path="/notifications" router={router} active={!!pathname?.startsWith('/notification')} muted={muted} color="#ef4444" />
+          {/* Logged-in user indicator */}
+          {user && (
+            <button onClick={()=>router.push('/profile')} className="flex items-center gap-1.5 ml-2 px-2 py-1 rounded-lg" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)',border:`1px solid ${isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)'}`,cursor:'pointer'}}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>{userInitials}</div>
+              <span style={{fontSize:10,fontWeight:600,color:t.text,maxWidth:80,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.name}</span>
+            </button>
+          )}
         </div>
       </div>
     </nav>

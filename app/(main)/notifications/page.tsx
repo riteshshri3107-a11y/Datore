@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
+import { getNotifications as dbGetNotifications, markNotificationRead } from '@/lib/supabase';
 
 const NOTIFS = [
   // Today
@@ -44,10 +46,18 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuth();
   const [filter, setFilter] = useState('all');
   const [readIds, setReadIds] = useState<string[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [showPush, setShowPush] = useState(true);
+  const [dbNotifs, setDbNotifs] = useState<any[]>([]);
+
+  // Load notifications from Supabase for this user
+  useEffect(() => {
+    if (!user) return;
+    dbGetNotifications(user.id).then(data => { if (data.length > 0) setDbNotifs(data); });
+  }, [user]);
 
   // Simulate push notification arrival
   useEffect(() => {

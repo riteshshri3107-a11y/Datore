@@ -4,27 +4,30 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
 import { DEMO_EVENTS } from '@/lib/demoData';
 
 export default function EventsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuth();
   const [tab, setTab] = useState<'upcoming'|'my'>('upcoming');
   const [rsvpd, setRsvpd] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showShare, setShowShare] = useState<string|null>(null);
+  const rsvpKey = `datore-rsvp-${user?.id || 'anon'}`;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      try { setRsvpd(JSON.parse(localStorage.getItem('datore-rsvp') || '[]')); } catch {}
+      try { setRsvpd(JSON.parse(localStorage.getItem(rsvpKey) || '[]')); } catch {}
     }
-  }, []);
+  }, [user]);
 
   const handleRSVP = (id: string) => {
     const updated = rsvpd.includes(id) ? rsvpd.filter(x => x !== id) : [...rsvpd, id];
     setRsvpd(updated);
-    if (typeof window !== 'undefined') { try { localStorage.setItem('datore-rsvp', JSON.stringify(updated)); } catch {} }
+    if (typeof window !== 'undefined') { try { localStorage.setItem(rsvpKey, JSON.stringify(updated)); } catch {} }
   };
 
   const shareEvent = (platform: string, event: typeof DEMO_EVENTS[0]) => {

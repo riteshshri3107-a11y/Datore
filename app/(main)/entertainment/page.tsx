@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic, IcoPlay, IcoBookmark } from '@/components/Icons';
 
 type Section = 'games'|'movies'|'tvshows'|'live'|'vacations';
@@ -79,6 +80,7 @@ export default function EntertainmentPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user } = useAuth();
   const [section,setSection] = useState<Section>('games');
   const [genre,setGenre] = useState<Genre>('All');
   const [search,setSearch] = useState('');
@@ -88,13 +90,14 @@ export default function EntertainmentPage() {
   const [bookingItem, setBookingItem] = useState<any>(null);
   const [bookingStep, setBookingStep] = useState<'details'|'payment'|'confirm'>('details');
   const [bookingPayMethod, setBookingPayMethod] = useState<'card'|'wallet'>('card');
+  const storageKey = `datore-bookings-${user?.id || 'anon'}`;
   const [bookingHistory, setBookingHistory] = useState<any[]>(() => {
-    try { const s = localStorage.getItem('datore-bookings'); return s ? JSON.parse(s) : []; } catch { return []; }
+    try { const s = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null; return s ? JSON.parse(s) : []; } catch { return []; }
   });
   const saveBooking = (b: any) => {
     const updated = [b, ...bookingHistory];
     setBookingHistory(updated);
-    try { localStorage.setItem('datore-bookings', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem(storageKey, JSON.stringify(updated)); } catch {}
   };
   const handleBook = (item: any) => { setBookingItem(item); setBookingStep('details'); };
   const [bookingProcessing, setBookingProcessing] = useState(false);

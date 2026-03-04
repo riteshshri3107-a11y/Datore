@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
+import { useAuth } from '@/lib/useAuth';
+import { createPost, getVisibleFeedPosts, deletePost as dbDeletePost, updatePost as dbUpdatePost, toggleLike as dbToggleLike, getComments as dbGetComments, createComment as dbCreateComment } from '@/lib/supabase';
+import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getProfilePrefs } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag } from '@/components/Icons';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
@@ -38,8 +40,7 @@ const AUDIENCES: { key:Audience; label:string; icon:string; color:string; desc:s
 /* Emoji quick picker */
 const EMOJI_SET = ['👍','❤️','😂','😮','😢','😡','🎉','🔥','💯','🙏','👏','💪','✨','🚀','💎','🌟'];
 
-function getComments(postId:string) { try { return JSON.parse(localStorage.getItem(`datore-comments-${postId}`)||'[]'); } catch { return []; } }
-function saveComments(postId:string, c:any[]) { try { localStorage.setItem(`datore-comments-${postId}`, JSON.stringify(c)); } catch {} }
+/* Comments now loaded from Supabase via dbGetComments / dbCreateComment */
 
 function renderHashText(text:string, accent:string, router:any) {
   const parts = text.split(/(#[a-zA-Z0-9_]+)/g);
@@ -50,12 +51,13 @@ export default function HomePage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuth();
   const [tab, setTab] = useState<'feed'|'discover'>('feed');
   const [showPost, setShowPost] = useState(false);
   const [postText, setPostText] = useState('');
   const [postType, setPostType] = useState<'text'|'photo'|'video'>('text');
   const [postAudience, setPostAudience] = useState<Audience>('public');
-  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [showShare, setShowShare] = useState<string|null>(null);
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [mediaPreview, setMediaPreview] = useState<string|null>(null);
@@ -76,34 +78,62 @@ export default function HomePage() {
   const videoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const prefs = getProfilePrefs();
-  
-  // Fix: Load user avatar PER AUDIENCE — different photo for Public/Friends/Professional
+  const displayName = user?.name || prefs.name || 'User';
+
+  // Load user avatar PER AUDIENCE — different photo for Public/Friends/Professional
   const getUserAvatarForAudience = (audience:string):{type:'image'|'emoji'|'initials';src:string} => {
+    if (user?.avatarUrl) return {type:'image',src:user.avatarUrl};
     try {
-      const saved = localStorage.getItem('datore-avatars');
+      const saved = localStorage.getItem(`datore-avatars-${user?.id || 'anon'}`);
       if (saved) {
         const avatars = JSON.parse(saved);
-        // ONLY use the avatar specifically set for THIS audience — no cross-audience fallback
         const src = avatars[audience];
         if (src && src.startsWith('data:image')) return {type:'image',src};
         if (src && src.length <= 4) return {type:'emoji',src};
       }
     } catch {}
-    // Distinct visual per audience so they look different when no custom photo is uploaded
     const audienceIcons: Record<string,string> = { public:'🌐', friends:'💛', buddy:'👥', professional:'💼' };
     if (audienceIcons[audience]) return {type:'emoji',src:audienceIcons[audience]};
-    return {type:'initials',src:(prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)};
+    return {type:'initials',src:displayName.split(' ').map((n:string)=>n[0]).join('').slice(0,2)};
   };
-  const userAvatar = getUserAvatarForAudience('public'); // default for composer
+  const userAvatar = getUserAvatarForAudience('public');
 
-  useEffect(() => { setUserPosts(getUserPosts()); }, []);
+  // Load feed from Supabase with audience filtering
+  const loadFeed = async () => {
+    if (!user) return;
+    try {
+      const posts = await getVisibleFeedPosts(user.id);
+      setFeedPosts(posts.map((p:any) => ({
+        id: p.id,
+        text: p.text || '',
+        user: p.author_name || 'Unknown',
+        avatar: p.author_name ? p.author_name.split(' ').map((n:string)=>n[0]).join('').slice(0,2) : '?',
+        avatarType: 'initials' as const,
+        time: p.created_at ? new Date(p.created_at).toLocaleDateString() : '',
+        likes: p.likes_count || 0,
+        comments: 0,
+        media: p.media_url || null,
+        type: p.type || 'text',
+        audience: (p.audience || 'public') as Audience,
+        isOwn: p.author_id === user.id,
+      })));
+    } catch {
+      // Fallback to demo feed if Supabase unavailable
+      setFeedPosts(SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const})));
+    }
+  };
+
+  useEffect(() => { loadFeed(); }, [user]);
 
   /* Display-time re-censor: Always re-run moderation on render to catch posts saved before moderation existed */
   const censorForDisplay = (text: string): string => {
     const r = _moderate(text, 'post');
     return (r.severity === 'low' || r.severity === 'medium' || r.severity === 'high' || r.severity === 'critical') ? r.cleaned : text;
   };
-  const allFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+  const allFeed = feedPosts.map(p => {
+    if (p.isOwn) { const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), user: displayName, avatar: av.src, avatarType: av.type}; }
+    return {...p, text: censorForDisplay(p.text)};
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -120,34 +150,37 @@ export default function HomePage() {
   const clearMedia = () => { setMediaPreview(null); setMediaName(''); };
 
   /* AI-moderated post submission */
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!postText.trim() && !mediaPreview) return;
+    if (!user) return;
     const modResult = moderatePost(postText);
     if (modResult.severity === 'severe') {
       setModerationAlert(modResult);
       return; // Block severe content
     }
     const finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
-    addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
-    setUserPosts(getUserPosts());
+    await createPost({ author_id: user.id, author_name: displayName, text: finalText, text_cleaned: finalText, audience: postAudience, type: postType, media_url: mediaPreview || undefined });
+    await loadFeed(); // Refresh from Supabase
     setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia();
-    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult); // Warn for censored
+    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult);
   };
 
   const handleLike = (id: string) => setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
   /* BR-101: Edit own post */
-  const saveEdit = (postId: string) => {
+  const saveEdit = async (postId: string) => {
     const modResult = moderatePost(editText);
     if (modResult.severity === 'severe') { setModerationAlert(modResult); return; }
-    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText} : p));
+    const finalText = (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText;
+    await dbUpdatePost(postId, finalText, finalText);
+    setFeedPosts(prev => prev.map(p => p.id === postId ? {...p, text: finalText} : p));
     setEditingPost(null); setEditText('');
   };
 
   /* BR-101: Delete own post */
-  const deletePost = (postId: string) => {
-    setUserPosts(prev => prev.filter(p => p.id !== postId));
-    try { const all = getUserPosts().filter((p:any) => p.id !== postId); localStorage.setItem('datore-user-posts', JSON.stringify(all)); } catch {}
+  const deletePost = async (postId: string) => {
+    await dbDeletePost(postId);
+    setFeedPosts(prev => prev.filter(p => p.id !== postId));
   };
 
   /* Emoji reaction */
@@ -166,22 +199,25 @@ export default function HomePage() {
     setTimeout(() => { setVoiceSearch(false); setSearchText('nearby jobs'); router.push('/search?q=nearby+jobs'); }, 2000);
   };
 
-  /* Comments */
-  const toggleComments = (postId: string) => {
+  /* Comments — loaded from Supabase */
+  const toggleComments = async (postId: string) => {
     if (openComments === postId) { setOpenComments(null); return; }
     setOpenComments(postId);
-    if (!commentData[postId]) setCommentData(prev => ({...prev, [postId]: getComments(postId) }));
+    if (!commentData[postId]) {
+      const comments = await dbGetComments(postId);
+      setCommentData(prev => ({...prev, [postId]: comments.map((c:any) => ({id:c.id, user:c.author_name||'User', text:c.text, time:c.created_at ? new Date(c.created_at).toLocaleDateString() : '', likes:0}))}));
+    }
   };
-  const submitComment = (postId: string) => {
-    const text = (commentInputs[postId]||'').trim(); if (!text) return;
-    const newC = { id: Date.now().toString(), user: prefs.name||'You', text, time: 'Just now', likes: 0 };
-    const updated = [...(commentData[postId]||[]), newC];
-    setCommentData(prev => ({...prev, [postId]: updated})); saveComments(postId, updated);
+  const submitComment = async (postId: string) => {
+    const text = (commentInputs[postId]||'').trim(); if (!text || !user) return;
+    const { data } = await dbCreateComment({ post_id: postId, author_id: user.id, author_name: displayName, text });
+    const newC = { id: data?.id || Date.now().toString(), user: displayName, text, time: 'Just now', likes: 0 };
+    setCommentData(prev => ({...prev, [postId]: [...(prev[postId]||[]), newC]}));
     setCommentInputs(prev => ({...prev, [postId]: ''})); setHashSuggestions([]);
   };
   const deleteComment = (postId: string, commentId: string) => {
     const updated = (commentData[postId]||[]).filter((c:any)=>c.id!==commentId);
-    setCommentData(prev => ({...prev, [postId]: updated})); saveComments(postId, updated);
+    setCommentData(prev => ({...prev, [postId]: updated}));
   };
 
   /* Hashtag suggestions */
@@ -381,7 +417,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-2"><span className="text-xs font-semibold">{c.user}</span><span className="text-[10px]" style={{ color:t.textMuted }}>{c.time}</span></div>
                         <p className="text-xs mt-0.5" style={{ color:t.textSecondary }}>{renderHashText(c.text, t.accent, router)}</p>
                       </div>
-                      {c.user === (prefs.name||'You') && <button onClick={()=>deleteComment(post.id, c.id)} className="text-[10px] self-start" style={{ color:'#ef4444' }}>✕</button>}
+                      {c.user === displayName && <button onClick={()=>deleteComment(post.id, c.id)} className="text-[10px] self-start" style={{ color:'#ef4444' }}>✕</button>}
                     </div>
                   ))}
                   <div>

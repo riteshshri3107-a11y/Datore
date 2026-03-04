@@ -1,8 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/useAuth';
+import { getChatRooms } from '@/lib/supabase';
 import { CHAT_CONTACTS } from '@/lib/demoData';
 
 const RECENT = [
@@ -18,6 +21,14 @@ export default function InboxPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuth();
+  const [chatRooms, setChatRooms] = useState<any[]>([]);
+
+  // Load chat rooms from Supabase for this user
+  useEffect(() => {
+    if (!user) return;
+    getChatRooms(user.id).then(rooms => { if (rooms.length > 0) setChatRooms(rooms); });
+  }, [user]);
   return (
     <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">💬 Messages</h1>
