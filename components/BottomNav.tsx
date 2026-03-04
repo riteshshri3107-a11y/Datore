@@ -2,14 +2,15 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoHome, IcoSearch, IcoPlus, IcoChat, IcoUser } from './Icons';
+import { IcoHome, IcoJobs, IcoPlus, IcoChat, IcoGrid } from './Icons';
 
+/* ─── Facebook-style mobile bottom nav: 5 items with center Create ─── */
 const NAV = [
-  { label:'Home', Icon:IcoHome, path:'/home' },
-  { label:'Explore', Icon:IcoSearch, path:'/search' },
-  { label:'', Icon:IcoPlus, path:'/create', isCenter:true },
-  { label:'Messages', Icon:IcoChat, path:'/inbox', badge:true },
-  { label:'Profile', Icon:IcoUser, path:'/profile' },
+  { label:'Home',     Icon:IcoHome,  path:'/home' },
+  { label:'Jobs',     Icon:IcoJobs,  path:'/jobplace' },
+  { label:'',         Icon:IcoPlus,  path:'/create', isCenter:true },
+  { label:'Messages', Icon:IcoChat,  path:'/inbox', badge:true },
+  { label:'Menu',     Icon:IcoGrid,  path:'/menu' },
 ];
 
 export default function BottomNav() {

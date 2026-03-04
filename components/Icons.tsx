@@ -57,3 +57,6 @@ export function IcoMusic({size=20,color='currentColor'}:{size?:number;color?:str
 // Learning & Health icons
 export function IcoBook({size=20,color='currentColor'}:{size?:number;color?:string}) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={S}><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>; }
 export function IcoHealth({size=20,color='currentColor'}:{size?:number;color?:string}) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={S}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>; }
+
+// Grid icon (Facebook-style 3x3 dots for "See All" menu)
+export function IcoGrid({size=20,color='currentColor'}:{size?:number;color?:string}) { return <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none" style={S}><circle cx="5" cy="5" r="2.5"/><circle cx="12" cy="5" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="5" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="12" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/></svg>; }
