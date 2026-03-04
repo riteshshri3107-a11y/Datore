@@ -9,7 +9,7 @@ const NAV = [
   { label:'Explore', Icon:IcoSearch, path:'/search' },
   { label:'', Icon:IcoPlus, path:'/create', isCenter:true },
   { label:'Messages', Icon:IcoChat, path:'/inbox', badge:true },
-  { label:'Profile', Icon:IcoUser, path:'/profile' },
+  { label:'Profile', Icon:IcoUser, path:'/profile', isProfile:true },
 ];
 
 export default function BottomNav() {
@@ -39,6 +39,31 @@ export default function BottomNav() {
                 transition:'all 0.25s', transform:'translateY(-4px)'
               }}>
                 <IcoPlus size={22} color="white" />
+              </button>
+            );
+          }
+          /* Profile — circular avatar style, always shows user */
+          if (item.isProfile) {
+            return (
+              <button key={item.path} onClick={()=>router.push(item.path)} className="relative" style={{
+                display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+                padding:'4px 12px', background:'none', border:'none', cursor:'pointer',
+                transition:'all 0.2s'
+              }}>
+                <div style={{
+                  width:30, height:30, borderRadius:'50%',
+                  background: active
+                    ? 'linear-gradient(135deg, #a78bfa, #8b5cf6)'
+                    : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                  border: active ? '2px solid #a78bfa' : `2px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  boxShadow: active ? '0 2px 8px rgba(167,139,250,0.35)' : 'none',
+                  transition:'all 0.25s ease',
+                }}>
+                  <IcoUser size={15} color={active ? '#fff' : muted} />
+                </div>
+                <span style={{fontSize:9,fontWeight:active?700:400,color:active?'#a78bfa':muted,letterSpacing:0.2}}>{item.label}</span>
+                {active && <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',width:16,height:2.5,borderRadius:2,background:'#a78bfa'}} />}
               </button>
             );
           }
