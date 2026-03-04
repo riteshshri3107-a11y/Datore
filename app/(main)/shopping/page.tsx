@@ -194,9 +194,10 @@ export default function ShoppingPage() {
       </div>
 
       {/* Search + Voice */}
-      <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products globally..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div>
-        <button onClick={voiceS} className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':t.card}}><IcoMic size={16} color={voiceSrch?'#ef4444':t.textMuted}/></button>
+      <div className="flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+        <IcoSearch size={14} color={t.textMuted}/>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search products globally..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/>
+        <button onClick={voiceS} className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.08)'}}><IcoMic size={14} color={voiceSrch?'#ef4444':t.textMuted}/></button>
       </div>
       {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
 

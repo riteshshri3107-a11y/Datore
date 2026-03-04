@@ -152,10 +152,7 @@ export default function EducationPage() {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">Education</h1>
-        <button onClick={voiceS} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':t.card}}><IcoMic size={14} color={voiceSrch?'#ef4444':t.textMuted}/></button>
-      </div>
-      {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
+      <div className="flex items-center gap-3"><button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button><h1 className="text-xl font-bold flex-1">Education</h1></div>
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{TABS.map(tb=>(
@@ -167,7 +164,10 @@ export default function EducationPage() {
       {/* EXPLORE */}
       {tab==='explore'&&(
         <>
-          <div className="flex gap-2"><div className="flex-1 flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search courses, skills..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/></div></div>
+          <div className="flex items-center gap-2 p-2 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><IcoSearch size={14} color={t.textMuted}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search courses, skills..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/>
+            <button onClick={voiceS} className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.08)'}}><IcoMic size={14} color={voiceSrch?'#ef4444':t.textMuted}/></button>
+          </div>
+          {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
           <div className="flex gap-1 overflow-x-auto" style={{scrollbarWidth:'none'}}>{CATS.map(c=>(<button key={c} onClick={()=>setCatF(c)} className="px-2 py-0.5 rounded-full text-[9px] font-medium whitespace-nowrap" style={{background:catF===c?t.accent+'20':t.card,color:catF===c?t.accent:t.textMuted}}>{c}</button>))}</div>
           <div className="flex gap-1 items-center">{LEVELS.map(l=>(<button key={l} onClick={()=>setLevelF(l)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:levelF===l?'rgba(139,92,246,0.15)':'transparent',color:levelF===l?'#8b5cf6':t.textMuted}}>{l}</button>))}
             <button onClick={()=>setFreeF(!freeF)} className="px-2 py-0.5 rounded-full text-[9px]" style={{background:freeF?'rgba(34,197,94,0.15)':'transparent',color:freeF?'#22c55e':t.textMuted}}>Free Only</button>

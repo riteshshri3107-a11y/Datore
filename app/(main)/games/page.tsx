@@ -62,15 +62,15 @@ export default function GamesPage() {
       <div className="flex items-center gap-3">
         <button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button>
         <h1 className="text-xl font-bold flex-1">Games</h1>
-        <button onClick={voiceS} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.12)'}}><IcoMic size={16} color={voiceSrch?'#ef4444':'#8b5cf6'}/></button>
       </div>
-      {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
 
       {/* Search */}
       <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
         <IcoSearch size={14} color={t.textMuted}/>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search games..." className="flex-1 text-sm outline-none bg-transparent" style={{color:t.text}}/>
+        <button onClick={voiceS} className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.08)'}}><IcoMic size={14} color={voiceSrch?'#ef4444':'#8b5cf6'}/></button>
       </div>
+      {voiceSrch&&<p className="text-xs text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
 
       {/* Tabs */}
       <div className="flex gap-1 p-0.5 rounded-lg" style={{background:t.card}}>
