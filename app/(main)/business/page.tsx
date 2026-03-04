@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoJobs, IcoUser, IcoDashboard } from '@/components/Icons';
 
@@ -16,6 +17,7 @@ const EMPLOYEES = [
 export default function BusinessPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [tab, setTab] = useState<'overview'|'employees'|'jobs'|'analytics'>('overview');
   const [showInvite, setShowInvite] = useState(false);

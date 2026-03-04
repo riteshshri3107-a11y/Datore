@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack } from '@/components/Icons';
 
@@ -18,6 +19,7 @@ const COURSES = [
 export default function LearnPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [cat, setCat] = useState('All');
   const [started, setStarted] = useState<string|null>(null);

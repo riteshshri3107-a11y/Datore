@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoMic, IcoSearch, IcoSend } from '@/components/Icons';
 
@@ -81,6 +82,7 @@ function parseVoiceCommand(text: string): { intent: string; slots: Record<string
 export default function VoiceCommercePage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');

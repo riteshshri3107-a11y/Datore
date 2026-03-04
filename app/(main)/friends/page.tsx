@@ -3,24 +3,26 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, getFriends, toggleFriend, getBlockedUsers, toggleBlock } from '@/lib/demoData';
+import { getFollowing, getFollowers, followUser, unfollowUser, blockUser, unblockUser, getBlockedUsers as getBlockedUsersFromDB, searchWorkers } from '@/lib/supabase';
+import { DEMO_WORKERS } from '@/lib/demoData';
 import { IcoBack, IcoSearch, IcoShield, IcoUser, IcoChat, IcoMic } from '@/components/Icons';
 
 /* FRIENDS PAGE — Privacy-First Discovery
    ════════════════════════════════════════
-   FRIENDS TAB: Full info (name, avatar, skills, status) — accepted connections
-   DISCOVER TAB: Privacy-protected — NO name, only public avatar, approximate zone
-   REQUESTS TAB: Incoming/outgoing friend requests
-   BLOCKED TAB: Managed blocked users
+   FRIENDS TAB: People you follow (getFollowing) — full info
+   DISCOVER TAB: Privacy-protected — searchWorkers for finding new people
+   REQUESTS TAB: Incoming followers (getFollowers not in following)
+   BLOCKED TAB: Managed blocked users via Supabase
 
    PRIVACY RULES:
-   ✗ Never show name of non-friends
-   ✗ Never show exact address or geo coordinates
-   ✗ Never show exact distance (only approximate zones)
-   ✓ Show only public avatar (emoji or uploaded photo)
-   ✓ Show approximate proximity zone (Within 1km, 1-3km, etc.)
-   ✓ Show general interest tags (not skills — too identifying)
+   - Never show name of non-friends
+   - Never show exact address or geo coordinates
+   - Never show exact distance (only approximate zones)
+   - Show only public avatar (emoji or uploaded photo)
+   - Show approximate proximity zone
+   - Show general interest tags
 */
 
 type DistanceZone = 'nearby'|'close'|'area'|'district'|'city';
@@ -32,11 +34,11 @@ const ZONES: Record<DistanceZone, {label:string;range:string;color:string;icon:s
   city:    {label:'Same City',    range:'10 – 25 km',  color:'#6b7280',icon:'⚪'},
 };
 
-// Discovery profiles — privacy-safe: only public avatars + interests + zone
+// Discovery profiles — privacy-safe fallback
 interface DiscoverProfile {
   id:string; avatar:string; avatarName:string; zone:DistanceZone; interests:string[];
   memberSince:string; mutualFriends:number; rating:number; verified:boolean;
-  activityHint:string; // vague — e.g. "Active today", not "Online at 3pm"
+  activityHint:string;
 }
 
 const DISCOVER_PROFILES: DiscoverProfile[] = [
@@ -57,34 +59,127 @@ const DISCOVER_PROFILES: DiscoverProfile[] = [
 export default function FriendsPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [tab,setTab] = useState<'friends'|'discover'|'requests'|'blocked'>('friends');
-  const [friendIds,setFriendIds] = useState<string[]>([]);
-  const [blockedIds,setBlockedIds] = useState<string[]>([]);
   const [search,setSearch] = useState('');
   const [voiceSrch,setVoiceSrch] = useState(false);
+
+  // Supabase data
+  const [following, setFollowing] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [discoverProfiles, setDiscoverProfiles] = useState<DiscoverProfile[]>(DISCOVER_PROFILES);
+  const [loading, setLoading] = useState(true);
+
   // Discover state
   const [discoverZone,setDiscoverZone] = useState<DistanceZone|'all'>('all');
-  const [radiusKm,setRadiusKm] = useState(10); // slider: 1–25 km
+  const [radiusKm,setRadiusKm] = useState(10);
   const [sentRequests,setSentRequests] = useState<string[]>([]);
   const [showPrivacyInfo,setShowPrivacyInfo] = useState(false);
-  const [incomingRequests] = useState<{id:string;avatar:string;zone:DistanceZone;interests:string[];mutualFriends:number}[]>([
-    {id:'ir1',avatar:'🧑‍🏭',zone:'nearby',interests:['Welding','Metal Work'],mutualFriends:2},
-    {id:'ir2',avatar:'👩‍🔬',zone:'close',interests:['Chemistry','Tutoring'],mutualFriends:4},
-  ]);
+
+  // Followers who you haven't followed back = "incoming requests"
   const [acceptedRequests,setAcceptedRequests] = useState<string[]>([]);
   const [declinedRequests,setDeclinedRequests] = useState<string[]>([]);
 
-  useEffect(() => { setFriendIds(getFriends()); setBlockedIds(getBlockedUsers()); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [user]);
 
-  const friends = DEMO_WORKERS.filter(w => friendIds.includes(w.id) && !blockedIds.includes(w.id));
-  const blocked = DEMO_WORKERS.filter(w => blockedIds.includes(w.id));
-  const filteredFriends = friends.filter(f => !search || f.full_name.toLowerCase().includes(search.toLowerCase()));
+  const fetchData = async () => {
+    if (!user) {
+      // Fallback to demo data
+      const demoFriendIds = DEMO_WORKERS.slice(0, 5).map(w => w.id);
+      setFollowing(DEMO_WORKERS.filter(w => demoFriendIds.includes(w.id)));
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [followingData, followersData, blockedData] = await Promise.all([
+        getFollowing(user.id),
+        getFollowers(user.id),
+        getBlockedUsersFromDB(user.id),
+      ]);
+
+      // Following: people the user follows
+      const followingList = (followingData || []).map((f: any) => ({
+        id: f.profiles?.id || f.following_id,
+        full_name: f.profiles?.name || 'Unknown',
+        avatar_url: f.profiles?.avatar_url || null,
+        verified: f.profiles?.verified || false,
+        city: f.profiles?.city || '',
+        skills: [],
+        availability: 'available',
+      }));
+      setFollowing(followingList);
+
+      // Followers: people who follow the user (for requests tab)
+      const followerList = (followersData || []).map((f: any) => ({
+        id: f.profiles?.id || f.follower_id,
+        full_name: f.profiles?.name || 'Unknown',
+        avatar_url: f.profiles?.avatar_url || null,
+        verified: f.profiles?.verified || false,
+      }));
+      setFollowers(followerList);
+
+      // Blocked users
+      const blockedList = (blockedData || []).map((b: any) => ({
+        id: b.profiles?.id || b.blocked_id,
+        full_name: b.profiles?.name || 'Unknown',
+        avatar_url: b.profiles?.avatar_url || null,
+      }));
+      setBlockedUsers(blockedList);
+
+      // Try to get workers for discover tab
+      try {
+        const workers = await searchWorkers({ available: true });
+        if (workers && workers.length > 0) {
+          const followingIds = new Set(followingList.map((f: any) => f.id));
+          const blockedIds = new Set(blockedList.map((b: any) => b.id));
+          const workerProfiles: DiscoverProfile[] = workers
+            .filter((w: any) => w.profiles && !followingIds.has(w.id) && !blockedIds.has(w.id) && w.id !== user.id)
+            .map((w: any, i: number) => {
+              const zones: DistanceZone[] = ['nearby','close','area','district','city'];
+              return {
+                id: w.id,
+                avatar: w.profiles?.avatar_url ? '👤' : ['👨‍🔧','👩‍🏫','🧑‍🍳','👩‍💻','🧑‍🌾','👨‍🎨','👩‍⚕️','🧑‍🔬','👷','👩‍🎤'][i % 10],
+                avatarName: w.profiles?.name?.split(' ')[0] || 'Worker',
+                zone: zones[Math.min(i % 5, 4)],
+                interests: w.skills || [],
+                memberSince: '2024',
+                mutualFriends: 0,
+                rating: w.profiles?.rating || 4.5,
+                verified: w.profiles?.verified || false,
+                activityHint: w.available ? 'Active today' : 'Active this week',
+              };
+            });
+          if (workerProfiles.length > 0) {
+            setDiscoverProfiles(workerProfiles);
+          }
+        }
+      } catch {}
+    } catch {
+      // Fallback to demo workers
+      setFollowing(DEMO_WORKERS.slice(0, 5).map(w => ({
+        id: w.id, full_name: w.full_name, city: w.city, skills: w.skills, availability: w.availability,
+      })));
+    }
+    setLoading(false);
+  };
+
+  const blockedIds = new Set(blockedUsers.map(b => b.id));
+  const friends = following.filter(f => !blockedIds.has(f.id));
+  const filteredFriends = friends.filter(f => !search || (f.full_name || '').toLowerCase().includes(search.toLowerCase()));
+
+  // Followers not followed back = incoming requests
+  const followingIds = new Set(following.map(f => f.id));
+  const incomingRequests = followers.filter(f => !followingIds.has(f.id) && !blockedIds.has(f.id));
+  const pendingIn = incomingRequests.filter(r => !acceptedRequests.includes(r.id) && !declinedRequests.includes(r.id));
 
   const zoneMaxKm:Record<DistanceZone,number> = {nearby:1,close:3,area:5,district:10,city:25};
-  const filteredDiscover = DISCOVER_PROFILES.filter(p => {
+  const filteredDiscover = discoverProfiles.filter(p => {
     if(sentRequests.includes(p.id)) return true;
-    // Radius slider filter
     if(zoneMaxKm[p.zone] > radiusKm) return false;
     if(discoverZone!=='all' && p.zone!==discoverZone) return false;
     if(search) {
@@ -94,22 +189,78 @@ export default function FriendsPage() {
     return true;
   });
 
-  const handleToggleFriend = (id:string) => { toggleFriend(id); setFriendIds(getFriends()); };
-  const handleToggleBlock = (id:string) => { toggleBlock(id); setBlockedIds(getBlockedUsers()); };
-  const sendRequest = (id:string) => setSentRequests(p=>[...p,id]);
-  const cancelRequest = (id:string) => setSentRequests(p=>p.filter(x=>x!==id));
-  const acceptRequest = (id:string) => setAcceptedRequests(p=>[...p,id]);
-  const declineRequest = (id:string) => setDeclinedRequests(p=>[...p,id]);
-  const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setVoiceSrch(false);setSearch('tutoring');},2000); };
+  const handleUnfollow = async (id: string) => {
+    if (!user) return;
+    try {
+      await unfollowUser(user.id, id);
+      setFollowing(prev => prev.filter(f => f.id !== id));
+    } catch {}
+  };
 
-  const pendingIn = incomingRequests.filter(r=>!acceptedRequests.includes(r.id)&&!declinedRequests.includes(r.id));
+  const handleBlock = async (id: string) => {
+    if (!user) return;
+    try {
+      await blockUser(user.id, id);
+      setBlockedUsers(prev => [...prev, following.find(f => f.id === id) || { id, full_name: 'User' }]);
+    } catch {}
+  };
+
+  const handleUnblock = async (id: string) => {
+    if (!user) return;
+    try {
+      await unblockUser(user.id, id);
+      setBlockedUsers(prev => prev.filter(b => b.id !== id));
+    } catch {}
+  };
+
+  const sendRequest = async (id: string) => {
+    if (!user) { alert('Please sign in.'); return; }
+    setSentRequests(p=>[...p,id]);
+    try {
+      await followUser(user.id, id);
+    } catch {
+      setSentRequests(p=>p.filter(x=>x!==id));
+    }
+  };
+
+  const cancelRequest = async (id: string) => {
+    if (!user) return;
+    setSentRequests(p=>p.filter(x=>x!==id));
+    try {
+      await unfollowUser(user.id, id);
+    } catch {}
+  };
+
+  const acceptRequest = async (id: string) => {
+    if (!user) return;
+    setAcceptedRequests(p=>[...p,id]);
+    try {
+      await followUser(user.id, id);
+      // Re-fetch following to update
+      const data = await getFollowing(user.id);
+      const list = (data || []).map((f: any) => ({
+        id: f.profiles?.id || f.following_id,
+        full_name: f.profiles?.name || 'Unknown',
+        avatar_url: f.profiles?.avatar_url || null,
+        verified: f.profiles?.verified || false,
+        city: '',
+        skills: [],
+        availability: 'available',
+      }));
+      setFollowing(list);
+    } catch {}
+  };
+
+  const declineRequest = (id: string) => setDeclinedRequests(p=>[...p,id]);
+
+  const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setVoiceSrch(false);setSearch('tutoring');},2000); };
 
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center gap-3">
         <button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button>
         <h1 className="text-xl font-bold flex-1">Friends</h1>
-        <span className="text-[10px] px-2.5 py-1 rounded-full" style={{background:t.accentLight,color:t.accent}}>{friends.length} friends</span>
+        <span className="text-[10px] px-2.5 py-1 rounded-full" style={{background:t.accentLight,color:t.accent}}>{friends.length} following</span>
         <button onClick={voiceS} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.12)'}}><IcoMic size={16} color={voiceSrch?'#ef4444':'#8b5cf6'}/></button>
       </div>
       {voiceSrch&&<p className="text-[10px] text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
@@ -126,10 +277,10 @@ export default function FriendsPage() {
       {/* Tabs */}
       <div className="flex gap-1 p-0.5 rounded-xl" style={{background:t.card}}>
         {([
-          {k:'friends' as const,l:`Friends (${friends.length})`,i:'👥'},
+          {k:'friends' as const,l:`Following (${friends.length})`,i:'👥'},
           {k:'discover' as const,l:'Discover',i:'🔍'},
-          {k:'requests' as const,l:`Requests${pendingIn.length>0?` (${pendingIn.length})`:''}`,i:'📨'},
-          {k:'blocked' as const,l:`Blocked (${blocked.length})`,i:'🚫'},
+          {k:'requests' as const,l:`Followers${pendingIn.length>0?` (${pendingIn.length})`:''}`,i:'📨'},
+          {k:'blocked' as const,l:`Blocked (${blockedUsers.length})`,i:'🚫'},
         ]).map(tb=>(
           <button key={tb.k} onClick={()=>setTab(tb.k)} className="flex-1 py-2 rounded-lg text-[9px] font-semibold" style={{background:tab===tb.k?t.accent:'transparent',color:tab===tb.k?'#fff':t.textMuted}}>
             {tb.i} {tb.l}
@@ -137,29 +288,37 @@ export default function FriendsPage() {
         ))}
       </div>
 
-      {/* ═══ FRIENDS TAB — Full info for accepted connections ═══ */}
+      {/* ═══ FRIENDS TAB — Full info for people you follow ═══ */}
       {tab==='friends'&&(
         <div className="space-y-2">
-          {filteredFriends.length===0?(
+          {loading ? (
             <div className="text-center py-8 rounded-2xl" style={{background:t.card}}>
-              <p className="text-sm" style={{color:t.textSecondary}}>{search?'No friends match your search':'No friends yet'}</p>
+              <p className="text-sm" style={{color:t.textSecondary}}>Loading...</p>
+            </div>
+          ) : filteredFriends.length===0?(
+            <div className="text-center py-8 rounded-2xl" style={{background:t.card}}>
+              <p className="text-sm" style={{color:t.textSecondary}}>{search?'No friends match your search':'Not following anyone yet'}</p>
               <button onClick={()=>setTab('discover')} className="text-xs mt-3 px-4 py-2 rounded-xl font-medium" style={{background:t.accentLight,color:t.accent}}>Find People Nearby</button>
             </div>
           ):filteredFriends.map(f=>(
             <div key={f.id} className="rounded-xl p-3 flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-              <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>{f.full_name.split(' ').map(n=>n[0]).join('')}</div>
+              <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>
+                {f.avatar_url ? <img src={f.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" /> : (f.full_name || '??').split(' ').map((n:string)=>n[0]).join('')}
+              </div>
               <div className="flex-1 cursor-pointer" onClick={()=>router.push(`/worker/${f.id}`)}>
                 <p className="font-semibold text-sm">{f.full_name}</p>
-                <p className="text-[10px]" style={{color:t.textMuted}}>{f.city} · {f.skills.join(', ')}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="w-2 h-2 rounded-full" style={{background:f.availability==='available'?'#22c55e':f.availability==='busy'?'#ef4444':'#f59e0b'}}/>
-                  <span className="text-[10px]" style={{color:t.textMuted}}>{f.availability}</span>
-                </div>
+                <p className="text-[10px]" style={{color:t.textMuted}}>{f.city}{f.skills?.length ? ' · ' + f.skills.join(', ') : ''}</p>
+                {f.availability && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="w-2 h-2 rounded-full" style={{background:f.availability==='available'?'#22c55e':f.availability==='busy'?'#ef4444':'#f59e0b'}}/>
+                    <span className="text-[10px]" style={{color:t.textMuted}}>{f.availability}</span>
+                  </div>
+                )}
               </div>
               <div className="flex gap-1.5">
                 <button onClick={()=>router.push(`/chat/${f.id}`)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium" style={{background:t.accentLight,color:t.accent}}>Chat</button>
-                <button onClick={()=>handleToggleFriend(f.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Remove</button>
-                <button onClick={()=>handleToggleBlock(f.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(107,114,128,0.1)',color:'#6b7280'}}>Block</button>
+                <button onClick={()=>handleUnfollow(f.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Unfollow</button>
+                <button onClick={()=>handleBlock(f.id)} className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(107,114,128,0.1)',color:'#6b7280'}}>Block</button>
               </div>
             </div>
           ))}
@@ -214,7 +373,7 @@ export default function FriendsPage() {
           <div className="p-4 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)',border:`1px solid ${t.cardBorder}`}}>
             <p className="text-[9px] font-bold mb-2 text-center" style={{color:t.textMuted}}>🗺️ Proximity Map (approximate zones)</p>
             <div className="relative flex items-center justify-center" style={{height:160}}>
-              {/* Concentric zone rings — only show rings within radius */}
+              {/* Concentric zone rings */}
               {[
                 {r:130,c:'#6b7280',km:25,l:'Same City'},
                 {r:104,c:'#f59e0b',km:10,l:'Same District'},
@@ -228,17 +387,16 @@ export default function FriendsPage() {
                   background:radiusKm>=ring.km?`${ring.c}08`:'transparent',
                   transition:'all 0.3s ease',
                 }}>
-                  {/* Zone label */}
                   <span style={{position:'absolute',top:-8,left:'50%',transform:'translateX(-50%)',fontSize:6,color:ring.c,fontWeight:600,whiteSpace:'nowrap',opacity:radiusKm>=ring.km?1:0.3}}>{ring.l} ({ring.km}km)</span>
                 </div>
               ))}
 
-              {/* Center (You) — pulsing dot */}
+              {/* Center (You) */}
               <div style={{position:'absolute',width:16,height:16,borderRadius:'50%',background:t.accent,zIndex:10,boxShadow:`0 0 16px ${t.accent}88`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <span style={{fontSize:6,color:'white',fontWeight:900}}>YOU</span>
               </div>
 
-              {/* People dots — positioned in their zones, only if within radius */}
+              {/* People dots */}
               {filteredDiscover.filter(p=>!sentRequests.includes(p.id)||true).slice(0,10).map((p,i)=>{
                 const z = ZONES[p.zone];
                 if(zoneMaxKm[p.zone] > radiusKm && !sentRequests.includes(p.id)) return null;
@@ -286,7 +444,7 @@ export default function FriendsPage() {
             <div className="flex gap-1.5 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
               <button onClick={()=>setDiscoverZone('all')} className="px-3 py-1.5 rounded-full text-[9px] font-semibold whitespace-nowrap" style={{background:discoverZone==='all'?t.accent+'20':t.card,color:discoverZone==='all'?t.accent:t.textMuted,border:`1px solid ${discoverZone==='all'?t.accent+'44':t.cardBorder}`}}>All Zones</button>
               {(Object.entries(ZONES) as [DistanceZone,typeof ZONES[DistanceZone]][]).map(([key,z])=>{
-                const count = DISCOVER_PROFILES.filter(p=>p.zone===key&&zoneMaxKm[p.zone]<=radiusKm).length;
+                const count = discoverProfiles.filter(p=>p.zone===key&&zoneMaxKm[p.zone]<=radiusKm).length;
                 return (
                   <button key={key} onClick={()=>setDiscoverZone(key)} disabled={zoneMaxKm[key as DistanceZone]>radiusKm} className="px-3 py-1.5 rounded-full text-[9px] font-semibold whitespace-nowrap disabled:opacity-30" style={{background:discoverZone===key?z.color+'20':t.card,color:discoverZone===key?z.color:t.textMuted,border:`1px solid ${discoverZone===key?z.color+'44':t.cardBorder}`}}>
                     {z.icon} {z.range} ({count})
@@ -299,7 +457,7 @@ export default function FriendsPage() {
           {/* People Count by Zone */}
           <div className="grid grid-cols-5 gap-1">
             {(Object.entries(ZONES) as [DistanceZone,typeof ZONES[DistanceZone]][]).map(([key,z])=>{
-              const count = DISCOVER_PROFILES.filter(p=>p.zone===key&&zoneMaxKm[p.zone]<=radiusKm).length;
+              const count = discoverProfiles.filter(p=>p.zone===key&&zoneMaxKm[p.zone]<=radiusKm).length;
               const inRange = zoneMaxKm[key as DistanceZone] <= radiusKm;
               return (
                 <button key={key} onClick={()=>inRange&&setDiscoverZone(key)} className="text-center p-1.5 rounded-lg" style={{background:discoverZone===key?z.color+'15':isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)',border:`1px solid ${discoverZone===key?z.color+'33':t.cardBorder}`,opacity:inRange?1:0.3}}>
@@ -318,18 +476,16 @@ export default function FriendsPage() {
               return (
                 <div key={p.id} className="rounded-xl p-3 group" style={{background:t.card,border:`1px solid ${isPending?'rgba(245,158,11,0.25)':t.cardBorder}`,transition:'all 0.2s'}}>
                   <div className="flex items-center gap-3">
-                    {/* Avatar Only — Name visible on hover via tooltip */}
+                    {/* Avatar Only */}
                     <div className="relative">
                       <div className="w-13 h-13 rounded-full flex items-center justify-center text-2xl flex-shrink-0 cursor-pointer" style={{width:52,height:52,background:`linear-gradient(135deg,${z.color}22,${z.color}11)`,border:`2.5px solid ${z.color}44`,transition:'all 0.3s'}} title={p.avatarName}>
                         {p.avatar}
                       </div>
-                      {/* Hover tooltip — shows avatar name only */}
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-10">
                         <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:isDark?'rgba(30,30,50,0.95)':'white',color:z.color,boxShadow:'0 2px 10px rgba(0,0,0,0.2)',border:`1px solid ${z.color}33`}}>{p.avatarName}</span>
                       </div>
                     </div>
                     <div className="flex-1">
-                      {/* Avatar Name (visible on hover) + Zone badge */}
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity" style={{color:z.color}}>{p.avatarName}</span>
                         {p.verified&&<span className="text-[7px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">✓ Verified</span>}
@@ -337,11 +493,9 @@ export default function FriendsPage() {
                       <div className="flex items-center gap-1 mb-1">
                         <span className="text-[8px] px-2 py-0.5 rounded-full font-semibold" style={{background:z.color+'15',color:z.color}}>{z.icon} {z.label} · {z.range}</span>
                       </div>
-                      {/* Interests (not skills — less identifying) */}
                       <div className="flex flex-wrap gap-1 mb-1">{p.interests.map(i=>(
                         <span key={i} className="text-[8px] px-1.5 py-0.5 rounded-full" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)',color:t.textSecondary}}>{i}</span>
                       ))}</div>
-                      {/* Safe metadata */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[8px]" style={{color:t.textMuted}}>⭐ {p.rating}</span>
                         {p.mutualFriends>0&&<span className="text-[8px] font-semibold" style={{color:t.accent}}>{p.mutualFriends} mutual</span>}
@@ -358,7 +512,7 @@ export default function FriendsPage() {
                         </div>
                       ) : (
                         <button onClick={()=>sendRequest(p.id)} className="px-4 py-2.5 rounded-xl text-[10px] font-bold text-white flex items-center gap-1.5" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,boxShadow:`0 2px 10px ${t.accent}30`}}>
-                          👋 Send Friend Request
+                          👋 Follow
                         </button>
                       )}
                     </div>
@@ -382,49 +536,49 @@ export default function FriendsPage() {
         </div>
       )}
 
-      {/* ═══ REQUESTS TAB ═══ */}
+      {/* ═══ REQUESTS TAB (Followers) ═══ */}
       {tab==='requests'&&(
         <div className="space-y-3">
-          {/* Incoming */}
+          {/* Incoming - followers not followed back */}
           <div>
-            <p className="text-[10px] font-bold mb-2" style={{color:t.textMuted}}>📥 INCOMING REQUESTS</p>
-            {pendingIn.length===0?(
-              <p className="text-center text-xs py-4 rounded-xl" style={{background:t.card,color:t.textMuted}}>No pending requests</p>
-            ):pendingIn.map(r=>{
-              const z = ZONES[r.zone];
-              return (
-                <div key={r.id} className="rounded-xl p-3 flex items-center gap-3 mb-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0" style={{background:`${z.color}15`,border:`2px solid ${z.color}44`}}>{r.avatar}</div>
-                  <div className="flex-1">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:z.color+'15',color:z.color}}>{z.icon} {z.label}</span>
-                    <div className="flex flex-wrap gap-1 mt-1">{r.interests.map(i=>(<span key={i} className="text-[8px] px-1.5 py-0.5 rounded-full" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}>{i}</span>))}</div>
-                    {r.mutualFriends>0&&<p className="text-[8px] mt-0.5" style={{color:t.accent}}>{r.mutualFriends} mutual friends</p>}
-                  </div>
-                  <div className="flex gap-1.5">
-                    <button onClick={()=>acceptRequest(r.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-white" style={{background:'#22c55e'}}>Accept</button>
-                    <button onClick={()=>declineRequest(r.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Decline</button>
-                  </div>
+            <p className="text-[10px] font-bold mb-2" style={{color:t.textMuted}}>📥 FOLLOWERS (not followed back)</p>
+            {loading ? (
+              <p className="text-center text-xs py-4 rounded-xl" style={{background:t.card,color:t.textMuted}}>Loading...</p>
+            ) : pendingIn.length===0?(
+              <p className="text-center text-xs py-4 rounded-xl" style={{background:t.card,color:t.textMuted}}>No pending followers to follow back</p>
+            ):pendingIn.map(r=>(
+              <div key={r.id} className="rounded-xl p-3 flex items-center gap-3 mb-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+                <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>
+                  {r.avatar_url ? <img src={r.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" /> : (r.full_name || '??').split(' ').map((n:string)=>n[0]).join('')}
                 </div>
-              );
-            })}
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{r.full_name}</p>
+                  {r.verified && <span className="text-[7px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">✓ Verified</span>}
+                </div>
+                <div className="flex gap-1.5">
+                  <button onClick={()=>acceptRequest(r.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-white" style={{background:'#22c55e'}}>Follow Back</button>
+                  <button onClick={()=>declineRequest(r.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Dismiss</button>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Sent */}
           <div>
-            <p className="text-[10px] font-bold mb-2" style={{color:t.textMuted}}>📤 SENT REQUESTS ({sentRequests.length})</p>
+            <p className="text-[10px] font-bold mb-2" style={{color:t.textMuted}}>📤 SENT FOLLOWS ({sentRequests.length})</p>
             {sentRequests.length===0?(
-              <p className="text-center text-xs py-4 rounded-xl" style={{background:t.card,color:t.textMuted}}>No sent requests</p>
+              <p className="text-center text-xs py-4 rounded-xl" style={{background:t.card,color:t.textMuted}}>No sent follow requests</p>
             ):sentRequests.map(id=>{
-              const p = DISCOVER_PROFILES.find(x=>x.id===id); if(!p) return null;
+              const p = discoverProfiles.find(x=>x.id===id); if(!p) return null;
               const z = ZONES[p.zone];
               return (
                 <div key={id} className="rounded-xl p-3 flex items-center gap-3 mb-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{background:`${z.color}15`}}>{p.avatar}</div>
                   <div className="flex-1">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:'rgba(245,158,11,0.12)',color:'#f59e0b'}}>⏳ Pending</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:'rgba(245,158,11,0.12)',color:'#f59e0b'}}>⏳ Following</span>
                     <div className="flex flex-wrap gap-1 mt-1">{p.interests.slice(0,2).map(i=>(<span key={i} className="text-[8px] px-1.5 py-0.5 rounded-full" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}>{i}</span>))}</div>
                   </div>
-                  <button onClick={()=>cancelRequest(id)} className="px-2.5 py-1.5 rounded-lg text-[10px]" style={{color:'#ef4444'}}>Cancel</button>
+                  <button onClick={()=>cancelRequest(id)} className="px-2.5 py-1.5 rounded-lg text-[10px]" style={{color:'#ef4444'}}>Unfollow</button>
                 </div>
               );
             })}
@@ -433,13 +587,15 @@ export default function FriendsPage() {
           {/* Accepted */}
           {acceptedRequests.length>0&&(
             <div>
-              <p className="text-[10px] font-bold mb-2" style={{color:'#22c55e'}}>✅ ACCEPTED</p>
+              <p className="text-[10px] font-bold mb-2" style={{color:'#22c55e'}}>✅ FOLLOWED BACK</p>
               {acceptedRequests.map(id=>{
                 const r = incomingRequests.find(x=>x.id===id); if(!r) return null;
                 return (
                   <div key={id} className="rounded-xl p-3 flex items-center gap-3 mb-2" style={{background:'rgba(34,197,94,0.05)',border:'1px solid rgba(34,197,94,0.15)'}}>
-                    <span className="text-lg">{r.avatar}</span>
-                    <div className="flex-1"><p className="text-xs font-bold" style={{color:'#22c55e'}}>New friend! 🎉</p><p className="text-[9px]" style={{color:t.textMuted}}>Name and profile now visible</p></div>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>
+                      {(r.full_name || '??').split(' ').map((n:string)=>n[0]).join('')}
+                    </div>
+                    <div className="flex-1"><p className="text-xs font-bold" style={{color:'#22c55e'}}>Now following each other! 🎉</p><p className="text-[9px]" style={{color:t.textMuted}}>{r.full_name}</p></div>
                     <button onClick={()=>router.push('/inbox')} className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{background:t.accentLight,color:t.accent}}>Chat</button>
                   </div>
                 );
@@ -452,15 +608,21 @@ export default function FriendsPage() {
       {/* ═══ BLOCKED TAB ═══ */}
       {tab==='blocked'&&(
         <div className="space-y-2">
-          {blocked.length===0?(
+          {loading ? (
+            <div className="text-center py-8 rounded-2xl" style={{background:t.card}}>
+              <p className="text-sm" style={{color:t.textSecondary}}>Loading...</p>
+            </div>
+          ) : blockedUsers.length===0?(
             <div className="text-center py-8 rounded-2xl" style={{background:t.card}}>
               <p className="text-sm" style={{color:t.textSecondary}}>No blocked users</p>
             </div>
-          ):blocked.map(b=>(
+          ):blockedUsers.map(b=>(
             <div key={b.id} className="rounded-xl p-3 flex items-center gap-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-              <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{background:'rgba(107,114,128,0.2)',color:'#6b7280'}}>{b.full_name.split(' ').map(n=>n[0]).join('')}</div>
+              <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold" style={{background:'rgba(107,114,128,0.2)',color:'#6b7280'}}>
+                {b.avatar_url ? <img src={b.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" /> : (b.full_name || '??').split(' ').map((n:string)=>n[0]).join('')}
+              </div>
               <div className="flex-1"><p className="font-semibold text-sm" style={{color:t.textMuted}}>{b.full_name}</p></div>
-              <button onClick={()=>handleToggleBlock(b.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(34,197,94,0.1)',color:'#22c55e'}}>Unblock</button>
+              <button onClick={()=>handleUnblock(b.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-medium" style={{background:'rgba(34,197,94,0.1)',color:'#22c55e'}}>Unblock</button>
             </div>
           ))}
         </div>

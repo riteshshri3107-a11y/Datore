@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { signOut } from '@/lib/supabase';
 import { IcoUser, IcoSettings, IcoWallet, IcoDashboard, IcoQR, IcoShield, IcoFriends, IcoCalendar, IcoCommunity, IcoChat, IcoJobs, IcoMap, IcoCompare, IcoStar, IcoMarket, IcoList, IcoBell, IcoSearch, IcoBookmark, IcoBack, IcoLogout, IcoMic } from '@/components/Icons';
@@ -68,6 +69,7 @@ const MENU = [
 export default function MenuPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   return (
     <div className="space-y-4 animate-fade-in">

@@ -3,12 +3,14 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoShield } from '@/components/Icons';
 
 export default function SOSPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [activated, setActivated] = useState(false);
   const [countdown, setCountdown] = useState(5);

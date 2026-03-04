@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getNearbyPosts, getListings } from '@/lib/supabase';
 import { IcoBack, IcoSearch, IcoStar, IcoHeart, IcoMic, IcoUser, IcoSend, IcoChat, IcoPlus } from '@/components/Icons';
 
 /* NearBy — Combined Local Jobs + Buy/Sell Marketplace
@@ -58,9 +60,67 @@ export default function NearByPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user } = useAuthStore();
   const [section,setSection] = useState<'jobs'|'market'>('jobs');
   const [search,setSearch] = useState('');
   const [voiceSrch,setVoiceSrch] = useState(false);
+  const [nearbyJobsFromDB, setNearbyJobsFromDB] = useState<LocalJob[]>([]);
+  const [nearbyItemsFromDB, setNearbyItemsFromDB] = useState<MarketItem[]>([]);
+  const [loadingNearby, setLoadingNearby] = useState(true);
+
+  // Fetch nearby data from Supabase (RPC get_nearby_posts + listings)
+  useEffect(() => {
+    async function loadNearby() {
+      setLoadingNearby(true);
+      try {
+        // Try to get user location for nearby posts
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            try {
+              const posts = await getNearbyPosts(pos.coords.latitude, pos.coords.longitude, 25);
+              // We still use demo data as the primary source since nearby posts may not be jobs
+              // Real nearby posts could enhance the experience
+            } catch {}
+          }, () => {}, { timeout: 5000 });
+        }
+
+        // Try to fetch real marketplace listings
+        const listings = await getListings();
+        if (listings && listings.length > 0) {
+          setNearbyItemsFromDB(listings.map((l: any) => ({
+            id: l.id,
+            title: l.title || 'Item',
+            seller: l.profiles?.name || 'Seller',
+            avatar: (l.profiles?.name || 'S')[0],
+            cat: (l.category || 'Home') as ItemCat,
+            price: l.price || 0,
+            condition: (l.condition || 'Good') as 'New'|'Like New'|'Good'|'Fair',
+            location: l.location_text || '',
+            distance: '',
+            posted: l.created_at ? timeAgoShort(l.created_at) : '',
+            desc: l.description || '',
+            img: getCatEmoji(l.category),
+          })));
+        }
+      } catch {}
+      setLoadingNearby(false);
+    }
+    loadNearby();
+  }, []);
+
+  function timeAgoShort(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hrs = Math.floor(diff / 3600000);
+    if (hrs < 1) return 'Just now';
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
+  function getCatEmoji(cat: string) {
+    const map: Record<string, string> = { Electronics: 'ELEC', Furniture: 'FURN', Clothing: 'CLO', Sports: 'SPRT', Books: 'BOOK', Toys: 'TOY', Vehicles: 'VEH', Home: 'HOME', Garden: 'GDN', Free: 'FREE' };
+    return map[cat] || 'ITEM';
+  }
+
   // Jobs state
   const [jobCat,setJobCat] = useState<JobCat>('All');
   const [selJob,setSelJob] = useState<LocalJob|null>(null);

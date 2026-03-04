@@ -4,13 +4,16 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { addUserListing } from '@/lib/demoData';
+import { useAuthStore } from '@/store/useAuthStore';
+import { createListing, uploadPostMedia } from '@/lib/supabase';
 
 export default function CreateListingPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, profile } = useAuthStore();
   const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Electronics');
   const [condition, setCondition] = useState('Like New');
@@ -29,9 +32,22 @@ export default function CreateListingPage() {
     e.target.value = '';
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!title || !price) return alert('Please fill in title and price');
-    addUserListing({ title, price: parseFloat(price), category, condition, desc });
+    if (!user?.id) return alert('Please log in first');
+    const { data, error } = await createListing({
+      user_id: user.id,
+      user_name: profile?.name || 'User',
+      title,
+      description: desc,
+      price: parseFloat(price),
+      category,
+      condition,
+      location_text: location || profile?.city || '',
+      images: photos.map(p => p.preview),
+      status: 'active',
+    });
+    if (error) return alert('Error: ' + error.message);
     setPosted(true);
     setTimeout(() => router.push('/marketplace/my-listings'), 2000);
   };

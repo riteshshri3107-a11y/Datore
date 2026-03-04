@@ -1,12 +1,14 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getMyBookings } from '@/lib/supabase';
 import { IcoBack, IcoCalendar } from '@/components/Icons';
 
-const BOOKINGS = [
+const DEMO_BOOKINGS = [
   { id:'b1', title:'House Cleaning', worker:'Anita Sharma', date:'2026-03-01', time:'10:00 AM', duration:'3 hrs', status:'confirmed', amount:120 },
   { id:'b2', title:'Plumbing Repair', worker:'Mike Chen', date:'2026-03-03', time:'2:00 PM', duration:'2 hrs', status:'pending', amount:85 },
   { id:'b3', title:'Tutoring Session', worker:'Priya K.', date:'2026-03-05', time:'4:00 PM', duration:'1.5 hrs', status:'confirmed', amount:60 },
@@ -21,10 +23,37 @@ export default function CalendarPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [view, setView] = useState<'month'|'list'>('month');
   const [currentMonth, setCurrentMonth] = useState(2); // March
   const [currentYear] = useState(2026);
   const [selectedDate, setSelectedDate] = useState<string|null>(null);
+  const [BOOKINGS, setBookings] = useState(DEMO_BOOKINGS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const data = await getMyBookings(user.id);
+          if (data && data.length > 0) {
+            const mapped = data.map((b: any) => ({
+              id: b.id,
+              title: b.title || b.service_type || 'Booking',
+              worker: b.worker_name || 'Worker',
+              date: b.scheduled_date?.split('T')[0] || b.created_at?.split('T')[0] || '',
+              time: b.scheduled_time || b.scheduled_date?.split('T')[1]?.slice(0, 5) || 'TBD',
+              duration: b.duration ? `${b.duration} hrs` : 'TBD',
+              status: b.status || 'pending',
+              amount: b.amount || b.total_amount || 0,
+            }));
+            setBookings(mapped.length > 0 ? mapped : DEMO_BOOKINGS);
+          }
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();

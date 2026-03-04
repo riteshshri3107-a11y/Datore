@@ -4,29 +4,28 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { CHAT_CONTACTS, AUTO_REPLIES } from '@/lib/demoData';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getChatMessages, sendMessage as sendChatMessage, getProfile, supabase, createChatRoom } from '@/lib/supabase';
 import { IcoBack, IcoCamera, IcoImage, IcoMic, IcoSend, IcoPlay, IcoStop, IcoVideo } from '@/components/Icons';
 
-type Msg = { text:string; fromMe:boolean; time:string; type?:'text'|'image'|'video'|'audio'; media?:string; };
+type Msg = { id?:string; text:string; fromMe:boolean; time:string; type?:'text'|'image'|'video'|'audio'; media?:string; };
 
 export default function ChatPage() {
   const router = useRouter(); const params = useParams();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const id = params.id as string;
-  const contact = CHAT_CONTACTS[id] || { name:'User', status:'online', skills:'General' };
-  const [messages, setMessages] = useState<Msg[]>([
-    { text:`Hi! I saw your profile. I'm interested in your ${contact.skills} services.`, fromMe:true, time:'2:30 PM', type:'text' },
-    { text:(AUTO_REPLIES[id]||AUTO_REPLIES['default'])[0], fromMe:false, time:'2:31 PM', type:'text' },
-  ]);
+  const [contact, setContact] = useState<{name:string;status:string;skills:string}>({ name:'User', status:'online', skills:'General' });
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{url:string;type:'image'|'video'}|null>(null);
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState<string|null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const replyIdx = useRef(1);
   const photoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -34,30 +33,73 @@ export default function ChatPage() {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<any>(null);
 
+  useEffect(() => {
+    loadChat();
+  }, [id, user?.id]);
+
+  async function loadChat() {
+    if (!user?.id) return;
+    // Try to load contact profile
+    const { data: profile } = await getProfile(id);
+    if (profile) {
+      setContact({ name: profile.name || 'User', status: 'online', skills: '' });
+    }
+
+    // Find or create chat room
+    const room = await createChatRoom(user.id, id);
+    let roomId = room?.id;
+    if (roomId) {
+      setChatRoomId(roomId);
+      // Load messages
+      const { data: msgs } = await getChatMessages(roomId);
+      if (msgs && msgs.length > 0) {
+        setMessages(msgs.map((m: any) => ({
+          id: m.id,
+          text: m.content || '',
+          fromMe: m.sender_id === user.id,
+          time: new Date(m.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          type: m.msg_type || 'text',
+          media: m.media_url,
+        })));
+      }
+
+      // Subscribe to new messages
+      const channel = supabase.channel(`chat-${roomId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_room_id=eq.${roomId}` }, (payload: any) => {
+          const m = payload.new;
+          if (m.sender_id !== user.id) {
+            setMessages(prev => [...prev, {
+              id: m.id,
+              text: m.content || '',
+              fromMe: false,
+              time: new Date(m.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+              type: m.msg_type || 'text',
+              media: m.media_url,
+            }]);
+          }
+        })
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    }
+  }
+
   useEffect(() => { scrollRef.current?.scrollTo({ top:scrollRef.current.scrollHeight, behavior:'smooth' }); }, [messages, typing]);
 
   const now = () => new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
-  const autoReply = () => {
-    setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      const replies = AUTO_REPLIES[id]||AUTO_REPLIES['default'];
-      const reply = replies[replyIdx.current % replies.length];
-      replyIdx.current++;
-      setMessages(p=>[...p, { text:reply, fromMe:false, time:now(), type:'text' }]);
-    }, 1200+Math.random()*1500);
-  };
+  const send = async () => {
+    if (!user?.id) return;
+    const text = input.trim();
+    if (!text && !mediaPreview) return;
 
-  const send = () => {
-    if (mediaPreview) {
-      setMessages(p=>[...p, { text:input.trim()||'', fromMe:true, time:now(), type:mediaPreview.type, media:mediaPreview.url }]);
-      setMediaPreview(null); setInput(''); setShowAttach(false);
-      autoReply(); return;
+    const newMsg: Msg = { text: text || '', fromMe: true, time: now(), type: mediaPreview?.type || 'text', media: mediaPreview?.url };
+    setMessages(p => [...p, newMsg]);
+    setInput(''); setMediaPreview(null); setShowAttach(false);
+
+    if (chatRoomId) {
+      await sendChatMessage({ chat_room_id: chatRoomId, sender_id: user.id, sender_name: '', content: text || 'Media message', msg_type: mediaPreview?.type === 'image' ? 'image' : 'text' });
     }
-    if (!input.trim()) return;
-    setMessages(p=>[...p, { text:input.trim(), fromMe:true, time:now(), type:'text' }]);
-    setInput(''); autoReply();
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>, type:'image'|'video') => {
@@ -78,8 +120,11 @@ export default function ChatPage() {
         const blob = new Blob(chunksRef.current, { type:'audio/webm' });
         const reader = new FileReader();
         reader.onload = (ev) => {
-          setMessages(p=>[...p, { text:`Voice message (${recordTime}s)`, fromMe:true, time:now(), type:'audio', media:ev.target?.result as string }]);
-          autoReply();
+          const newMsg: Msg = { text:`Voice message (${recordTime}s)`, fromMe:true, time:now(), type:'audio', media:ev.target?.result as string };
+          setMessages(p=>[...p, newMsg]);
+          if (chatRoomId && user?.id) {
+            sendChatMessage({ chat_room_id: chatRoomId, sender_id: user.id, sender_name: '', content: `Voice message (${recordTime}s)`, msg_type: 'text' });
+          }
         };
         reader.readAsDataURL(blob);
         setRecordTime(0);
@@ -89,7 +134,7 @@ export default function ChatPage() {
       setRecording(true);
       let sec = 0;
       timerRef.current = setInterval(() => { sec++; setRecordTime(sec); }, 1000);
-    } catch { alert('Microphone access denied. Please allow mic access to send voice messages.'); }
+    } catch { alert('Microphone access denied.'); }
   };
 
   const stopRecording = () => {
@@ -115,8 +160,14 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div ref={scrollRef} style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:8 }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign:'center', padding:'40px 20px' }}>
+            <p style={{ fontSize:32, marginBottom:8 }}>💬</p>
+            <p style={{ fontSize:13, color:t.textMuted }}>Start a conversation with {contact.name}</p>
+          </div>
+        )}
         {messages.map((msg,i)=>(
-          <div key={i} style={{ display:'flex', justifyContent:msg.fromMe?'flex-end':'flex-start' }}>
+          <div key={msg.id || i} style={{ display:'flex', justifyContent:msg.fromMe?'flex-end':'flex-start' }}>
             <div style={{ maxWidth:'75%', padding:msg.type==='image'||msg.type==='video'?4:'10px 14px', borderRadius:msg.fromMe?'16px 16px 4px 16px':'16px 16px 16px 4px', background:msg.fromMe?`linear-gradient(135deg,${t.accent},#8b5cf6)`:(isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'), color:msg.fromMe?'white':t.text, fontSize:13, lineHeight:1.5, overflow:'hidden' }}>
               {msg.type==='image' && msg.media && <img src={msg.media} alt="Shared" style={{ width:'100%', maxHeight:220, objectFit:'cover', borderRadius:12, display:'block' }} />}
               {msg.type==='video' && msg.media && <video src={msg.media} controls playsInline style={{ width:'100%', maxHeight:220, borderRadius:12, display:'block' }} />}

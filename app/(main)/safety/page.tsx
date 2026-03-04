@@ -1,17 +1,34 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS } from '@/lib/demoData';
+import { searchWorkers } from '@/lib/supabase';
 
 export default function SafetyPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const verified = DEMO_WORKERS.filter(w => w.is_police_verified);
-  const avgTrust = Math.round(DEMO_WORKERS.reduce((a,w) => a + w.trust_score, 0) / DEMO_WORKERS.length);
+  const { user } = useAuthStore();
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) { router.push('/auth/login'); return; }
+    searchWorkers({ available: true }).then(data => {
+      setWorkers(data || []);
+      setLoading(false);
+    });
+  }, [user, router]);
+
+  const verified = workers.filter((w: any) => w.profiles?.verified);
+  const avgTrust = workers.length > 0
+    ? Math.round(workers.reduce((a: number, w: any) => a + (w.profiles?.rating || 0), 0) / workers.length * 20)
+    : 0;
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: t.accent, borderTopColor: 'transparent' }} /></div>;
 
   return (
     <div className="space-y-4 animate-fade-in ">
@@ -21,7 +38,7 @@ export default function SafetyPage() {
       <div className="glass-card rounded-2xl p-5 text-center" style={{ background:`linear-gradient(135deg,rgba(34,197,94,0.08),rgba(59,130,246,0.08))`, borderColor:t.cardBorder }}>
         <p className="text-4xl font-bold" style={{ color:'#22c55e' }}>{avgTrust}</p>
         <p className="text-sm font-medium mt-1">Platform Average Trust Score</p>
-        <p className="text-xs mt-1" style={{ color:t.textMuted }}>{verified.length}/{DEMO_WORKERS.length} workers are police verified</p>
+        <p className="text-xs mt-1" style={{ color:t.textMuted }}>{verified.length}/{workers.length} workers are verified</p>
       </div>
 
       {/* Safety Features */}
@@ -68,12 +85,13 @@ export default function SafetyPage() {
 
       {/* Verified Workers */}
       <div className="glass-card rounded-2xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
-        <h3 className="font-semibold text-sm mb-3">Police Verified Workers</h3>
+        <h3 className="font-semibold text-sm mb-3">Verified Workers</h3>
         <div className="space-y-2">
-          {verified.map(w => (
+          {verified.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.textMuted }}>No verified workers found</p>}
+          {verified.map((w: any) => (
             <div key={w.id} onClick={() => router.push(`/worker/${w.id}`)} className="flex items-center gap-3 p-2 rounded-xl cursor-pointer" style={{ background:isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)' }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background:`${t.accent}22`, color:t.accent }}>{w.full_name.split(' ').map(n=>n[0]).join('')}</div>
-              <div className="flex-1"><p className="text-sm font-medium">{w.full_name}</p><p className="text-[10px]" style={{ color:t.textMuted }}>Trust: {w.trust_score} - {w.skills.join(', ')}</p></div>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background:`${t.accent}22`, color:t.accent }}>{(w.profiles?.name || 'W').split(' ').map((n: string) => n[0]).join('')}</div>
+              <div className="flex-1"><p className="text-sm font-medium">{w.profiles?.name || 'Worker'}</p><p className="text-[10px]" style={{ color:t.textMuted }}>Rating: {w.profiles?.rating || 'N/A'} - {(w.skills || []).join(', ') || 'General'}</p></div>
               <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e' }}>Verified</span>
             </div>
           ))}

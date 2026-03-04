@@ -1,22 +1,54 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { searchWorkers } from '@/lib/supabase';
 import { DEMO_WORKERS } from '@/lib/demoData';
 
 export default function ComparePage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [selected, setSelected] = useState<string[]>([]);
+  const [allWorkers, setAllWorkers] = useState(DEMO_WORKERS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await searchWorkers();
+        if (data && data.length > 0) {
+          const mapped = data.map((w: any) => ({
+            id: w.id,
+            full_name: w.profiles?.name || 'Worker',
+            skills: w.skills || [],
+            rating: w.profiles?.rating || 0,
+            trust_score: w.trust_score || 0,
+            hourly_rate: w.hourly_rate || 0,
+            fixed_rate: w.fixed_rate || 0,
+            completed_jobs: w.completed_jobs || 0,
+            review_count: w.profiles?.review_count || 0,
+            experience_years: w.experience_years || 0,
+            city: w.profiles?.city || '',
+            availability: w.available ? 'available' : 'busy',
+            is_police_verified: w.profiles?.verified || false,
+          }));
+          setAllWorkers(prev => mapped.length > 0 ? mapped : prev);
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
 
   const toggle = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev);
   };
 
-  const workers = DEMO_WORKERS.filter(w => selected.includes(w.id));
+  const workers = allWorkers.filter(w => selected.includes(w.id));
 
   const metrics = [
     { label:'Rating', key:'rating' as const, format:(v:number) => `${v} / 5.0` },
@@ -36,7 +68,7 @@ export default function ComparePage() {
         <div className="glass-card rounded-2xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
           <p className="text-sm font-medium mb-3">Select 2-3 workers to compare ({selected.length}/3)</p>
           <div className="grid grid-cols-2 gap-2">
-            {DEMO_WORKERS.map(w => (
+            {allWorkers.map(w => (
               <button key={w.id} onClick={() => toggle(w.id)}
                 className="p-3 rounded-xl text-left flex items-center gap-2"
                 style={{ background:selected.includes(w.id)?t.accentLight:(isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)'), border:`1px solid ${selected.includes(w.id)?t.accent+'55':t.cardBorder}` }}>

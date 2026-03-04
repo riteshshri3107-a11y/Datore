@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, toggleFavorite, getFavorites } from '@/lib/demoData';
+import { searchWorkers } from '@/lib/supabase';
 
 const CENTER = { lat: 43.6532, lng: -79.3832 };
 
@@ -16,8 +16,6 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-const ALL_SKILLS = Array.from(new Set(DEMO_WORKERS.flatMap(w => w.skills)));
-
 export default function MapPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
@@ -28,24 +26,44 @@ export default function MapPage() {
   const [selected, setSelected] = useState<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
-  const [isFav, setIsFav] = useState(false);
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [allSkills, setAllSkills] = useState<string[]>([]);
   const mapRef = useRef<any>(null);
   const circleRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch workers from Supabase
+  useEffect(() => {
+    searchWorkers({ available: false }).then(data => {
+      const processed = (data || []).map((w: any) => ({
+        ...w,
+        full_name: w.profiles?.name || 'Unknown',
+        rating: w.profiles?.rating || 0,
+        review_count: w.profiles?.review_count || 0,
+        city: w.profiles?.city || '',
+        avatar_url: w.profiles?.avatar_url || '',
+        verified: w.profiles?.verified || false,
+        lat: w.profiles?.lat || CENTER.lat + (Math.random() - 0.5) * 0.1,
+        lng: w.profiles?.lng || CENTER.lng + (Math.random() - 0.5) * 0.1,
+        availability: w.available ? 'available' : 'busy',
+      }));
+      setWorkers(processed);
+      const skills = Array.from(new Set(processed.flatMap((w: any) => w.skills || [])));
+      setAllSkills(skills as string[]);
+    });
+  }, []);
+
   // Filter workers by search, skill, and radius
-  const filtered = DEMO_WORKERS.filter(w => {
+  const filtered = workers.filter(w => {
     const dist = distanceKm(CENTER.lat, CENTER.lng, w.lat, w.lng);
     const inRadius = dist <= radius;
-    const matchSearch = !search || w.full_name.toLowerCase().includes(search.toLowerCase()) || w.skills.some(s => s.toLowerCase().includes(search.toLowerCase()));
-    const matchSkill = skillFilter === 'All' || w.skills.includes(skillFilter);
+    const matchSearch = !search || (w.full_name || '').toLowerCase().includes(search.toLowerCase()) || (w.skills || []).some((s: string) => s.toLowerCase().includes(search.toLowerCase()));
+    const matchSkill = skillFilter === 'All' || (w.skills || []).includes(skillFilter);
     return inRadius && matchSearch && matchSkill;
   });
 
   const availableCount = filtered.filter(w => w.availability === 'available').length;
-
-  useEffect(() => { if (selected) setIsFav(getFavorites().includes(selected.id)); }, [selected]);
 
   // Initialize map once
   const initMap = useCallback(() => {
@@ -131,7 +149,7 @@ export default function MapPage() {
         className: '',
         html: `<div style="background:${bg};border-radius:14px;padding:4px 10px;color:white;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 4px 15px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;gap:5px;cursor:pointer;">` +
               `<span style="font-size:12px;">*${w.rating}</span>` +
-              `<span>$${w.hourly_rate}/hr</span>` +
+              `<span>${w.hourly_rate ? '$' + w.hourly_rate + '/hr' : 'N/A'}</span>` +
               `<span style="width:7px;height:7px;border-radius:50%;background:${ac};"></span></div>`,
         iconSize: [130, 28], iconAnchor: [65, 14]
       });
@@ -140,8 +158,6 @@ export default function MapPage() {
       markersRef.current.push(marker);
     });
   }, [radius, search, skillFilter, mapReady, filtered]);
-
-  const handleFav = () => { if (!selected) return; const now = toggleFavorite(selected.id); setIsFav(now); };
 
   return (
     <div style={{ margin: '-1rem -0.75rem', height: 'calc(100vh - 60px)', position: 'relative' }}>
@@ -182,7 +198,7 @@ export default function MapPage() {
             style={{ padding: '4px 12px', borderRadius: 10, background: skillFilter === 'All' ? (accentColor || '#6366f1') : (isDark ? 'rgba(15,15,26,0.8)' : 'rgba(255,255,255,0.8)'), color: skillFilter === 'All' ? 'white' : t.textSecondary, border: `1px solid ${skillFilter === 'All' ? 'transparent' : t.cardBorder}`, fontSize: 10, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             All Skills
           </button>
-          {ALL_SKILLS.map(sk => (
+          {allSkills.map(sk => (
             <button key={sk} onClick={() => setSkillFilter(sk)}
               style={{ padding: '4px 12px', borderRadius: 10, background: skillFilter === sk ? (accentColor || '#6366f1') : (isDark ? 'rgba(15,15,26,0.8)' : 'rgba(255,255,255,0.8)'), color: skillFilter === sk ? 'white' : t.textSecondary, border: `1px solid ${skillFilter === sk ? 'transparent' : t.cardBorder}`, fontSize: 10, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {sk}
@@ -228,31 +244,35 @@ export default function MapPage() {
           <div className="" style={{ background: isDark ? 'rgba(15,15,26,0.96)' : 'rgba(255,255,255,0.96)', borderRadius: 20, padding: 16, border: `1px solid ${t.cardBorder}`, boxShadow: '0 -4px 30px rgba(0,0,0,0.2)', backdropFilter: 'blur(24px)' }}>
             <button onClick={() => setSelected(null)} style={{ position: 'absolute', top: 16, right: 16, color: t.textMuted, background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', fontWeight: 700 }}>X</button>
             <div style={{ display: 'flex', gap: 12 }}>
-              <div onClick={() => router.push(`/worker/${selected.id}`)} style={{ width: 54, height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, background: `linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color: t.accent, cursor: 'pointer', flexShrink: 0, position: 'relative' }}>
-                {selected.full_name.split(' ').map((n: string) => n[0]).join('')}
+              <div onClick={() => router.push(`/worker/${selected.id}`)} style={{ width: 54, height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, background: `linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color: t.accent, cursor: 'pointer', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                {selected.avatar_url ? <img src={selected.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : (selected.full_name || '?').split(' ').map((n: string) => n[0]).join('')}
                 <div style={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderRadius: '50%', background: selected.availability === 'available' ? '#22c55e' : selected.availability === 'busy' ? '#ef4444' : '#f59e0b', border: `2px solid ${isDark ? '#0f0f1a' : '#fff'}` }}></div>
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{selected.full_name} {selected.is_police_verified ? '[V]' : ''}</p>
+                <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{selected.full_name} {selected.verified ? '[V]' : ''}</p>
                 <p style={{ fontSize: 12, color: t.textSecondary, margin: '2px 0' }}>
-                  *{selected.rating} | {selected.completed_jobs} jobs | Trust: <span style={{ color: selected.trust_score >= 80 ? '#22c55e' : '#eab308', fontWeight: 700 }}>{selected.trust_score}</span>
+                  *{selected.rating} | {selected.review_count || 0} reviews
                 </p>
                 <p style={{ fontSize: 10, color: t.textMuted }}>{distanceKm(CENTER.lat, CENTER.lng, selected.lat, selected.lng).toFixed(1)}km away</p>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                  {selected.skills.map((s: string) => <span key={s} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: t.accentLight, color: t.accent }}>{s}</span>)}
+                  {(selected.skills || []).map((s: string) => <span key={s} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: t.accentLight, color: t.accent }}>{s}</span>)}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <span style={{ fontWeight: 700, fontSize: 17, color: t.accent }}>${selected.hourly_rate}</span>
-                <div style={{ fontSize: 10, color: t.textMuted }}>/hr</div>
-                {selected.fixed_rate && <div style={{ fontSize: 10, color: t.textMuted }}>${selected.fixed_rate} fixed</div>}
+                {selected.hourly_rate ? (
+                  <>
+                    <span style={{ fontWeight: 700, fontSize: 17, color: t.accent }}>${selected.hourly_rate}</span>
+                    <div style={{ fontSize: 10, color: t.textMuted }}>/hr</div>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 12, color: t.textMuted }}>Rate N/A</span>
+                )}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={() => router.push(`/chat/${selected.id}`)} style={{ flex: 1, padding: '10px', borderRadius: 14, background: `linear-gradient(135deg,${t.accent},#8b5cf6)`, color: 'white', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Chat</button>
               <button onClick={() => router.push(`/worker/${selected.id}`)} style={{ flex: 1, padding: '10px', borderRadius: 14, background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Hire</button>
               <button onClick={() => router.push(`/qr-verify`)} style={{ padding: '10px 14px', borderRadius: 14, background: 'rgba(6,182,212,0.12)', color: '#06b6d4', border: `1px solid #06b6d433`, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>QR</button>
-              <button onClick={handleFav} style={{ padding: '10px 14px', borderRadius: 14, background: isFav ? 'rgba(234,179,8,0.15)' : t.surface, color: isFav ? '#eab308' : t.textSecondary, border: `1px solid ${t.cardBorder}`, fontSize: 12, cursor: 'pointer' }}>{isFav ? 'Saved' : 'Save'}</button>
             </div>
           </div>
         </div>

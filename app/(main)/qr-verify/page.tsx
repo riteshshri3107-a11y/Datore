@@ -1,27 +1,65 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
-import { QR_VERIFICATION_DATA, DEMO_WORKERS } from '@/lib/demoData';
+import { searchWorkers, getWorker, recordQRScan } from '@/lib/supabase';
 
 export default function QRVerifyPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [mode, setMode] = useState<'scan'|'result'|'myqr'>('scan');
   const [scannedId, setScannedId] = useState<string|null>(null);
   const [scanning, setScanning] = useState(false);
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const simulateScan = (id: string) => {
+  useEffect(() => {
+    if (!user) { router.push('/auth/login'); return; }
+    searchWorkers({ available: true }).then(data => {
+      setWorkers(data || []);
+      setLoading(false);
+    });
+  }, [user, router]);
+
+  const simulateScan = async (id: string) => {
     setScanning(true);
-    setTimeout(() => { setScannedId(id); setMode('result'); setScanning(false); }, 1500);
+    try {
+      const worker = await getWorker(id);
+      if (user) {
+        await recordQRScan({ worker_id: id, scanner_id: user.id });
+      }
+      const profile = worker?.profiles || {};
+      setResult({
+        name: profile.name || 'Unknown Worker',
+        photo: (profile.name || 'W').split(' ').map((n: string) => n[0]).join(''),
+        rating: profile.rating || 0,
+        completedJobs: profile.review_count || 0,
+        policeVerified: profile.verified || false,
+        backgroundCheck: profile.verified ? 'Clear' : 'Pending',
+        trustScore: Math.round((profile.rating || 0) * 20),
+        behaviorBadge: (profile.rating || 0) >= 4.5 ? 'Excellent' : (profile.rating || 0) >= 4 ? 'Very Good' : 'Good',
+        safetyLevel: (profile.rating || 0) >= 4 ? 'High' : (profile.rating || 0) >= 3 ? 'Medium' : 'Low',
+        reviewSummary: `Based on ${profile.review_count || 0} reviews. Skills: ${(worker?.skills || []).join(', ') || 'General'}`,
+        joined: 'Member',
+      });
+      setScannedId(id);
+      setMode('result');
+    } catch (err) {
+      console.error('QR scan error:', err);
+    }
+    setScanning(false);
   };
 
-  const result = scannedId ? QR_VERIFICATION_DATA[scannedId] : null;
   const safetyColors: Record<string,string> = { High:'#22c55e', Medium:'#f59e0b', Low:'#ef4444' };
   const badgeColors: Record<string,string> = { Excellent:'#22c55e', 'Very Good':'#3b82f6', Good:'#f59e0b' };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: t.accent, borderTopColor: 'transparent' }} /></div>;
 
   return (
     <div className="space-y-4 animate-fade-in ">
@@ -32,7 +70,7 @@ export default function QRVerifyPage() {
 
       {/* Mode tabs */}
       <div className="flex gap-2">
-        <button onClick={() => { setMode('scan'); setScannedId(null); }} className="flex-1 py-2.5 rounded-xl text-xs font-medium" style={{ background:mode==='scan'?t.accentLight:'transparent', color:mode==='scan'?t.accent:t.textSecondary }}>Scan Worker QR</button>
+        <button onClick={() => { setMode('scan'); setScannedId(null); setResult(null); }} className="flex-1 py-2.5 rounded-xl text-xs font-medium" style={{ background:mode==='scan'?t.accentLight:'transparent', color:mode==='scan'?t.accent:t.textSecondary }}>Scan Worker QR</button>
         <button onClick={() => setMode('myqr')} className="flex-1 py-2.5 rounded-xl text-xs font-medium" style={{ background:mode==='myqr'?t.accentLight:'transparent', color:mode==='myqr'?t.accent:t.textSecondary }}>My QR Code</button>
       </div>
 
@@ -55,23 +93,24 @@ export default function QRVerifyPage() {
                     <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 rounded-br-lg" style={{ borderColor:t.accent }}></div>
                     <div className="absolute inset-0 flex items-center justify-center"><p className="text-white text-xs text-center px-4 opacity-60">Point camera at worker's QR code</p></div>
                   </div>
-                  <p className="text-white text-[10px] mt-3 opacity-50">Camera access simulated in demo</p>
+                  <p className="text-white text-[10px] mt-3 opacity-50">Camera access simulated</p>
                 </>
               )}
             </div>
           </div>
 
-          {/* Demo: Quick scan buttons */}
+          {/* Workers to scan */}
           <div className="glass-card rounded-2xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
-            <p className="text-xs font-semibold mb-3" style={{ color:t.textMuted }}>DEMO: Tap to simulate scanning a worker</p>
+            <p className="text-xs font-semibold mb-3" style={{ color:t.textMuted }}>Available Workers -- Tap to simulate scan</p>
             <div className="grid grid-cols-2 gap-2">
-              {DEMO_WORKERS.map(w => (
+              {workers.slice(0, 6).map((w: any) => (
                 <button key={w.id} onClick={() => simulateScan(w.id)} className="p-3 rounded-xl text-left flex items-center gap-2" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`1px solid ${t.cardBorder}` }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold" style={{ background:`${t.accent}22`, color:t.accent }}>{w.full_name.split(' ').map(n=>n[0]).join('')}</div>
-                  <div><p className="text-xs font-medium">{w.full_name}</p><p className="text-[10px]" style={{ color:t.textMuted }}>{w.skills[0]}</p></div>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold" style={{ background:`${t.accent}22`, color:t.accent }}>{(w.profiles?.name || 'W').split(' ').map((n: string) => n[0]).join('')}</div>
+                  <div><p className="text-xs font-medium">{w.profiles?.name || 'Worker'}</p><p className="text-[10px]" style={{ color:t.textMuted }}>{(w.skills || [])[0] || 'General'}</p></div>
                 </button>
               ))}
             </div>
+            {workers.length === 0 && <p className="text-xs text-center py-4" style={{ color: t.textMuted }}>No workers available</p>}
           </div>
         </div>
       )}
@@ -137,13 +176,13 @@ export default function QRVerifyPage() {
                 <p className="text-xs" style={{ color:t.textSecondary }}>{result.reviewSummary}</p>
               </div>
 
-              <p className="text-[10px] text-center" style={{ color:t.textMuted }}>Member since {result.joined} - Verified at {new Date().toLocaleTimeString()}</p>
+              <p className="text-[10px] text-center" style={{ color:t.textMuted }}>{result.joined} - Verified at {new Date().toLocaleTimeString()}</p>
             </div>
           </div>
 
           <div className="flex gap-2">
             <button onClick={() => router.push(`/worker/${scannedId}`)} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>View Full Profile</button>
-            <button onClick={() => { setMode('scan'); setScannedId(null); }} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background:t.surface, color:t.text, border:`1px solid ${t.cardBorder}` }}>Scan Another</button>
+            <button onClick={() => { setMode('scan'); setScannedId(null); setResult(null); }} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background:t.surface, color:t.text, border:`1px solid ${t.cardBorder}` }}>Scan Another</button>
           </div>
         </div>
       )}

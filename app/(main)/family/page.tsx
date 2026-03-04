@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack } from '@/components/Icons';
 
@@ -12,6 +13,7 @@ const PETS = [{name:'Max',type:'Dog',breed:'Golden Retriever',nextVet:'Mar 15'},
 export default function FamilyPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [tab, setTab] = useState<'members'|'wallet'|'activity'|'pets'>('members');
 

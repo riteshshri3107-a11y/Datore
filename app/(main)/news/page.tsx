@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack } from '@/components/Icons';
 
@@ -21,6 +22,7 @@ const CAT_COLORS: Record<string,string> = { Product:'#6366f1', Industry:'#22c55e
 export default function NewsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [cat, setCat] = useState('All');
   const [expanded, setExpanded] = useState<string|null>(null);

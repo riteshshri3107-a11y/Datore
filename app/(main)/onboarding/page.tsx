@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { updateProfile } from '@/lib/supabase';
 import { TRUST_TIERS, VERIFICATION_STEPS, ONBOARDING_STEPS, getTrustTier, calculateTrustScore, getOnboardingProgress, type OnboardingStep, type TrustScoreFactors } from '@/lib/onboarding';
 import { IcoBack, IcoCheck, IcoShield, IcoUser, IcoStar } from '@/components/Icons';
 
@@ -13,12 +15,23 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { isDark } = useThemeStore();
   const t = getTheme(isDark);
+  const { user, profile } = useAuthStore();
   const [step, setStep] = useState<OnboardingStep>('welcome');
   const [accountType, setAccountType] = useState<'seeker'|'provider'|'both'>('seeker');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [verifications, setVerifications] = useState<string[]>(['email']);
+
+  // Prefill from profile if available
+  useEffect(() => {
+    if (profile) {
+      if (profile.name) setName(profile.name);
+      if (profile.bio) setBio(profile.bio);
+      if (profile.role) setAccountType(profile.role === 'worker' ? 'provider' : profile.role === 'both' ? 'both' : 'seeker');
+      if (profile.interests) setInterests(profile.interests);
+    }
+  }, [profile]);
 
   const progress = getOnboardingProgress({ name, email:'user@example.com', avatar:name?'set':undefined, interests, emailVerified:verifications.includes('email'), phoneVerified:verifications.includes('phone'), accountType });
   const stepIdx = ONBOARDING_STEPS.findIndex(s => s.step === step);
@@ -230,7 +243,20 @@ export default function OnboardingPage() {
                 </div>
               ))}
             </div>
-            <button onClick={() => router.push('/home')} className="btn-accent w-full py-3.5 rounded-xl text-sm mt-4">🚀 Start Exploring</button>
+            <button onClick={async () => {
+              if (user?.id) {
+                try {
+                  await updateProfile(user.id, {
+                    name: name.trim() || undefined,
+                    bio: bio.trim() || undefined,
+                    role: accountType,
+                    interests,
+                    onboarding_completed: true,
+                  });
+                } catch {}
+              }
+              router.push('/home');
+            }} className="btn-accent w-full py-3.5 rounded-xl text-sm mt-4">🚀 Start Exploring</button>
           </div>
         )}
       </div>

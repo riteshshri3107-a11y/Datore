@@ -4,23 +4,56 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getFollowing } from '@/lib/supabase';
 import { DEMO_WORKERS, getFavorites, setFavorites } from '@/lib/demoData';
 
 export default function BuddyListPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [favIds, setFavIds] = useState<string[]>([]);
-  useEffect(() => { setFavIds(getFavorites()); }, []);
+  const [dbFollowing, setDbFollowing] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setFavIds(getFavorites());
+    (async () => {
+      if (user?.id) {
+        try {
+          const data = await getFollowing(user.id);
+          if (data && data.length > 0) setDbFollowing(data);
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
+
+  // Merge DB following with local favorites
+  const dbBuddies = dbFollowing.map((f: any) => ({
+    id: f.profiles?.id || f.following_id,
+    full_name: f.profiles?.name || 'User',
+    avatar_url: f.profiles?.avatar_url,
+    skills: [],
+    rating: f.profiles?.rating || 0,
+    hourly_rate: 0,
+    availability: 'available',
+    is_police_verified: f.profiles?.verified || false,
+  }));
+
   const favWorkers = DEMO_WORKERS.filter(w => favIds.includes(w.id));
+  const allBuddies = [...dbBuddies, ...favWorkers.filter(w => !dbBuddies.some(b => b.id === w.id))];
   const removeFav = (id: string) => { const u=favIds.filter(f=>f!==id); setFavIds(u); setFavorites(u); };
   const ac = (a:string)=>a==='available'?'#22c55e':a==='busy'?'#ef4444':'#f59e0b';
 
   return (
     <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center gap-3"><button onClick={()=>router.back()} className="text-lg">←</button><h1 className="text-xl font-bold">⭐ Buddy List</h1></div>
-      <p className="text-xs" style={{ color:t.textMuted }}>{favWorkers.length} favorite worker{favWorkers.length!==1?'s':''}</p>
-      {favWorkers.length===0 ? (
+      <p className="text-xs" style={{ color:t.textMuted }}>{allBuddies.length} favorite worker{allBuddies.length!==1?'s':''}</p>
+      {loading ? (
+        <div className="text-center py-8"><div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: t.accent, borderTopColor: 'transparent' }} /><p className="text-xs mt-2" style={{ color: t.textMuted }}>Loading...</p></div>
+      ) : allBuddies.length===0 ? (
         <div className="text-center py-12 glass-card rounded-2xl" style={{ background:t.card, borderColor:t.cardBorder }}>
           <p className="text-3xl mb-3">⭐</p><p className="font-medium" style={{ color:t.textSecondary }}>No favorites yet</p>
           <p className="text-xs mt-1" style={{ color:t.textMuted }}>Tap ⭐ on any worker to save them here</p>
@@ -28,14 +61,14 @@ export default function BuddyListPage() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {favWorkers.map(w=>(<div key={w.id} className="glass-card rounded-2xl p-4 flex items-center gap-3" style={{ background:t.card, borderColor:t.cardBorder }}>
+          {allBuddies.map(w=>(<div key={w.id} className="glass-card rounded-2xl p-4 flex items-center gap-3" style={{ background:t.card, borderColor:t.cardBorder }}>
             <div onClick={()=>router.push(`/worker/${w.id}`)} className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold cursor-pointer" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent, position:'relative' }}>
-              {w.full_name.split(' ').map(n=>n[0]).join('')}
+              {w.full_name.split(' ').map((n: string)=>n[0]).join('')}
               <div style={{ position:'absolute', bottom:-2, right:-2, width:10, height:10, borderRadius:'50%', background:ac(w.availability), border:`2px solid ${isDark?'#1a1a2e':'#fff'}` }}></div>
             </div>
             <div className="flex-1 cursor-pointer" onClick={()=>router.push(`/worker/${w.id}`)}>
               <p className="font-semibold text-sm">{w.full_name} {w.is_police_verified?'🛡️':''}</p>
-              <p className="text-xs" style={{ color:t.textSecondary }}>{w.skills.join(', ')} ● ★{w.rating} ● ${w.hourly_rate}/hr</p>
+              <p className="text-xs" style={{ color:t.textSecondary }}>{w.skills?.join(', ') || 'Worker'} {w.rating ? `● ★${w.rating}` : ''} {w.hourly_rate ? `● $${w.hourly_rate}/hr` : ''}</p>
             </div>
             <div className="flex gap-1.5">
               <button onClick={()=>router.push(`/chat/${w.id}`)} className="p-2 rounded-xl text-sm" style={{ background:t.accentLight, color:t.accent }}>💬</button>

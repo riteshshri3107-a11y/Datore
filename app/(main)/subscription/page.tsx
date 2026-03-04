@@ -1,9 +1,10 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
 import { IcoBack } from '@/components/Icons';
 
 const PLANS = [
@@ -17,8 +18,16 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, profile } = useAuthStore();
   const [annual, setAnnual] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string|null>(null);
+
+  // Mark current plan from profile if available
+  const currentPlanId = profile?.subscription_plan || 'free';
+  const plansWithCurrent = PLANS.map(p => ({
+    ...p,
+    current: p.id === currentPlanId,
+  }));
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -32,7 +41,7 @@ export default function SubscriptionPage() {
         <span className="text-xs" style={{ color:annual?t.accent:t.textMuted }}>Annual <span style={{ color:'#22c55e', fontWeight:700 }}>Save 20%</span></span>
       </div>
       <div className="space-y-4">
-        {PLANS.map(plan=>{const price=annual&&plan.price>0?Math.round(plan.price*0.8*100)/100:plan.price; return(
+        {plansWithCurrent.map(plan=>{const price=annual&&plan.price>0?Math.round(plan.price*0.8*100)/100:plan.price; return(
           <div key={plan.id} className="glass-card rounded-2xl overflow-hidden" style={{ background:t.card, borderColor:(plan as any).popular?t.accent:t.cardBorder, borderWidth:(plan as any).popular?2:1 }}>
             {(plan as any).popular && <div className="text-center py-1 text-[10px] font-bold text-white" style={{ background:`linear-gradient(90deg,${t.accent},#8b5cf6)` }}>MOST POPULAR</div>}
             <div className="p-5">

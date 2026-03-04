@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoStar, IcoHeart, IcoUser, IcoMic, IcoGamepad } from '@/components/Icons';
 
@@ -34,6 +35,7 @@ const CATS:GameCat[] = ['All','Action','Puzzle','Racing','Strategy','Sports','Ar
 export default function GamesPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [tab,setTab] = useState<'browse'|'installed'|'wishlist'>('browse');
   const [cat,setCat] = useState<GameCat>('All');

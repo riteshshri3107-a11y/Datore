@@ -1,15 +1,17 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getProfileStats, getFollowers, getFollowing } from '@/lib/supabase';
 import { IcoBack, IcoUser } from '@/components/Icons';
 
-const CRS = { total:87, breakdown:{ jobRating:92, reliability:88, helpfulness:79, peerEndorsements:85, communityParticipation:82, accountAge:96 }, weights:{ jobRating:0.35, reliability:0.20, helpfulness:0.15, peerEndorsements:0.15, communityParticipation:0.10, accountAge:0.05 } };
+const CRS_DEFAULT = { total:87, breakdown:{ jobRating:92, reliability:88, helpfulness:79, peerEndorsements:85, communityParticipation:82, accountAge:96 }, weights:{ jobRating:0.35, reliability:0.20, helpfulness:0.15, peerEndorsements:0.15, communityParticipation:0.10, accountAge:0.05 } };
 const BADGES = [{name:'Trusted Neighbor',icon:'🏘️',date:'Jan 2026'},{name:'5-Star Streak',icon:'⭐',date:'Feb 2026'},{name:'Top Helper',icon:'🤝',date:'Feb 2026'},{name:'First Responder',icon:'🚀',date:'Dec 2025'}];
 const ENDORSE = [{from:'Maria S.',skill:'Great with kids',time:'2d ago'},{from:'John D.',skill:'Very punctual',time:'5d ago'},{from:'Li Wei',skill:'Professional attitude',time:'1w ago'},{from:'Priya K.',skill:'Excellent communication',time:'2w ago'}];
-const SOCIAL = { friends:48, engagement:72, responseTime:'12 min', posts:23, weeklyActivity:[65,82,74,91,68,55,87] };
+const SOCIAL_DEFAULT = { friends:48, engagement:72, responseTime:'12 min', posts:23, weeklyActivity:[65,82,74,91,68,55,87] };
 const CLUSTERS = [{name:'Home Services',count:18,color:'#6366f1'},{name:'Education',count:12,color:'#22c55e'},{name:'Pet Care',count:8,color:'#f59e0b'},{name:'Other',count:10,color:'#8b5cf6'}];
 const LEADERS = [{rank:1,name:'Sarah Chen',score:96,badge:'🏆'},{rank:2,name:'Mike L.',score:93,badge:'🥈'},{rank:3,name:'You',score:87,badge:'🥉',isYou:true},{rank:4,name:'Anita S.',score:85},{rank:5,name:'David R.',score:82}];
 
@@ -17,7 +19,47 @@ export default function SocialAnalyticsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, profile } = useAuthStore();
   const [tab, setTab] = useState<'crs'|'analytics'|'network'|'leaders'>('crs');
+  const [CRS, setCRS] = useState(CRS_DEFAULT);
+  const [SOCIAL, setSOCIAL] = useState(SOCIAL_DEFAULT);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const [stats, followers, following] = await Promise.all([
+            getProfileStats(user.id),
+            getFollowers(user.id),
+            getFollowing(user.id),
+          ]);
+          if (stats) {
+            setCRS(prev => ({
+              ...prev,
+              total: stats.trust_score || stats.rating || prev.total,
+              breakdown: {
+                jobRating: stats.rating ? Math.round(stats.rating * 20) : prev.breakdown.jobRating,
+                reliability: stats.completed_jobs ? Math.min(100, Math.round((stats.completed_jobs / Math.max(stats.total_jobs || 1, 1)) * 100)) : prev.breakdown.reliability,
+                helpfulness: prev.breakdown.helpfulness,
+                peerEndorsements: prev.breakdown.peerEndorsements,
+                communityParticipation: prev.breakdown.communityParticipation,
+                accountAge: prev.breakdown.accountAge,
+              },
+            }));
+          }
+          setSOCIAL(prev => ({
+            ...prev,
+            friends: (followers?.length || 0) + (following?.length || 0) || prev.friends,
+            posts: stats?.post_count || prev.posts,
+            engagement: stats?.engagement_rate || prev.engagement,
+          }));
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
+
   const crsColor = CRS.total >= 80 ? '#22c55e' : '#f59e0b';
   const mx = Math.max(...SOCIAL.weeklyActivity);
 

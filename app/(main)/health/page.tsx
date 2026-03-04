@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic, IcoVideo, IcoChat, IcoCalendar, IcoUser } from '@/components/Icons';
 
@@ -72,6 +73,7 @@ const EXERCISES = [
 export default function HealthPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [section,setSection] = useState<Section>('doctor');
   const [search,setSearch] = useState('');

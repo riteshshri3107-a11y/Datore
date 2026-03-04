@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useThemeStore } from "@/store/useThemeStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { getTheme } from "@/lib/theme";
+import { getReels, createReel, toggleLike, createComment, getComments } from "@/lib/supabase";
 import { IcoBack, IcoHeart, IcoChat, IcoSend, IcoUser, IcoBookmark, IcoMusic, IcoMic, IcoClose } from "@/components/Icons";
 
 interface Reel {
@@ -19,12 +21,12 @@ interface Reel {
   duration: string;
   music: string;
   hashtags: string[];
-  scene: string;  // Large scene emoji
-  gradient: string; // Background gradient for video feel
-  sceneLabel: string; // Scene description overlay
+  scene: string;
+  gradient: string;
+  sceneLabel: string;
 }
 
-const REELS: Reel[] = [
+const FALLBACK_REELS: Reel[] = [
   { id:"r1", user:"Anita Sharma", verified:true, caption:"Quick tip: How I organize my cleaning supplies for efficiency!", likes:2340, comments:182, shares:120, saves:89, cat:"Cleaning", duration:"0:45", music:"Chill Vibes - LoFi Beats", hashtags:["cleaning","tips","datore","organization"], scene:"🧹🧼✨", gradient:"linear-gradient(160deg,#0a2e1a 0%,#134e2e 40%,#1a3a2a 100%)", sceneLabel:"Cleaning Organization Tips" },
   { id:"r2", user:"Mike Chen", verified:true, caption:"Watch me fix a leaky faucet in under 10 minutes", likes:8910, comments:560, shares:430, saves:312, cat:"Plumbing", duration:"0:58", music:"Do It Yourself - Maker Music", hashtags:["plumbing","diy","howto","fixitup"], scene:"🔧💧🚰", gradient:"linear-gradient(160deg,#1a1a3e 0%,#2a2a5e 40%,#1e1e4a 100%)", sceneLabel:"DIY Faucet Repair" },
   { id:"r3", user:"Priya K.", verified:false, caption:"Fun math trick I teach my students! Makes multiplication easy", likes:12030, comments:890, shares:670, saves:445, cat:"Education", duration:"0:32", music:"Study Session - BrainWave", hashtags:["tutoring","education","mathisfun","students"], scene:"📐✏️🧮", gradient:"linear-gradient(160deg,#2e1a3e 0%,#4a2a6e 40%,#3a1a5a 100%)", sceneLabel:"Math Made Easy" },
@@ -33,6 +35,15 @@ const REELS: Reel[] = [
   { id:"r6", user:"Tom Rodriguez", verified:false, caption:"Best tacos in the neighborhood! My secret recipe", likes:6780, comments:445, shares:320, saves:256, cat:"Food", duration:"1:05", music:"Cooking Time - Jazz", hashtags:["cooking","tacos","recipe","foodie"], scene:"🌮🔥🍳", gradient:"linear-gradient(160deg,#2e1a0a 0%,#4e2e1a 40%,#3a2a1a 100%)", sceneLabel:"Secret Taco Recipe" },
   { id:"r7", user:"Lisa Park", verified:true, caption:"5-minute morning workout you can do anywhere", likes:15400, comments:1120, shares:780, saves:512, cat:"Fitness", duration:"0:48", music:"Pump It Up - Gym Mix", hashtags:["fitness","workout","morning","health"], scene:"💪🏋️‍♀️⚡", gradient:"linear-gradient(160deg,#0a1a2e 0%,#1a3e5e 40%,#0a2a4a 100%)", sceneLabel:"Morning Workout" },
   { id:"r8", user:"James Wilson", verified:false, caption:"Drone footage of Toronto skyline at sunset", likes:9200, comments:670, shares:540, saves:389, cat:"Photography", duration:"0:35", music:"Sunset Vibes - Chillstep", hashtags:["drone","toronto","skyline","sunset","photography"], scene:"🏙️🌅📸", gradient:"linear-gradient(160deg,#2e1a1a 0%,#5e3a2a 40%,#4a2a2a 100%)", sceneLabel:"Toronto Sunset Drone" },
+];
+
+const SCENE_EMOJIS = ["🎬","🎥","📹","🎭","🎪","🎨","🎯","🏆"];
+const GRADIENTS = [
+  "linear-gradient(160deg,#0a2e1a 0%,#134e2e 40%,#1a3a2a 100%)",
+  "linear-gradient(160deg,#1a1a3e 0%,#2a2a5e 40%,#1e1e4a 100%)",
+  "linear-gradient(160deg,#2e1a3e 0%,#4a2a6e 40%,#3a1a5a 100%)",
+  "linear-gradient(160deg,#2e1a0a 0%,#4e2e1a 40%,#3a2a1a 100%)",
+  "linear-gradient(160deg,#0a1a2e 0%,#1a3e5e 40%,#0a2a4a 100%)",
 ];
 
 const CATS = ["For You","Following","Trending","Cleaning","Education","Lifestyle","Food","Fitness","Photography"];
@@ -45,11 +56,36 @@ function formatNum(n: number): string {
   return n.toString();
 }
 
+function mapSupabaseReel(r: any, index: number): Reel {
+  const profileName = r.profiles?.name || 'Unknown';
+  const hashtags = r.hashtags || [];
+  const dur = r.duration_seconds ? (r.duration_seconds >= 60 ? Math.floor(r.duration_seconds/60) + ":" + String(r.duration_seconds%60).padStart(2,'0') : "0:" + String(r.duration_seconds).padStart(2,'0')) : "0:30";
+  return {
+    id: r.id,
+    user: profileName,
+    verified: r.profiles?.verified || false,
+    caption: r.caption || '',
+    likes: r.like_count || 0,
+    comments: r.comment_count || 0,
+    shares: r.share_count || 0,
+    saves: r.save_count || 0,
+    cat: hashtags[0] || 'General',
+    duration: dur,
+    music: r.music || '',
+    hashtags: hashtags,
+    scene: SCENE_EMOJIS[index % SCENE_EMOJIS.length] + SCENE_EMOJIS[(index+1) % SCENE_EMOJIS.length] + SCENE_EMOJIS[(index+2) % SCENE_EMOJIS.length],
+    gradient: GRADIENTS[index % GRADIENTS.length],
+    sceneLabel: r.caption ? r.caption.substring(0, 30) : 'Reel',
+  };
+}
+
 export default function ReelsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
 
+  const [reels, setReels] = useState<Reel[]>(FALLBACK_REELS);
   const [current, setCurrent] = useState(0);
   const [liked, setLiked] = useState<string[]>([]);
   const [saved, setSaved] = useState<string[]>([]);
@@ -72,21 +108,86 @@ export default function ReelsPage() {
   const [reelTags, setReelTags] = useState("");
   const videoRef = useRef<HTMLInputElement>(null);
 
-  const visibleReels = REELS.filter(function(r) { return !blocked.includes(r.user); });
+  // Fetch reels from Supabase on mount
+  useEffect(() => {
+    async function loadReels() {
+      try {
+        const data = await getReels(20);
+        if (data && data.length > 0) {
+          const mapped = data.map((r: any, i: number) => mapSupabaseReel(r, i));
+          setReels(mapped);
+        }
+        // If empty, keep FALLBACK_REELS
+      } catch (err) {
+        console.error('Failed to load reels:', err);
+      }
+    }
+    loadReels();
+  }, []);
+
+  const visibleReels = reels.filter(function(r) { return !blocked.includes(r.user); });
   const idx = current % Math.max(visibleReels.length, 1);
   const reel = visibleReels[idx];
   const isLiked = reel ? liked.includes(reel.id) : false;
   const isSaved = reel ? saved.includes(reel.id) : false;
   const isFollowing = reel ? following.includes(reel.id) : false;
 
+  // Load comments for current reel when comment panel opens
+  useEffect(() => {
+    if (!showComments || !reel) return;
+    async function loadComments() {
+      try {
+        const data = await getComments(reel.id, 'reel');
+        if (data && data.length > 0) {
+          const mapped = data.map((c: any) => ({
+            user: c.profiles?.name || 'User',
+            text: c.content,
+            likes: c.like_count || 0,
+            time: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
+          }));
+          setComments(prev => ({ ...prev, [reel.id]: mapped }));
+        }
+      } catch {
+        // keep local comments
+      }
+    }
+    loadComments();
+  }, [showComments, reel?.id]);
+
   function goNext() { setCurrent(function(p) { return (p + 1) % Math.max(visibleReels.length, 1); }); }
-  function toggleLike() { if (!reel) return; setLiked(function(p) { return p.includes(reel.id) ? p.filter(function(x) { return x !== reel.id; }) : p.concat([reel.id]); }); }
-  function toggleSave() { if (!reel) return; setSaved(function(p) { return p.includes(reel.id) ? p.filter(function(x) { return x !== reel.id; }) : p.concat([reel.id]); }); }
+
+  async function handleToggleLike() {
+    if (!reel) return;
+    if (user?.id) {
+      try {
+        const result = await toggleLike(user.id, reel.id, 'reel');
+        setLiked(function(p) { return result ? p.concat([reel.id]) : p.filter(function(x) { return x !== reel.id; }); });
+        return;
+      } catch {
+        // fallback to local
+      }
+    }
+    setLiked(function(p) { return p.includes(reel.id) ? p.filter(function(x) { return x !== reel.id; }) : p.concat([reel.id]); });
+  }
+
+  function toggleSaveLocal() { if (!reel) return; setSaved(function(p) { return p.includes(reel.id) ? p.filter(function(x) { return x !== reel.id; }) : p.concat([reel.id]); }); }
   function toggleFollow() { if (!reel) return; setFollowing(function(p) { return p.includes(reel.id) ? p.filter(function(x) { return x !== reel.id; }) : p.concat([reel.id]); }); }
 
-  function addComment() {
+  async function addCommentHandler() {
     if (!commentText.trim() || !reel) return;
     var entry = { user: "You", text: commentText.trim(), likes: 0, time: "Just now" };
+    if (user?.id) {
+      try {
+        await createComment({
+          user_id: user.id,
+          target_id: reel.id,
+          target_type: 'reel',
+          content: commentText.trim(),
+        });
+      } catch {
+        // fallback to local
+      }
+    }
     setComments(function(p) {
       var prev = p[reel.id] || [];
       var next: Record<string, Array<{ user: string; text: string; likes: number; time: string }>> = {};
@@ -114,7 +215,20 @@ export default function ReelsPage() {
     setShowShare(false);
   }
 
-  function publishReel() {
+  async function publishReel() {
+    if (user?.id && reelCaption.trim()) {
+      try {
+        const tags = reelTags.split(',').map(t => t.trim()).filter(Boolean);
+        await createReel({
+          user_id: user.id,
+          video_url: '',
+          caption: reelCaption.trim(),
+          hashtags: tags.length > 0 ? tags : undefined,
+        });
+      } catch (err) {
+        console.error('Failed to create reel:', err);
+      }
+    }
     setShowCreate(false);
     setCreateStep("upload");
     setReelCaption("");
@@ -167,19 +281,15 @@ export default function ReelsPage() {
         </p>
       )}
 
-      {/* Full-Screen Reel — Video-like scene */}
+      {/* Full-Screen Reel */}
       <div onClick={goNext} style={{ height: "calc(100vh - 130px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: reel ? reel.gradient : ("linear-gradient(135deg," + t.accent + "22,#8b5cf622,#22c55e22)"), cursor: "pointer", overflow: "hidden" }}>
-        {/* Scan lines for video feel */}
         <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.008) 3px,rgba(255,255,255,0.008) 6px)",pointerEvents:"none",zIndex:1}} />
-        {/* Live indicator */}
         <div style={{position:"absolute",top:14,left:14,display:"flex",alignItems:"center",gap:6,zIndex:10}}>
           <div style={{width:7,height:7,borderRadius:"50%",background:"#ef4444",boxShadow:"0 0 6px #ef4444"}} />
           <span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>PLAYING · {reel ? reel.duration : "0:00"}</span>
         </div>
         <div style={{ textAlign: "center", padding: 20, zIndex: 2 }}>
-          {/* Large scene emojis */}
           <div style={{ fontSize: 56, marginBottom: 12, filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.4))" }}>{reel ? reel.scene : "🎬"}</div>
-          {/* Scene label overlay */}
           {reel && <div style={{display:"inline-block",padding:"5px 14px",borderRadius:10,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(8px)",marginBottom:12}}><p style={{fontSize:11,fontWeight:700,color:"#fff"}}>{reel.sceneLabel}</p></div>}
           <div style={{ width: 60, height: 60, borderRadius: "50%", background: "linear-gradient(135deg," + t.accent + ",#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 22, color: "white", fontWeight: 700, boxShadow: "0 2px 15px rgba(99,102,241,0.3)" }}>
             {initials}
@@ -210,7 +320,7 @@ export default function ReelsPage() {
             <span style={{ fontSize: 8, color: t.text, fontWeight: 600 }}>{isFollowing ? "Following" : "Follow"}</span>
           </button>
 
-          <button onClick={function(e) { e.stopPropagation(); toggleLike(); }} style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 2, background: "none", border: "none", cursor: "pointer" }}>
+          <button onClick={function(e) { e.stopPropagation(); handleToggleLike(); }} style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 2, background: "none", border: "none", cursor: "pointer" }}>
             <IcoHeart size={26} color={isLiked ? "#ef4444" : t.text} fill={isLiked ? "#ef4444" : "none"} />
             <span style={{ fontSize: 9, color: t.text, fontWeight: 600 }}>{formatNum(reel.likes + (isLiked ? 1 : 0))}</span>
           </button>
@@ -225,7 +335,7 @@ export default function ReelsPage() {
             <span style={{ fontSize: 9, color: t.text }}>{formatNum(reel.shares)}</span>
           </button>
 
-          <button onClick={function(e) { e.stopPropagation(); toggleSave(); }} style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 2, background: "none", border: "none", cursor: "pointer" }}>
+          <button onClick={function(e) { e.stopPropagation(); toggleSaveLocal(); }} style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 2, background: "none", border: "none", cursor: "pointer" }}>
             <IcoBookmark size={22} color={isSaved ? "#f59e0b" : t.text} fill={isSaved ? "#f59e0b" : "none"} />
             <span style={{ fontSize: 9, color: t.text }}>{formatNum(reel.saves)}</span>
           </button>
@@ -269,7 +379,7 @@ export default function ReelsPage() {
             <h3 style={{ fontWeight: 700, fontSize: 14 }}>Comments ({totalComments})</h3>
             <button onClick={function() { setShowComments(false); }}><IcoClose size={18} color={t.textMuted} /></button>
           </div>
-          {[
+          {reelComments.length === 0 && [
             { user: "Maria G.", text: "So helpful! Saved this for later", likes: 23, time: "2h ago" },
             { user: "Jake R.", text: "Been looking for exactly this!", likes: 8, time: "5h ago" },
             { user: "Lily Chen", text: "Amazing work as always", likes: 45, time: "1d ago" },
@@ -304,8 +414,8 @@ export default function ReelsPage() {
             );
           })}
           <div className="flex gap-2 mt-3">
-            <input value={commentText} onChange={function(e) { setCommentText(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") addComment(); }} placeholder="Add a comment..." className="flex-1 px-4 py-2 rounded-full text-xs outline-none" style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", border: "1px solid " + t.cardBorder, color: t.text }} />
-            <button onClick={addComment} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg," + t.accent + ",#8b5cf6)" }}>
+            <input value={commentText} onChange={function(e) { setCommentText(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") addCommentHandler(); }} placeholder="Add a comment..." className="flex-1 px-4 py-2 rounded-full text-xs outline-none" style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", border: "1px solid " + t.cardBorder, color: t.text }} />
+            <button onClick={addCommentHandler} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg," + t.accent + ",#8b5cf6)" }}>
               <IcoSend size={14} color="white" />
             </button>
           </div>
@@ -373,7 +483,6 @@ export default function ReelsPage() {
               <button onClick={function() { setShowCreate(false); }}><IcoClose size={18} color={t.textMuted} /></button>
             </div>
 
-            {/* Step indicator */}
             <div className="flex gap-1">
               {["upload", "edit", "details"].map(function(s) {
                 var stepIdx = ["upload", "edit", "details"].indexOf(s);

@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getListings } from '@/lib/supabase';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic } from '@/components/Icons';
 
 /* BR-99: GLOBAL SHOPPING AGGREGATION -- Amazon/Instacart/Walmart Feature Parity
@@ -46,7 +48,46 @@ export default function ShoppingPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user } = useAuthStore();
   const [products,setProducts] = useState(PRODUCTS);
+  const [dbListingsLoaded, setDbListingsLoaded] = useState(false);
+
+  // Fetch real listings from Supabase and merge with demo products
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getListings();
+        if (data && data.length > 0) {
+          const mapped: Product[] = data.map((l: any, i: number) => ({
+            id: l.id || `db_${i}`,
+            name: l.title || 'Listing',
+            price: l.price || 0,
+            orig: l.original_price || l.price || 0,
+            rating: 4.5,
+            reviews: 0,
+            cat: (l.category || 'All') as Cat,
+            portal: 'Datore',
+            img: l.image_urls?.[0] ? '📦' : '📦',
+            delivery: 'Local',
+            prime: false,
+            badge: '',
+            desc: l.description || '',
+            features: [],
+            seller: l.profiles?.name || 'Seller',
+            stock: l.status === 'active' ? 'In Stock' : 'Sold',
+            priceHistory: [{ portal: 'Datore', price: l.price || 0 }],
+            saved: false,
+            inCart: false,
+            alsoViewed: [],
+            specs: {},
+            warranty: 'Seller guarantee',
+          }));
+          setProducts(prev => [...mapped, ...prev]);
+        }
+      } catch {}
+      setDbListingsLoaded(true);
+    })();
+  }, []);
   const [search,setSearch] = useState('');
   const [cat,setCat] = useState<string>('All');
   const [portal,setPortal] = useState<string>('All');

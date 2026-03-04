@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoHeart, IcoStar, IcoMic, IcoPlay, IcoBookmark } from '@/components/Icons';
 
@@ -78,6 +79,7 @@ const VACATIONS = {
 export default function EntertainmentPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [section,setSection] = useState<Section>('games');
   const [genre,setGenre] = useState<Genre>('All');

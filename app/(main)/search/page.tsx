@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getPosts, getJobs, getListings, searchWorkers } from '@/lib/supabase';
 import { search, indexBulk, suggest, getTrending, recordSearch, getIndexStats, type SearchableType, type SearchFilters } from '@/lib/search';
 import { DEMO_WORKERS, DEMO_JOBS } from '@/lib/demoData';
 import { IcoBack, IcoSearch, IcoMic, IcoClose } from '@/components/Icons';
@@ -21,38 +23,82 @@ export default function UniversalSearch() {
   const router = useRouter();
   const { isDark } = useThemeStore();
   const t = getTheme(isDark);
+  const { user } = useAuthStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ReturnType<typeof search> | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [voiceSrch, setVoiceSrch] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [indexReady, setIndexReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Build index on mount
+  // Build index on mount — fetch from Supabase + fallback to demo
   useEffect(() => {
-    const docs = [
-      ...DEMO_WORKERS.map(w => ({
-        id:`w_${w.id}`, type:'worker' as SearchableType, title:w.full_name,
-        body:`${w.bio} ${w.skills.join(' ')}`, tags:w.skills,
-        category:'Workers', location:w.city, rating:w.rating,
-        metadata:{ hourly:w.hourly_rate, path:`/jobplace/providers/${w.id}` },
-      })),
-      ...DEMO_JOBS.map(j => ({
-        id:`j_${j.id}`, type:'job' as SearchableType, title:j.title,
-        body:j.desc, tags:[j.category], category:j.category,
-        location:j.location, rating:undefined,
-        metadata:{ amount:j.amount, payment:j.payment, path:`/jobplace/job/${j.id}` },
-      })),
-      ...[
-        { id:'s1', type:'service' as SearchableType, title:'Home Cleaning', body:'Professional deep cleaning, regular maintenance, move-in/out cleaning', tags:['cleaning','home'], category:'Services', location:'Toronto', rating:4.7, metadata:{path:'/jobplace?cat=cleaning'} },
-        { id:'s2', type:'service' as SearchableType, title:'Math Tutoring', body:'Grade 1-12 math tutoring, exam prep, homework help', tags:['tutoring','math','education'], category:'Education', location:'Toronto', rating:4.9, metadata:{path:'/jobplace?cat=tutoring'} },
-        { id:'s3', type:'service' as SearchableType, title:'Pet Care', body:'Dog walking, cat sitting, pet grooming, veterinary transport', tags:['pets','dog','cat'], category:'Pet Care', location:'Toronto', rating:4.8, metadata:{path:'/jobplace?cat=petcare'} },
-        { id:'c1', type:'community' as SearchableType, title:'Toronto Tech Workers', body:'Community for tech professionals in the GTA area', tags:['tech','toronto','networking'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
-        { id:'c2', type:'community' as SearchableType, title:'GTA Parents Network', body:'Support group for parents, playdates, childcare sharing', tags:['parents','childcare','family'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
-      ],
-    ];
-    indexBulk(docs);
+    (async () => {
+      const docs: any[] = [];
+      try {
+        const [dbWorkers, dbJobs, dbListings, dbPosts] = await Promise.all([
+          searchWorkers(), getJobs(), getListings(), getPosts(),
+        ]);
+        if (dbWorkers && dbWorkers.length > 0) {
+          docs.push(...dbWorkers.map((w: any) => ({
+            id:`w_${w.id}`, type:'worker' as SearchableType, title: w.profiles?.name || 'Worker',
+            body: `${w.skills?.join(' ') || ''} ${w.bio || ''}`, tags: w.skills || [],
+            category:'Workers', location: w.profiles?.city || '', rating: w.profiles?.rating,
+            metadata:{ path:`/jobplace/providers/${w.id}` },
+          })));
+        }
+        if (dbJobs && dbJobs.length > 0) {
+          docs.push(...dbJobs.map((j: any) => ({
+            id:`j_${j.id}`, type:'job' as SearchableType, title: j.title || 'Job',
+            body: j.description || '', tags: [j.category_id].filter(Boolean),
+            category: j.category_id || 'Jobs', location: j.location_text || '',
+            metadata:{ amount: j.budget, path:`/jobplace/job/${j.id}` },
+          })));
+        }
+        if (dbListings && dbListings.length > 0) {
+          docs.push(...dbListings.map((l: any) => ({
+            id:`l_${l.id}`, type:'listing' as SearchableType, title: l.title || 'Listing',
+            body: l.description || '', tags: [l.category].filter(Boolean),
+            category: l.category || 'Listings', location: l.location_text || '',
+            rating: undefined, metadata:{ price: l.price, path:`/marketplace/${l.id}` },
+          })));
+        }
+        if (dbPosts && dbPosts.length > 0) {
+          docs.push(...dbPosts.slice(0, 30).map((p: any) => ({
+            id:`p_${p.id}`, type:'post' as SearchableType, title: p.author_name || 'Post',
+            body: p.content || '', tags: p.hashtags || [],
+            category: 'Posts', location: p.location_text || '',
+            metadata:{ path:`/home` },
+          })));
+        }
+      } catch {}
+      // Fallback: add demo data if DB returned nothing
+      if (docs.length === 0) {
+        docs.push(
+          ...DEMO_WORKERS.map(w => ({
+            id:`w_${w.id}`, type:'worker' as SearchableType, title:w.full_name,
+            body:`${w.bio} ${w.skills.join(' ')}`, tags:w.skills,
+            category:'Workers', location:w.city, rating:w.rating,
+            metadata:{ hourly:w.hourly_rate, path:`/jobplace/providers/${w.id}` },
+          })),
+          ...DEMO_JOBS.map(j => ({
+            id:`j_${j.id}`, type:'job' as SearchableType, title:j.title,
+            body:j.desc, tags:[j.category], category:j.category,
+            location:j.location, rating:undefined,
+            metadata:{ amount:j.amount, payment:j.payment, path:`/jobplace/job/${j.id}` },
+          })),
+          { id:'s1', type:'service' as SearchableType, title:'Home Cleaning', body:'Professional deep cleaning, regular maintenance, move-in/out cleaning', tags:['cleaning','home'], category:'Services', location:'Toronto', rating:4.7, metadata:{path:'/jobplace?cat=cleaning'} },
+          { id:'s2', type:'service' as SearchableType, title:'Math Tutoring', body:'Grade 1-12 math tutoring, exam prep, homework help', tags:['tutoring','math','education'], category:'Education', location:'Toronto', rating:4.9, metadata:{path:'/jobplace?cat=tutoring'} },
+          { id:'s3', type:'service' as SearchableType, title:'Pet Care', body:'Dog walking, cat sitting, pet grooming, veterinary transport', tags:['pets','dog','cat'], category:'Pet Care', location:'Toronto', rating:4.8, metadata:{path:'/jobplace?cat=petcare'} },
+          { id:'c1', type:'community' as SearchableType, title:'Toronto Tech Workers', body:'Community for tech professionals in the GTA area', tags:['tech','toronto','networking'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
+          { id:'c2', type:'community' as SearchableType, title:'GTA Parents Network', body:'Support group for parents, playdates, childcare sharing', tags:['parents','childcare','family'], category:'Communities', location:'Toronto', metadata:{path:'/buddy-groups'} },
+        );
+      }
+      indexBulk(docs);
+      setIndexReady(true);
+    })();
   }, []);
 
   const doSearch = (q: string) => {

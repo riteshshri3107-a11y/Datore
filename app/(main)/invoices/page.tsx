@@ -1,12 +1,14 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getTransactions } from '@/lib/supabase';
 import { IcoBack } from '@/components/Icons';
 
-const INVOICES = [
+const DEMO_INVOICES = [
   { id:'INV-001', client:'John Davidson', service:'House Cleaning', date:'2026-02-25', amount:120, status:'paid', items:[{desc:'Deep Cleaning (3hrs)',qty:1,rate:100},{desc:'Supplies',qty:1,rate:20}] },
   { id:'INV-002', client:'Maria Garcia', service:'Plumbing Repair', date:'2026-02-22', amount:185, status:'pending', items:[{desc:'Pipe Repair (2hrs)',qty:1,rate:150},{desc:'Parts',qty:1,rate:35}] },
   { id:'INV-003', client:'TechCorp Inc.', service:'Office Cleaning', date:'2026-02-18', amount:350, status:'paid', items:[{desc:'Weekly Cleaning',qty:1,rate:300},{desc:'Window Cleaning',qty:1,rate:50}] },
@@ -17,8 +19,34 @@ export default function InvoicesPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [expanded, setExpanded] = useState<string|null>(null);
   const [filter, setFilter] = useState('all');
+  const [INVOICES, setInvoices] = useState(DEMO_INVOICES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const data = await getTransactions(user.id);
+          if (data && data.length > 0) {
+            const mapped = data.map((t: any, i: number) => ({
+              id: `INV-${String(i + 1).padStart(3, '0')}`,
+              client: t.description || t.type || 'Transaction',
+              service: t.category || t.type || 'Service',
+              date: t.created_at?.split('T')[0] || '',
+              amount: Math.abs(t.amount || 0),
+              status: t.status === 'completed' ? 'paid' : t.status === 'pending' ? 'pending' : t.status || 'paid',
+              items: [{ desc: t.description || t.type || 'Service', qty: 1, rate: Math.abs(t.amount || 0) }],
+            }));
+            setInvoices(mapped.length > 0 ? mapped : DEMO_INVOICES);
+          }
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
 
   const statusColor: Record<string,string> = { paid:'#22c55e', pending:'#f59e0b', overdue:'#ef4444', draft:'#6b7280' };
   const filtered = filter === 'all' ? INVOICES : INVOICES.filter(i=>i.status===filter);

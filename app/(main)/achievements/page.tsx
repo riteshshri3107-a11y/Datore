@@ -1,12 +1,14 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getProfileStats } from '@/lib/supabase';
 import { IcoBack } from '@/components/Icons';
 
-const BADGES = [
+const DEFAULT_BADGES = [
   { id:'b1', name:'First Job', desc:'Completed your first job', icon:'🎯', earned:true, date:'Jan 15' },
   { id:'b2', name:'5-Star Streak', desc:'Received 5 consecutive 5-star reviews', icon:'⭐', earned:true, date:'Feb 1' },
   { id:'b3', name:'Community Helper', desc:'Helped 10 people in community', icon:'🤝', earned:true, date:'Feb 10' },
@@ -23,11 +25,39 @@ export default function AchievementsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const xp = 2340;
+  const { user, profile } = useAuthStore();
+  const [xp, setXp] = useState(2340);
+  const [streak, setStreak] = useState(7);
+  const [BADGES, setBadges] = useState(DEFAULT_BADGES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const stats = await getProfileStats(user.id);
+          if (stats) {
+            const completedJobs = stats.completed_jobs || 0;
+            const reviewCount = stats.review_count || 0;
+            const trustScore = stats.trust_score || 0;
+            const calculatedXp = completedJobs * 50 + reviewCount * 30 + trustScore * 10;
+            if (calculatedXp > 0) setXp(calculatedXp);
+            setBadges(prev => prev.map(b => {
+              if (b.id === 'b1') return { ...b, earned: completedJobs >= 1 };
+              if (b.id === 'b5') return { ...b, progress: Math.min(100, completedJobs) };
+              if (b.id === 'b4') return { ...b, earned: trustScore >= 90, progress: trustScore };
+              return b;
+            }));
+          }
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
+
   const level = Math.floor(Math.pow(xp/100, 1/1.5));
   const currentTier = TIERS.filter(t=>xp>=t.min).pop()||TIERS[0];
   const nextTier = TIERS[TIERS.indexOf(currentTier)+1];
-  const streak = 7;
 
   return (
     <div className="space-y-4 animate-fade-in">

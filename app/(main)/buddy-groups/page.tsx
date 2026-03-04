@@ -1,9 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getBuddyGroups, createBuddyGroup, joinBuddyGroup, leaveBuddyGroup } from '@/lib/supabase';
 import { IcoBack, IcoSearch, IcoUser, IcoStar, IcoHeart, IcoShield, IcoSend, IcoMic } from '@/components/Icons';
 
 /* BR-96: MULTI-MODAL AI SAFETY ENGINE */
@@ -76,7 +78,33 @@ export default function BuddyGroupsPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user, profile } = useAuthStore();
   const [groups,setGroups] = useState<BGroup[]>(GROUPS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const data = await getBuddyGroups(user.id);
+          if (data && data.length > 0) {
+            const mapped: BGroup[] = data.map((g: any) => ({
+              id: g.id, name: g.name || 'Group', desc: g.description || '', icon: '👥',
+              members: g.member_count || 1, memberList: [], cat: g.category || 'General',
+              isOwner: g.created_by === user.id, joined: true, risk: 0, createdBy: g.created_by || '',
+              vis: g.visibility || 'open', rules: g.rules || [],
+            }));
+            setGroups(prev => {
+              const dbIds = new Set(mapped.map(m => m.id));
+              const kept = prev.filter(p => !dbIds.has(p.id));
+              return [...mapped, ...kept];
+            });
+          }
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
   const [tab,setTab] = useState<'my'|'discover'|'safety'>('my');
   const [sel,setSel] = useState<BGroup|null>(null);
   const [search,setSearch] = useState('');
@@ -100,12 +128,19 @@ export default function BuddyGroupsPage() {
     const mc=catF==='All'||g.cat===catF; return ms&&mc;
   });
 
-  const createGroup = () => {
+  const createGroup = async () => {
     const nc=moderate(nName); const dc=moderate(nDesc);
     if(!nc.safe){setModAlert(nc);setModLog(p=>[nc,...p]);return;}
     if(!dc.safe){setModAlert(dc);setModLog(p=>[dc,...p]);return;}
     if(!nName.trim()||!nCat) return;
-    setGroups(p=>[{id:`g${Date.now()}`,name:nName.trim(),desc:nDesc.trim(),icon:'👥',members:1,memberList:[{id:'me',name:'You',avatar:'ME',role:'admin'}],cat:nCat,isOwner:true,joined:true,risk:0,createdBy:'me',vis:nVis,rules:[]},...p]);
+    const newGroup: BGroup = {id:`g${Date.now()}`,name:nName.trim(),desc:nDesc.trim(),icon:'👥',members:1,memberList:[{id:'me',name: profile?.name || 'You',avatar:'ME',role:'admin'}],cat:nCat,isOwner:true,joined:true,risk:0,createdBy:'me',vis:nVis,rules:[]};
+    if (user?.id) {
+      try {
+        const { data } = await createBuddyGroup({ name: nName.trim(), description: nDesc.trim(), created_by: user.id, category: nCat, visibility: nVis });
+        if (data) { newGroup.id = data.id; await joinBuddyGroup(data.id, user.id); }
+      } catch {}
+    }
+    setGroups(p=>[newGroup,...p]);
     setNName('');setNDesc('');setNCat('');setShowCreate(false);
   };
 

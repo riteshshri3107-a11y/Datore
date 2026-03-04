@@ -30,166 +30,266 @@ export async function getProfile(userId: string) {
 export async function updateProfile(userId: string, updates: any) {
   return supabase.from('profiles').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', userId);
 }
-
-// ═══ POSTS (replaces localStorage datore-user-posts) ═══
-export async function createPost(post: { author_id: string; author_name: string; text: string; text_cleaned?: string; audience?: string; type?: string; media_url?: string }) {
-  return supabase.from('posts').insert({ audience: 'public', type: 'text', ...post }).select().single();
+export async function getProfileStats(userId: string) {
+  const { data } = await supabase.from('profile_stats').select('*').eq('id', userId).single();
+  return data;
 }
-export async function getPosts(audience: string = 'public', limit: number = 50) {
-  const { data } = await supabase.from('posts').select('*').eq('audience', audience)
-    .order('created_at', { ascending: false }).limit(limit);
+
+// ═══ POSTS ═══
+export async function createPost(post: { user_id: string; content: string; media_urls?: string[]; media_type?: string; post_type?: string; visibility?: string; location_text?: string; location_lat?: number; location_lng?: number; hashtags?: string[] }) {
+  return supabase.from('posts').insert({ visibility: 'public', post_type: 'text', ...post }).select().single();
+}
+export async function getPosts(visibility: string = 'public', limit: number = 50) {
+  const { data } = await supabase.from('feed_posts').select('*').limit(limit);
   return data || [];
 }
 export async function getAllFeedPosts(limit: number = 50) {
-  const { data } = await supabase.from('posts').select('*')
-    .order('created_at', { ascending: false }).limit(limit);
+  const { data } = await supabase.from('feed_posts').select('*').limit(limit);
   return data || [];
 }
 export async function getMyPosts(userId: string) {
-  const { data } = await supabase.from('posts').select('*').eq('author_id', userId)
+  const { data } = await supabase.from('posts').select('*').eq('user_id', userId)
     .order('created_at', { ascending: false });
   return data || [];
 }
 export async function deletePost(postId: string) { return supabase.from('posts').delete().eq('id', postId); }
-export async function updatePost(postId: string, text: string, textCleaned?: string) {
-  return supabase.from('posts').update({ text, text_cleaned: textCleaned || text }).eq('id', postId);
+export async function updatePost(postId: string, content: string) {
+  return supabase.from('posts').update({ content }).eq('id', postId);
 }
 
-// ═══ LIKES ═══
-export async function toggleLike(userId: string, postId: string) {
-  const { data: existing } = await supabase.from('likes').select('id').eq('user_id', userId).eq('post_id', postId).single();
+// ═══ LIKES (polymorphic: post, reel, comment, listing) ═══
+export async function toggleLike(userId: string, targetId: string, targetType: string = 'post') {
+  const { data: existing } = await supabase.from('likes').select('id').eq('user_id', userId).eq('target_id', targetId).eq('target_type', targetType).single();
   if (existing) { await supabase.from('likes').delete().eq('id', existing.id); return false; }
-  else { await supabase.from('likes').insert({ user_id: userId, post_id: postId }); return true; }
+  else { await supabase.from('likes').insert({ user_id: userId, target_id: targetId, target_type: targetType }); return true; }
 }
-
-// ═══ COMMENTS (replaces localStorage datore-comments-*) ═══
-export async function getComments(postId: string) {
-  const { data } = await supabase.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+export async function getLikes(targetId: string, targetType: string = 'post') {
+  const { data } = await supabase.from('likes').select('*').eq('target_id', targetId).eq('target_type', targetType);
   return data || [];
 }
-export async function createComment(comment: { post_id: string; author_id: string; author_name: string; text: string }) {
+
+// ═══ COMMENTS (polymorphic: post, reel) ═══
+export async function getComments(targetId: string, targetType: string = 'post') {
+  const { data } = await supabase.from('comments').select('*, profiles:user_id(name, avatar_url)')
+    .eq('target_id', targetId).eq('target_type', targetType).order('created_at', { ascending: true });
+  return data || [];
+}
+export async function createComment(comment: { user_id: string; target_id: string; target_type: string; content: string; parent_id?: string }) {
   return supabase.from('comments').insert(comment).select().single();
+}
+export async function deleteComment(commentId: string) {
+  return supabase.from('comments').delete().eq('id', commentId);
+}
+
+// ═══ FOLLOWS ═══
+export async function followUser(followerId: string, followingId: string) {
+  return supabase.from('follows').insert({ follower_id: followerId, following_id: followingId });
+}
+export async function unfollowUser(followerId: string, followingId: string) {
+  return supabase.from('follows').delete().eq('follower_id', followerId).eq('following_id', followingId);
+}
+export async function getFollowers(userId: string) {
+  const { data } = await supabase.from('follows').select('*, profiles:follower_id(id, name, avatar_url, verified)').eq('following_id', userId);
+  return data || [];
+}
+export async function getFollowing(userId: string) {
+  const { data } = await supabase.from('follows').select('*, profiles:following_id(id, name, avatar_url, verified)').eq('follower_id', userId);
+  return data || [];
+}
+export async function isFollowing(followerId: string, followingId: string) {
+  const { data } = await supabase.from('follows').select('id').eq('follower_id', followerId).eq('following_id', followingId).single();
+  return !!data;
+}
+
+// ═══ STORIES ═══
+export async function createStory(story: { user_id: string; media_url: string; media_type: string; caption?: string; location_text?: string }) {
+  const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  return supabase.from('stories').insert({ ...story, expires_at }).select().single();
+}
+export async function getStories() {
+  const { data } = await supabase.from('stories').select('*, profiles:user_id(name, avatar_url)')
+    .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false });
+  return data || [];
+}
+
+// ═══ REELS ═══
+export async function createReel(reel: { user_id: string; video_url: string; thumbnail_url?: string; caption?: string; duration_seconds?: number; hashtags?: string[]; location_text?: string; location_lat?: number; location_lng?: number }) {
+  return supabase.from('reels').insert(reel).select().single();
+}
+export async function getReels(limit: number = 20) {
+  const { data } = await supabase.from('reels').select('*, profiles:user_id(name, avatar_url, verified)')
+    .order('created_at', { ascending: false }).limit(limit);
+  return data || [];
+}
+
+// ═══ SAVES / BOOKMARKS ═══
+export async function toggleSave(userId: string, targetId: string, targetType: string = 'post') {
+  const { data: existing } = await supabase.from('saves').select('id').eq('user_id', userId).eq('target_id', targetId).eq('target_type', targetType).single();
+  if (existing) { await supabase.from('saves').delete().eq('id', existing.id); return false; }
+  else { await supabase.from('saves').insert({ user_id: userId, target_id: targetId, target_type: targetType }); return true; }
+}
+export async function getSavedItems(userId: string) {
+  const { data } = await supabase.from('saves').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  return data || [];
+}
+
+// ═══ USER BLOCKS ═══
+export async function blockUser(blockerId: string, blockedId: string) {
+  return supabase.from('user_blocks').insert({ blocker_id: blockerId, blocked_id: blockedId });
+}
+export async function unblockUser(blockerId: string, blockedId: string) {
+  return supabase.from('user_blocks').delete().eq('blocker_id', blockerId).eq('blocked_id', blockedId);
+}
+export async function getBlockedUsers(userId: string) {
+  const { data } = await supabase.from('user_blocks').select('*, profiles:blocked_id(id, name, avatar_url)').eq('blocker_id', userId);
+  return data || [];
+}
+
+// ═══ REPORTS ═══
+export async function reportContent(reporterId: string, targetId: string, targetType: string, reason: string, description?: string) {
+  return supabase.from('reports').insert({ reporter_id: reporterId, target_id: targetId, target_type: targetType, reason, description });
+}
+
+// ═══ HASHTAGS ═══
+export async function getTrendingHashtags(limit: number = 20) {
+  const { data } = await supabase.from('hashtags').select('*').order('trending_score', { ascending: false }).limit(limit);
+  return data || [];
 }
 
 // ═══ JOBS ═══
-export async function createJob(job: any) { return supabase.from('jobs').insert(job).select().single(); }
+export async function createJob(job: any) {
+  return supabase.from('jobs').insert(job).select().single();
+}
 export async function getJobs(filters: any = {}) {
-  let q = supabase.from('jobs').select('*').eq('status', 'open');
-  if (filters.category) q = q.eq('category', filters.category);
-  if (filters.urgency) q = q.eq('urgency', filters.urgency);
+  let q = supabase.from('jobs').select('*, profiles:customer_id(name, avatar_url)').eq('status', 'open');
+  if (filters.category) q = q.eq('category_id', filters.category);
   q = q.order('created_at', { ascending: false }).limit(50);
   const { data } = await q; return data || [];
 }
 export async function getJob(id: string) {
-  const { data } = await supabase.from('jobs').select('*').eq('id', id).single(); return data;
+  const { data } = await supabase.from('jobs').select('*, profiles:customer_id(name, avatar_url)').eq('id', id).single();
+  return data;
 }
 export async function getMyJobs(userId: string) {
-  const { data } = await supabase.from('jobs').select('*').eq('poster_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('jobs').select('*').eq('customer_id', userId).order('created_at', { ascending: false });
   return data || [];
 }
 export async function deleteJob(jobId: string) { return supabase.from('jobs').delete().eq('id', jobId); }
-export async function updateJobStatus(jobId: string, status: string, assignedTo?: string) {
-  const updates: any = { status }; if (assignedTo) updates.assigned_to = assignedTo;
+export async function updateJobStatus(jobId: string, status: string, workerId?: string) {
+  const updates: any = { status }; if (workerId) updates.worker_id = workerId;
   return supabase.from('jobs').update(updates).eq('id', jobId);
 }
 
+// ═══ JOB APPLICATIONS ═══
+export async function applyToJob(application: { job_id: string; provider_id: string; provider_name: string; message: string; proposed_amount?: number }) {
+  return supabase.from('job_applications').insert(application).select().single();
+}
+export async function getJobApplications(jobId: string) {
+  const { data } = await supabase.from('job_applications').select('*, profiles:provider_id(name, avatar_url)').eq('job_id', jobId);
+  return data || [];
+}
+
 // ═══ LISTINGS (Marketplace) ═══
-export async function createListing(listing: any) { return supabase.from('listings').insert(listing).select().single(); }
+export async function createListing(listing: any) {
+  return supabase.from('listings').insert(listing).select().single();
+}
 export async function getListings(filters: any = {}) {
-  let q = supabase.from('listings').select('*').eq('status', 'active');
+  let q = supabase.from('listings').select('*, profiles:user_id(name, avatar_url)').eq('status', 'active');
   if (filters.category) q = q.eq('category', filters.category);
   q = q.order('created_at', { ascending: false }).limit(50);
   const { data } = await q; return data || [];
 }
 export async function getListing(id: string) {
-  const { data } = await supabase.from('listings').select('*').eq('id', id).single(); return data;
+  const { data } = await supabase.from('listings').select('*, profiles:user_id(name, avatar_url)').eq('id', id).single();
+  return data;
 }
 export async function getMyListings(userId: string) {
-  const { data } = await supabase.from('listings').select('*').eq('seller_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('listings').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return data || [];
 }
 export async function deleteListing(id: string) { return supabase.from('listings').delete().eq('id', id); }
+export async function updateListing(id: string, updates: any) {
+  return supabase.from('listings').update(updates).eq('id', id);
+}
 
 // ═══ WORKERS ═══
 export async function searchWorkers(filters: any = {}) {
-  let q = supabase.from('worker_profiles').select('*');
-  if (filters.category) q = q.contains('categories', [filters.category]);
-  if (filters.skill) q = q.contains('skills', [filters.skill]);
-  if (filters.minRating) q = q.gte('rating', filters.minRating);
-  if (filters.availability) q = q.eq('availability', filters.availability);
-  q = q.order('rating', { ascending: false }).limit(50);
+  let q = supabase.from('workers').select('*, profiles:id(name, avatar_url, city, rating, review_count, verified)');
+  if (filters.available) q = q.eq('available', true);
+  q = q.order('created_at', { ascending: false }).limit(50);
   const { data } = await q; return data || [];
 }
 export async function getWorker(id: string) {
-  const { data } = await supabase.from('worker_profiles').select('*').eq('id', id).single(); return data;
+  const { data } = await supabase.from('workers').select('*, profiles:id(name, avatar_url, city, rating, review_count, bio, verified, email, phone)').eq('id', id).single();
+  return data;
 }
-export async function updateWorkerAvailability(userId: string, availability: string) {
-  return supabase.from('worker_profiles').update({ availability }).eq('user_id', userId);
+export async function createWorkerProfile(worker: any) {
+  return supabase.from('workers').insert(worker).select().single();
+}
+export async function updateWorkerProfile(userId: string, updates: any) {
+  return supabase.from('workers').update(updates).eq('id', userId);
 }
 export async function getNearbyWorkers(lat: number, lng: number, radiusKm: number, skill?: string) {
-  const { data } = await supabase.from('worker_profiles').select('*').eq('availability', 'available');
+  const { data } = await supabase.from('workers').select('*, profiles:id(name, avatar_url, city, lat, lng, rating, review_count, verified)').eq('available', true);
   if (!data) return [];
   return data.filter((w: any) => {
-    const dist = haversine(lat, lng, w.location_lat, w.location_lng);
+    if (!w.profiles?.lat || !w.profiles?.lng) return false;
+    const dist = haversine(lat, lng, w.profiles.lat, w.profiles.lng);
     return dist <= radiusKm && (!skill || w.skills?.some((s: string) => s.toLowerCase().includes(skill.toLowerCase())));
-  }).map((w: any) => ({ ...w, distance: haversine(lat, lng, w.location_lat, w.location_lng) }))
+  }).map((w: any) => ({ ...w, distance: haversine(lat, lng, w.profiles.lat, w.profiles.lng) }))
     .sort((a: any, b: any) => a.distance - b.distance);
 }
 
 // ═══ CHAT (with Realtime WebSocket) ═══
 export async function getChatRooms(userId: string) {
-  const { data } = await supabase.from('chat_rooms').select('*')
-    .or('user1_id.eq.' + userId + ',user2_id.eq.' + userId).order('updated_at', { ascending: false });
+  const { data } = await supabase.from('chat_rooms').select('*, p1:participant_1(name, avatar_url), p2:participant_2(name, avatar_url)')
+    .or('participant_1.eq.' + userId + ',participant_2.eq.' + userId).order('last_message_at', { ascending: false });
   return data || [];
 }
 export async function getChatMessages(roomId: string) {
-  const { data } = await supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true });
+  const { data } = await supabase.from('messages').select('*').eq('chat_room_id', roomId).order('created_at', { ascending: true });
   return data || [];
 }
-export async function sendMessage(msg: { room_id: string; sender_id: string; sender_name: string; content: string }) {
-  const { data } = await supabase.from('messages').insert(msg).select().single();
-  await supabase.from('chat_rooms').update({ last_message: msg.content, last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', msg.room_id);
+export async function sendMessage(msg: { chat_room_id: string; sender_id: string; sender_name: string; content: string; msg_type?: string }) {
+  const { data } = await supabase.from('messages').insert({ msg_type: 'text', ...msg }).select().single();
+  await supabase.from('chat_rooms').update({ last_message: msg.content, last_message_at: new Date().toISOString() }).eq('id', msg.chat_room_id);
   return data;
 }
-export async function createChatRoom(user1Id: string, user2Id: string, jobId?: string) {
+export async function createChatRoom(user1Id: string, user2Id: string, bookingId?: string) {
   const { data: existing } = await supabase.from('chat_rooms').select('*')
-    .or('and(user1_id.eq.' + user1Id + ',user2_id.eq.' + user2Id + '),and(user1_id.eq.' + user2Id + ',user2_id.eq.' + user1Id + ')').single();
+    .or('and(participant_1.eq.' + user1Id + ',participant_2.eq.' + user2Id + '),and(participant_1.eq.' + user2Id + ',participant_2.eq.' + user1Id + ')').single();
   if (existing) return existing;
-  const { data } = await supabase.from('chat_rooms').insert({ user1_id: user1Id, user2_id: user2Id, job_id: jobId }).select().single();
+  const { data } = await supabase.from('chat_rooms').insert({ participant_1: user1Id, participant_2: user2Id, booking_id: bookingId }).select().single();
   return data;
 }
 export function subscribeToMessages(roomId: string, callback: (msg: any) => void) {
   return supabase.channel('room-' + roomId)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'room_id=eq.' + roomId }, (payload: any) => callback(payload.new))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'chat_room_id=eq.' + roomId }, (payload: any) => callback(payload.new))
     .subscribe();
 }
 
-// ═══ ORDERS (replaces localStorage datore-orders) ═══
-export async function createOrder(order: { user_id: string; items: any[]; total: number; pay_method: string; shipping_address?: any }) {
-  return supabase.from('orders').insert({ ...order, status: 'confirmed' }).select().single();
-}
-export async function getMyOrders(userId: string) {
-  const { data } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  return data || [];
-}
-export async function updateOrderStatus(orderId: string, status: string, trackingNumber?: string) {
-  const updates: any = { status }; if (trackingNumber) updates.tracking_number = trackingNumber;
-  return supabase.from('orders').update(updates).eq('id', orderId);
-}
-
-// ═══ BOOKINGS (replaces localStorage datore-bookings) ═══
-export async function createBooking(booking: { user_id: string; name: string; type: string; price: string; provider: string; pay_method: string; confirmation_code: string }) {
-  return supabase.from('bookings').insert({ ...booking, status: 'confirmed' }).select().single();
+// ═══ BOOKINGS ═══
+export async function createBooking(booking: any) {
+  return supabase.from('bookings').insert(booking).select().single();
 }
 export async function getMyBookings(userId: string) {
-  const { data } = await supabase.from('bookings').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('bookings').select('*')
+    .or('customer_id.eq.' + userId + ',worker_id.eq.' + userId)
+    .order('created_at', { ascending: false });
   return data || [];
+}
+export async function updateBookingStatus(bookingId: string, status: string) {
+  return supabase.from('bookings').update({ status, updated_at: new Date().toISOString() }).eq('id', bookingId);
+}
+export async function deleteBooking(bookingId: string) {
+  return supabase.from('bookings').delete().eq('id', bookingId);
 }
 
 // ═══ REVIEWS ═══
 export async function createReview(review: any) { return supabase.from('reviews').insert(review).select().single(); }
-export async function getReviews(targetId: string) {
-  const { data } = await supabase.from('reviews').select('*').eq('target_id', targetId).order('created_at', { ascending: false });
+export async function getReviews(toUserId: string) {
+  const { data } = await supabase.from('reviews').select('*, profiles:from_user_id(name, avatar_url)')
+    .eq('to_user_id', toUserId).order('created_at', { ascending: false });
   return data || [];
 }
 
@@ -199,6 +299,7 @@ export async function getNotifications(userId: string) {
   return data || [];
 }
 export async function markNotificationRead(id: string) { return supabase.from('notifications').update({ is_read: true }).eq('id', id); }
+export async function markAllNotificationsRead(userId: string) { return supabase.from('notifications').update({ is_read: true }).eq('user_id', userId).eq('is_read', false); }
 export function subscribeToNotifications(userId: string, callback: (notif: any) => void) {
   return supabase.channel('notifs-' + userId)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + userId }, (payload: any) => callback(payload.new))
@@ -208,28 +309,37 @@ export function subscribeToNotifications(userId: string, callback: (notif: any) 
 // ═══ WALLET ═══
 export async function getWalletBalance(userId: string) {
   const { data } = await supabase.from('wallets').select('*').eq('user_id', userId).single();
-  return data || { available: 0, escrowed: 0, pending: 0 };
+  return data || { balance: 0, total_earned: 0, total_spent: 0, total_tips: 0, total_platform_fees: 0 };
+}
+export async function getTokenWallet(userId: string) {
+  const { data } = await supabase.from('token_wallets').select('*').eq('user_id', userId).single();
+  return data || { available_tokens: 0, escrowed_tokens: 0, total_earned: 0, total_spent: 0, social_credits: 0 };
 }
 export async function getTransactions(userId: string) {
-  const { data } = await supabase.from('wallet_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('transactions').select('*')
+    .or('payer_id.eq.' + userId + ',payee_id.eq.' + userId)
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+export async function getTokenTransactions(userId: string) {
+  const { data } = await supabase.from('token_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return data || [];
 }
 
-// ═══ FRIENDS ═══
-export async function sendFriendRequest(fromId: string, toId: string) {
-  return supabase.from('friend_requests').insert({ from_user_id: fromId, to_user_id: toId, status: 'pending' });
-}
-export async function respondFriendRequest(requestId: string, accept: boolean) {
-  return supabase.from('friend_requests').update({ status: accept ? 'accepted' : 'rejected' }).eq('id', requestId);
-}
-export async function getFriends(userId: string) {
-  const { data } = await supabase.from('friend_requests').select('*')
-    .eq('status', 'accepted').or('from_user_id.eq.' + userId + ',to_user_id.eq.' + userId);
+// ═══ EVENTS ═══
+export async function getEvents() {
+  const { data } = await supabase.from('events').select('*, profiles:organizer_id(name, avatar_url)')
+    .gte('date', new Date().toISOString().split('T')[0]).order('date', { ascending: true });
   return data || [];
 }
-export async function getFriendRequests(userId: string) {
-  const { data } = await supabase.from('friend_requests').select('*').eq('to_user_id', userId).eq('status', 'pending');
-  return data || [];
+export async function createEvent(event: any) {
+  return supabase.from('events').insert(event).select().single();
+}
+export async function joinEvent(eventId: string, userId: string) {
+  return supabase.from('event_attendees').insert({ event_id: eventId, user_id: userId });
+}
+export async function leaveEvent(eventId: string, userId: string) {
+  return supabase.from('event_attendees').delete().eq('event_id', eventId).eq('user_id', userId);
 }
 
 // ═══ COMMUNITIES ═══
@@ -237,16 +347,68 @@ export async function getCommunities() {
   const { data } = await supabase.from('communities').select('*').eq('is_public', true).order('member_count', { ascending: false });
   return data || [];
 }
+export async function getCommunity(id: string) {
+  const { data } = await supabase.from('communities').select('*').eq('id', id).single();
+  return data;
+}
 export async function createCommunity(community: any) { return supabase.from('communities').insert(community).select().single(); }
-export async function deleteCommunity(id: string) { return supabase.from('communities').delete().eq('id', id); }
+export async function joinCommunity(communityId: string, userId: string) {
+  return supabase.from('community_members').insert({ community_id: communityId, user_id: userId });
+}
+export async function leaveCommunity(communityId: string, userId: string) {
+  return supabase.from('community_members').delete().eq('community_id', communityId).eq('user_id', userId);
+}
 
 // ═══ BUDDY GROUPS ═══
 export async function getBuddyGroups(userId: string) {
-  const { data } = await supabase.from('buddy_groups').select('*').contains('member_ids', [userId]);
-  return data || [];
+  const { data } = await supabase.from('buddy_group_members').select('*, buddy_groups(*)').eq('user_id', userId);
+  return data?.map((d: any) => d.buddy_groups) || [];
 }
 export async function createBuddyGroup(group: any) { return supabase.from('buddy_groups').insert(group).select().single(); }
-export async function deleteBuddyGroup(id: string) { return supabase.from('buddy_groups').delete().eq('id', id); }
+export async function joinBuddyGroup(groupId: string, userId: string) {
+  return supabase.from('buddy_group_members').insert({ group_id: groupId, user_id: userId });
+}
+export async function leaveBuddyGroup(groupId: string, userId: string) {
+  return supabase.from('buddy_group_members').delete().eq('group_id', groupId).eq('user_id', userId);
+}
+
+// ═══ VERIFICATIONS ═══
+export async function submitVerification(verification: any) {
+  return supabase.from('verifications').insert(verification).select().single();
+}
+export async function getVerification(userId: string) {
+  const { data } = await supabase.from('verifications').select('*').eq('user_id', userId).order('submitted_at', { ascending: false }).limit(1).single();
+  return data;
+}
+
+// ═══ QR SCANS ═══
+export async function recordQRScan(scan: { worker_id: string; scanner_id: string; lat?: number; lng?: number }) {
+  return supabase.from('qr_scans').insert(scan).select().single();
+}
+
+// ═══ TICKETS (Support) ═══
+export async function createTicket(ticket: any) { return supabase.from('tickets').insert(ticket).select().single(); }
+export async function getMyTickets(userId: string) {
+  const { data } = await supabase.from('tickets').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  return data || [];
+}
+
+// ═══ CATEGORIES ═══
+export async function getCategories() {
+  const { data } = await supabase.from('categories').select('*').eq('active', true).order('sort_order', { ascending: true });
+  return data || [];
+}
+
+// ═══ PUSH TOKENS ═══
+export async function registerPushToken(userId: string, token: string, platform: string) {
+  return supabase.from('push_tokens').upsert({ user_id: userId, token, platform }, { onConflict: 'user_id,token' });
+}
+
+// ═══ NEARBY POSTS (uses DB function) ═══
+export async function getNearbyPosts(lat: number, lng: number, radiusKm: number = 25) {
+  const { data } = await supabase.rpc('get_nearby_posts', { user_lat: lat, user_lng: lng, radius_km: radiusKm });
+  return data || [];
+}
 
 // ═══ STORAGE (File Uploads to Supabase Storage) ═══
 export async function uploadAvatar(userId: string, file: File, audience: string = 'public') {
@@ -255,7 +417,7 @@ export async function uploadAvatar(userId: string, file: File, audience: string 
   const { error } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
   if (error) return { url: null, error };
   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-  await supabase.from('profiles').update({ ['avatar_' + audience]: publicUrl, avatar_url: publicUrl }).eq('id', userId);
+  await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
   return { url: publicUrl, error: null };
 }
 export async function uploadPostMedia(userId: string, file: File) {
@@ -266,17 +428,17 @@ export async function uploadPostMedia(userId: string, file: File) {
   return { url: publicUrl, error: null };
 }
 
-// ═══ CONSENT (GDPR/PIPEDA) ═══
-export async function recordConsent(userId: string, purpose: string, granted: boolean, legalBasis: string = 'consent') {
-  return supabase.from('consent_records').insert({ user_id: userId, purpose, granted, legal_basis: legalBasis });
+// ═══ SERVICE PROFILES ═══
+export async function getServiceProfile(userId: string) {
+  const { data } = await supabase.from('service_profiles').select('*').eq('user_id', userId).single();
+  return data;
 }
-export async function submitDSR(userId: string, type: string, details: string) {
-  const deadline = new Date(); deadline.setDate(deadline.getDate() + 30);
-  return supabase.from('data_subject_requests').insert({ user_id: userId, type, details, deadline: deadline.toISOString() });
+export async function updateServiceProfile(userId: string, updates: any) {
+  return supabase.from('service_profiles').update(updates).eq('user_id', userId);
 }
 
 // ═══ UTILS ═══
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));

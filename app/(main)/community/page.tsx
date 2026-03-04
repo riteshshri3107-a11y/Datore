@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getCommunities, joinCommunity, leaveCommunity, createCommunity as createCommunityDB } from '@/lib/supabase';
 import { getJoinedCommunities, toggleCommunity } from '@/lib/demoData';
 import { IcoBack, IcoShield, IcoSearch, IcoMic } from '@/components/Icons';
 
@@ -93,6 +95,7 @@ export default function CommunityPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, profile } = useAuthStore();
   const [tab, setTab] = useState<MTab>('discover');
   const [search, setSearch] = useState('');
   const [joined, setJoined] = useState<string[]>([]);
@@ -107,13 +110,51 @@ export default function CommunityPage() {
   const [postVis, setPostVis] = useState<PVis>('group_only');
   const [postRes, setPostRes] = useState<SafetyResult|null>(null);
   const [showSafety, setShowSafety] = useState(false);
+  const [dbCommunities, setDbCommunities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { setJoined(getJoinedCommunities()); }, []);
-  const toggle = (id:string) => { toggleCommunity(id); setJoined(getJoinedCommunities()); };
-  const filtered = GROUPS.filter(c => (!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())) && (typeF==='all'||c.type===typeF) && (tab==='joined'?joined.includes(c.id):true));
-  const sg = selGroup ? GROUPS.find(c=>c.id===selGroup) : null;
+  useEffect(() => {
+    setJoined(getJoinedCommunities());
+    (async () => {
+      try {
+        const data = await getCommunities();
+        if (data && data.length > 0) setDbCommunities(data);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+  const toggle = async (id:string) => {
+    toggleCommunity(id);
+    setJoined(getJoinedCommunities());
+    if (user?.id) {
+      try {
+        if (joined.includes(id)) await leaveCommunity(id, user.id);
+        else await joinCommunity(id, user.id);
+      } catch {}
+    }
+  };
+
+  // Merge DB communities into GROUPS (DB data takes priority)
+  const mergedGroups = dbCommunities.length > 0
+    ? dbCommunities.map((c: any) => ({
+        id: c.id, name: c.name || 'Community', desc: c.description || '', members: c.member_count || 0,
+        emoji: '👥', type: 'social' as GType, verified: true, rules: c.rules || ['Be respectful'],
+        admin: c.created_by || 'Admin', vis: c.is_public ? 'public' as PVis : 'group_only' as PVis,
+        approval: false, safetyScore: 95, lastActive: 'Recently', posts: [] as GPost[],
+      }))
+    : GROUPS;
+  const filtered = mergedGroups.filter(c => (!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())) && (typeF==='all'||c.type===typeF) && (tab==='joined'?joined.includes(c.id):true));
+  const sg = selGroup ? mergedGroups.find(c=>c.id===selGroup) : null;
   const sb = (s:number) => s>=95?{l:'Excellent',c:'#22c55e',bg:'rgba(34,197,94,0.1)'}:s>=80?{l:'Good',c:'#f59e0b',bg:'rgba(245,158,11,0.1)'}:{l:'Review',c:'#ef4444',bg:'rgba(239,68,68,0.1)'};
-  const handleCreate = () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
+  const handleCreate = async () => {
+    const r=groupPurposeCheck(newName,newDesc); setCreateRes(r);
+    if(r.safe){
+      if (user?.id) {
+        try { await createCommunityDB({ name: newName.trim(), description: newDesc.trim(), created_by: user.id, is_public: newVis === 'public' }); } catch {}
+      }
+      setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');
+    }
+  };
   const handlePost = () => { const r=aiScan(postText); setPostRes(r); if(r.safe){setPostText('');setPostRes(null);} };
 
   return (

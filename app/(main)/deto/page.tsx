@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSend, IcoMic, IcoUser, IcoHeart, IcoShield } from '@/components/Icons';
 
@@ -114,6 +115,7 @@ function detectMood(text:string):string {
 export default function DetoPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [messages,setMessages] = useState<ChatMsg[]>([
     {id:'d0',role:'deto',text:DETO_INTROS[Math.floor(Math.random()*DETO_INTROS.length)],time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'text'},

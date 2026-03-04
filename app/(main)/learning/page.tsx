@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoBookmark, IcoHeart, IcoStar, IcoMic, IcoGlobe } from '@/components/Icons';
 
@@ -75,6 +76,7 @@ const AWARDS_DATA = [
 export default function LearningPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark,glassLevel,accentColor);
   const [section,setSection] = useState<Section>('library');
   const [search,setSearch] = useState('');

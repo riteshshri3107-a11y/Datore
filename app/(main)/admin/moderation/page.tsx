@@ -1,23 +1,13 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { moderateContent, quickCheck, type ModerationResult, type ContentType, type Severity } from '@/lib/moderation';
+import { supabase } from '@/lib/supabase';
 import { IcoBack, IcoShield, IcoSearch, IcoFlag, IcoCheck, IcoClose, IcoTrash } from '@/components/Icons';
-
-/* Demo moderation queue — in production this comes from Supabase moderation_queue table */
-const DEMO_QUEUE = [
-  { id:'mq1', contentType:'post' as ContentType, authorName:'Anonymous#231', text:'This fucking app is garbage! Kill all the developers!', status:'pending' as const, createdAt:'2 min ago' },
-  { id:'mq2', contentType:'comment' as ContentType, authorName:'Anonymous#892', text:'Check out my crypto investment scheme! Guaranteed 500% returns! Send money to...', status:'pending' as const, createdAt:'15 min ago' },
-  { id:'mq3', contentType:'listing' as ContentType, authorName:'Anonymous#445', text:'Selling adult explicit content, DM for prices, 18+ only', status:'pending' as const, createdAt:'1h ago' },
-  { id:'mq4', contentType:'post' as ContentType, authorName:'Anonymous#102', text:'Anyone know a good plumber in Brampton? My sink has been leaking for days.', status:'pending' as const, createdAt:'2h ago' },
-  { id:'mq5', contentType:'comment' as ContentType, authorName:'Anonymous#567', text:'Great service! Highly recommended. My number is 416-555-1234 call me', status:'pending' as const, createdAt:'3h ago' },
-  { id:'mq6', contentType:'post' as ContentType, authorName:'Anonymous#333', text:'You retarded bitch, go die in a hole', status:'pending' as const, createdAt:'4h ago' },
-  { id:'mq7', contentType:'review' as ContentType, authorName:'Anonymous#711', text:'Terrible worker. Showed up late, did sloppy work. Damn waste of money.', status:'pending' as const, createdAt:'5h ago' },
-  { id:'mq8', contentType:'message' as ContentType, authorName:'Anonymous#999', text:'Send me your password and credit card info to verify your account', status:'pending' as const, createdAt:'6h ago' },
-];
 
 const SEVERITY_COLORS: Record<Severity, {bg:string;text:string;label:string}> = {
   none: { bg:'rgba(34,197,94,0.1)', text:'#22c55e', label:'Clean' },
@@ -30,13 +20,33 @@ const SEVERITY_COLORS: Record<Severity, {bg:string;text:string;label:string}> = 
 export default function ModerationDashboard() {
   const router = useRouter();
   const { isDark } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark);
-  const [queue, setQueue] = useState(DEMO_QUEUE.map(item => ({
-    ...item,
-    modResult: moderateContent(item.text, item.contentType),
-    status: item.status as 'pending' | 'approved' | 'rejected',
-  })));
+  const [queue, setQueue] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all'|'pending'|'approved'|'rejected'>('all');
+
+  // Load moderation queue from Supabase
+  useEffect(() => {
+    if (!user) { router.push('/auth/login'); return; }
+    async function loadQueue() {
+      const { data } = await supabase.from('moderation_queue').select('*').order('created_at', { ascending: false }).limit(50);
+      if (data && data.length > 0) {
+        const items = data.map((item: any) => ({
+          id: item.id,
+          contentType: (item.content_type || 'post') as ContentType,
+          authorName: item.author_id ? `User#${item.author_id.slice(0, 6)}` : 'Unknown',
+          text: item.original_text || '',
+          status: item.status as 'pending' | 'approved' | 'rejected',
+          createdAt: new Date(item.created_at).toLocaleString(),
+          modResult: moderateContent(item.original_text || '', (item.content_type || 'post') as ContentType),
+        }));
+        setQueue(items);
+      }
+      setLoading(false);
+    }
+    loadQueue();
+  }, [user, router]);
   const [testText, setTestText] = useState('');
   const [testResult, setTestResult] = useState<ModerationResult | null>(null);
   const [testType, setTestType] = useState<ContentType>('post');
@@ -50,8 +60,9 @@ export default function ModerationDashboard() {
     critical: queue.filter(i => i.modResult.severity === 'critical').length,
   };
 
-  const updateStatus = (id: string, status: 'approved' | 'rejected') => {
+  const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
     setQueue(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+    await supabase.from('moderation_queue').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
   };
 
   const runTest = () => {

@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getAllFeedPosts, createPost as createSupabasePost, toggleLike, getComments as getSupabaseComments, createComment, deleteComment as deleteSupabaseComment, deletePost as deleteSupabasePost, updatePost, uploadPostMedia, getLikes } from '@/lib/supabase';
+import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag } from '@/components/Icons';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
@@ -38,9 +40,6 @@ const AUDIENCES: { key:Audience; label:string; icon:string; color:string; desc:s
 /* Emoji quick picker */
 const EMOJI_SET = ['👍','❤️','😂','😮','😢','😡','🎉','🔥','💯','🙏','👏','💪','✨','🚀','💎','🌟'];
 
-function getComments(postId:string) { try { return JSON.parse(localStorage.getItem(`datore-comments-${postId}`)||'[]'); } catch { return []; } }
-function saveComments(postId:string, c:any[]) { try { localStorage.setItem(`datore-comments-${postId}`, JSON.stringify(c)); } catch {} }
-
 function renderHashText(text:string, accent:string, router:any) {
   const parts = text.split(/(#[a-zA-Z0-9_]+)/g);
   return parts.map((part,i) => part.startsWith('#') ? <span key={i} onClick={(e)=>{e.stopPropagation();router.push(`/search?q=${encodeURIComponent(part)}`);}} style={{ color:accent, fontWeight:600, cursor:'pointer' }}>{part}</span> : <span key={i}>{part}</span>);
@@ -50,15 +49,18 @@ export default function HomePage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user, profile } = useAuthStore();
   const [tab, setTab] = useState<'feed'|'discover'>('feed');
   const [showPost, setShowPost] = useState(false);
   const [postText, setPostText] = useState('');
   const [postType, setPostType] = useState<'text'|'photo'|'video'>('text');
   const [postAudience, setPostAudience] = useState<Audience>('public');
-  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showShare, setShowShare] = useState<string|null>(null);
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [mediaPreview, setMediaPreview] = useState<string|null>(null);
+  const [mediaFile, setMediaFile] = useState<File|null>(null);
   const [mediaName, setMediaName] = useState('');
   const [openComments, setOpenComments] = useState<string|null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string,string>>({});
@@ -72,38 +74,107 @@ export default function HomePage() {
   const [moderationAlert, setModerationAlert] = useState<ModerationAlert|null>(null);
   const [voiceSearch, setVoiceSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [posting, setPosting] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
-  const prefs = getProfilePrefs();
-  
-  // Fix: Load user avatar PER AUDIENCE — different photo for Public/Friends/Professional
-  const getUserAvatarForAudience = (audience:string):{type:'image'|'emoji'|'initials';src:string} => {
-    try {
-      const saved = localStorage.getItem('datore-avatars');
-      if (saved) {
-        const avatars = JSON.parse(saved);
-        // ONLY use the avatar specifically set for THIS audience — no cross-audience fallback
-        const src = avatars[audience];
-        if (src && src.startsWith('data:image')) return {type:'image',src};
-        if (src && src.length <= 4) return {type:'emoji',src};
-      }
-    } catch {}
-    // Distinct visual per audience so they look different when no custom photo is uploaded
-    const audienceIcons: Record<string,string> = { public:'🌐', friends:'💛', buddy:'👥', professional:'💼' };
-    if (audienceIcons[audience]) return {type:'emoji',src:audienceIcons[audience]};
-    return {type:'initials',src:(prefs.name||'DU').split(' ').map((n:string)=>n[0]).join('').slice(0,2)};
-  };
-  const userAvatar = getUserAvatarForAudience('public'); // default for composer
 
-  useEffect(() => { setUserPosts(getUserPosts()); }, []);
+  const userName = profile?.name || 'You';
+  const userAvatar = profile?.avatar_url ? { type: 'image' as const, src: profile.avatar_url } : { type: 'initials' as const, src: (userName).split(' ').map((n:string)=>n[0]).join('').slice(0,2) };
+
+  // Fetch feed posts from Supabase
+  useEffect(() => {
+    async function loadFeed() {
+      setLoading(true);
+      try {
+        const posts = await getAllFeedPosts(50);
+        if (posts && posts.length > 0) {
+          setFeedPosts(posts);
+        } else {
+          // Fallback to demo data when DB is empty
+          setFeedPosts(SOCIAL_FEED.map(p => ({
+            id: p.id,
+            content: p.text,
+            user_id: null,
+            author_name: p.user,
+            author_avatar: p.avatar,
+            visibility: 'public',
+            post_type: p.type,
+            media_urls: p.media ? [p.media] : [],
+            like_count: p.likes,
+            comment_count: p.comments,
+            created_at: p.time,
+            _demo: true,
+          })));
+        }
+      } catch {
+        // On error, fallback to demo
+        setFeedPosts(SOCIAL_FEED.map(p => ({
+          id: p.id,
+          content: p.text,
+          user_id: null,
+          author_name: p.user,
+          author_avatar: p.avatar,
+          visibility: 'public',
+          post_type: p.type,
+          media_urls: p.media ? [p.media] : [],
+          like_count: p.likes,
+          comment_count: p.comments,
+          created_at: p.time,
+          _demo: true,
+        })));
+      }
+      setLoading(false);
+    }
+    loadFeed();
+  }, []);
+
+  // Load liked state for current user
+  useEffect(() => {
+    if (!user?.id) return;
+    // We track likes locally since polymorphic likes require per-post queries
+  }, [user?.id]);
 
   /* Display-time re-censor: Always re-run moderation on render to catch posts saved before moderation existed */
   const censorForDisplay = (text: string): string => {
     const r = _moderate(text, 'post');
     return (r.severity === 'low' || r.severity === 'medium' || r.severity === 'high' || r.severity === 'critical') ? r.cleaned : text;
   };
-  const allFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+
+  // Normalize feed posts for display
+  const allFeed = feedPosts.map(p => {
+    const isOwn = user?.id && p.user_id === user.id;
+    const authorName = p.author_name || p.profiles?.name || (isOwn ? userName : 'User');
+    const authorAvatar = p.author_avatar || p.profiles?.avatar_url || authorName.split(' ').map((n:string)=>n[0]).join('').slice(0,2);
+    const aud = p.visibility || 'public';
+    return {
+      id: p.id,
+      user: authorName,
+      avatar: authorAvatar,
+      avatarType: (p.profiles?.avatar_url || p.author_avatar?.startsWith?.('http')) ? 'image' : 'initials',
+      text: censorForDisplay(p.content || ''),
+      time: p._demo ? p.created_at : timeAgo(p.created_at),
+      likes: p.like_count || 0,
+      comments: p.comment_count || 0,
+      type: p.post_type || 'text',
+      media: p.media_urls?.[0] || null,
+      isOwn,
+      audience: aud as Audience,
+      _demo: p._demo,
+    };
+  });
+
+  function timeAgo(dateStr: string) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -111,43 +182,83 @@ export default function HomePage() {
       setModerationAlert({ safe:false, severity:'severe', flags:['Adult/explicit content detected in filename'], cleaned:'', blocked:true });
       return;
     }
-    setPostType(type); setMediaName(file.name);
+    setPostType(type); setMediaName(file.name); setMediaFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => { setMediaPreview(ev.target?.result as string); };
     reader.readAsDataURL(file);
     if (!showPost) setShowPost(true);
   };
-  const clearMedia = () => { setMediaPreview(null); setMediaName(''); };
+  const clearMedia = () => { setMediaPreview(null); setMediaName(''); setMediaFile(null); };
 
-  /* AI-moderated post submission */
-  const handlePost = () => {
+  /* AI-moderated post submission — now creates in Supabase */
+  const handlePost = async () => {
     if (!postText.trim() && !mediaPreview) return;
+    if (!user?.id) { alert('Please sign in to post'); return; }
     const modResult = moderatePost(postText);
     if (modResult.severity === 'severe') {
       setModerationAlert(modResult);
-      return; // Block severe content
+      return;
     }
     const finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
-    addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
-    setUserPosts(getUserPosts());
+
+    setPosting(true);
+    try {
+      let mediaUrls: string[] = [];
+      if (mediaFile && user?.id) {
+        const { url } = await uploadPostMedia(user.id, mediaFile);
+        if (url) mediaUrls = [url];
+      }
+
+      // Extract hashtags
+      const hashtags = finalText.match(/#[a-zA-Z0-9_]+/g)?.map(h => h.slice(1)) || [];
+
+      await createSupabasePost({
+        user_id: user.id,
+        content: finalText,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        media_type: postType !== 'text' ? postType : undefined,
+        post_type: postType,
+        visibility: postAudience,
+        hashtags: hashtags.length > 0 ? hashtags : undefined,
+      });
+
+      // Refresh feed
+      const posts = await getAllFeedPosts(50);
+      if (posts && posts.length > 0) setFeedPosts(posts);
+    } catch (err) {
+      console.error('Failed to create post:', err);
+    }
+    setPosting(false);
     setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia();
-    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult); // Warn for censored
+    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult);
   };
 
-  const handleLike = (id: string) => setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  const handleLike = async (id: string, isDemo?: boolean) => {
+    // Optimistic UI update
+    setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+    if (!isDemo && user?.id) {
+      try { await toggleLike(user.id, id, 'post'); } catch {}
+    }
+  };
 
-  /* BR-101: Edit own post */
-  const saveEdit = (postId: string) => {
+  /* Edit own post */
+  const saveEdit = async (postId: string) => {
     const modResult = moderatePost(editText);
     if (modResult.severity === 'severe') { setModerationAlert(modResult); return; }
-    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText} : p));
+    const finalText = (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText;
+    try {
+      await updatePost(postId, finalText);
+      setFeedPosts(prev => prev.map(p => p.id === postId ? {...p, content: finalText} : p));
+    } catch {}
     setEditingPost(null); setEditText('');
   };
 
-  /* BR-101: Delete own post */
-  const deletePost = (postId: string) => {
-    setUserPosts(prev => prev.filter(p => p.id !== postId));
-    try { const all = getUserPosts().filter((p:any) => p.id !== postId); localStorage.setItem('datore-user-posts', JSON.stringify(all)); } catch {}
+  /* Delete own post */
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await deleteSupabasePost(postId);
+      setFeedPosts(prev => prev.filter(p => p.id !== postId));
+    } catch {}
   };
 
   /* Emoji reaction */
@@ -166,22 +277,56 @@ export default function HomePage() {
     setTimeout(() => { setVoiceSearch(false); setSearchText('nearby jobs'); router.push('/search?q=nearby+jobs'); }, 2000);
   };
 
-  /* Comments */
-  const toggleComments = (postId: string) => {
+  /* Comments — now fetches from Supabase */
+  const toggleCommentsPanel = async (postId: string) => {
     if (openComments === postId) { setOpenComments(null); return; }
     setOpenComments(postId);
-    if (!commentData[postId]) setCommentData(prev => ({...prev, [postId]: getComments(postId) }));
+    if (!commentData[postId]) {
+      try {
+        const comments = await getSupabaseComments(postId, 'post');
+        if (comments && comments.length > 0) {
+          setCommentData(prev => ({...prev, [postId]: comments.map(c => ({
+            id: c.id,
+            user: c.profiles?.name || 'User',
+            text: c.content,
+            time: timeAgo(c.created_at),
+            likes: 0,
+          }))}));
+        } else {
+          setCommentData(prev => ({...prev, [postId]: []}));
+        }
+      } catch {
+        setCommentData(prev => ({...prev, [postId]: []}));
+      }
+    }
   };
-  const submitComment = (postId: string) => {
+
+  const submitComment = async (postId: string) => {
     const text = (commentInputs[postId]||'').trim(); if (!text) return;
-    const newC = { id: Date.now().toString(), user: prefs.name||'You', text, time: 'Just now', likes: 0 };
-    const updated = [...(commentData[postId]||[]), newC];
-    setCommentData(prev => ({...prev, [postId]: updated})); saveComments(postId, updated);
+    if (!user?.id) return;
+    try {
+      const { data } = await createComment({
+        user_id: user.id,
+        target_id: postId,
+        target_type: 'post',
+        content: text,
+      });
+      const newC = { id: data?.id || Date.now().toString(), user: userName, text, time: 'Just now', likes: 0 };
+      const updated = [...(commentData[postId]||[]), newC];
+      setCommentData(prev => ({...prev, [postId]: updated}));
+    } catch {
+      // Fallback: add locally
+      const newC = { id: Date.now().toString(), user: userName, text, time: 'Just now', likes: 0 };
+      const updated = [...(commentData[postId]||[]), newC];
+      setCommentData(prev => ({...prev, [postId]: updated}));
+    }
     setCommentInputs(prev => ({...prev, [postId]: ''})); setHashSuggestions([]);
   };
-  const deleteComment = (postId: string, commentId: string) => {
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try { await deleteSupabaseComment(commentId); } catch {}
     const updated = (commentData[postId]||[]).filter((c:any)=>c.id!==commentId);
-    setCommentData(prev => ({...prev, [postId]: updated})); saveComments(postId, updated);
+    setCommentData(prev => ({...prev, [postId]: updated}));
   };
 
   /* Hashtag suggestions */
@@ -248,12 +393,12 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="font-bold text-sm" style={{ color:moderationAlert.severity==='severe'?'#ef4444':'#f59e0b' }}>
-                  {moderationAlert.severity==='severe'?'⛔ Content Blocked':'⚠️ Content Modified'}
+                  {moderationAlert.severity==='severe'?'Content Blocked':'Content Modified'}
                 </h3>
                 <p className="text-[10px]" style={{ color:t.textMuted }}>AI Safety System</p>
               </div>
             </div>
-            {moderationAlert.flags.map((f,i)=>(<p key={i} className="text-xs mb-1" style={{ color:t.text }}>• {f}</p>))}
+            {moderationAlert.flags.map((f,i)=>(<p key={i} className="text-xs mb-1" style={{ color:t.text }}>- {f}</p>))}
             {(moderationAlert.severity==='mild'||moderationAlert.severity==='moderate')&&<p className="text-[10px] mt-2" style={{ color:t.textMuted }}>Profanity has been censored. Your post was published.</p>}
             {moderationAlert.severity==='severe'&&<p className="text-[10px] mt-2" style={{ color:'#ef4444' }}>This content violates community guidelines and cannot be posted.</p>}
             <button onClick={()=>setModerationAlert(null)} className="w-full mt-3 py-2 rounded-xl text-xs font-bold text-white" style={{ background:moderationAlert.severity==='severe'?'#ef4444':'#f59e0b' }}>Understood</button>
@@ -269,17 +414,17 @@ export default function HomePage() {
           <IcoMic size={16} color={voiceSearch?'#ef4444':'#8b5cf6'} />
         </button>
       </div>
-      {voiceSearch && <p className="text-xs text-center animate-pulse" style={{ color:'#ef4444' }}>🎙️ Listening...</p>}
+      {voiceSearch && <p className="text-xs text-center animate-pulse" style={{ color:'#ef4444' }}>Listening...</p>}
 
       {/* Create Post Bar */}
       <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowPost(true)}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden" style={{ background:`linear-gradient(135deg,${t.accent}44,#8b5cf644)`, color:t.accent }}>
-            {userAvatar.type==='image' ? <img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/> : userAvatar.type==='emoji' ? <span className="text-xl">{userAvatar.src}</span> : userAvatar.src}
+            {userAvatar.type==='image' ? <img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/> : userAvatar.src}
           </div>
           <p className="flex-1 text-sm" style={{ color:t.textMuted }}>Share what's on your mind...</p>
-          <button onClick={e => { e.stopPropagation(); photoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e' }}>📷 Photo</button>
-          <button onClick={e => { e.stopPropagation(); videoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>🎥 Video</button>
+          <button onClick={e => { e.stopPropagation(); photoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(34,197,94,0.1)', color:'#22c55e' }}>Photo</button>
+          <button onClick={e => { e.stopPropagation(); videoRef.current?.click(); }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>Video</button>
         </div>
       </div>
 
@@ -291,7 +436,12 @@ export default function HomePage() {
 
       {tab === 'feed' ? (
         <div className="space-y-3">
-          {allFeed.map(post => {
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: `${t.accent} transparent ${t.accent} ${t.accent}` }} />
+              <p className="text-xs" style={{ color: t.textMuted }}>Loading feed...</p>
+            </div>
+          ) : allFeed.map(post => {
             const comments = commentData[post.id] || [];
             const commentCount = (post.comments||0) + comments.length;
             const reactions = postReactions[post.id] || [];
@@ -301,7 +451,7 @@ export default function HomePage() {
               {/* Post Header */}
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>
-                  {(post as any).avatarType==='image'?<img src={post.avatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>:(post as any).avatarType==='emoji'?<span className="text-xl">{post.avatar}</span>:post.avatar}
+                  {(post as any).avatarType==='image'?<img src={post.avatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>:post.avatar}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{post.user}</p>
@@ -310,11 +460,11 @@ export default function HomePage() {
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background:`${aud.color}15`, color:aud.color }}>{aud.icon} {aud.label}</span>
                   </div>
                 </div>
-                {/* BR-101: Edit & Delete for own posts */}
+                {/* Edit & Delete for own posts */}
                 {(post as any).isOwn && (
                   <div className="flex items-center gap-1">
                     <button onClick={()=>{setEditingPost(post.id);setEditText(post.text);}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(59,130,246,0.1)' }} title="Edit"><IcoEdit size={14} color="#3b82f6" /></button>
-                    <button onClick={()=>deletePost(post.id)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(239,68,68,0.1)' }} title="Delete"><IcoClose size={14} color="#ef4444" /></button>
+                    <button onClick={()=>handleDeletePost(post.id)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'rgba(239,68,68,0.1)' }} title="Delete"><IcoClose size={14} color="#ef4444" /></button>
                   </div>
                 )}
               </div>
@@ -335,8 +485,8 @@ export default function HomePage() {
               {/* Media */}
               {post.media && (
                 <div className="mb-3 rounded-xl overflow-hidden" style={{ border:`1px solid ${t.cardBorder}` }}>
-                  {post.media.startsWith('data:video') ? <video src={post.media} controls playsInline style={{ width:'100%', maxHeight:300, display:'block', background:'#000' }} />
-                  : post.media.startsWith('data:image') ? <img src={post.media} alt="Post" style={{ width:'100%', maxHeight:300, objectFit:'cover', display:'block' }} />
+                  {post.media.startsWith('data:video') || post.media.includes('.mp4') ? <video src={post.media} controls playsInline style={{ width:'100%', maxHeight:300, display:'block', background:'#000' }} />
+                  : (post.media.startsWith('data:image') || post.media.startsWith('http')) ? <img src={post.media} alt="Post" style={{ width:'100%', maxHeight:300, objectFit:'cover', display:'block' }} />
                   : <div className="h-32 flex items-center justify-center" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.03)' }}><p className="text-sm" style={{ color:t.textMuted }}>[{post.type === 'video' ? 'Video' : 'Photo'} content]</p></div>}
                 </div>
               )}
@@ -348,14 +498,14 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Action Bar: Right-aligned — Like, Comment, Share, Report, Emoji */}
+              {/* Action Bar */}
               <div className="flex items-center gap-3 pt-3 justify-end" style={{ borderTop:`1px solid ${t.cardBorder}` }}>
-                <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 text-xs" style={{ color:likedPosts.includes(post.id)?'#ef4444':t.textMuted }}>
+                <button onClick={() => handleLike(post.id, post._demo)} className="flex items-center gap-1 text-xs" style={{ color:likedPosts.includes(post.id)?'#ef4444':t.textMuted }}>
                   <IcoHeart size={14} color={likedPosts.includes(post.id)?'#ef4444':t.textMuted} fill={likedPosts.includes(post.id)?'#ef4444':'none'} />
                   Like ({post.likes + (likedPosts.includes(post.id)?1:0)})
                 </button>
-                <button onClick={() => toggleComments(post.id)} className="flex items-center gap-1 text-xs" style={{ color:openComments===post.id?t.accent:t.textMuted }}>💬 Comment ({commentCount})</button>
-                <button onClick={() => setShowShare(showShare===post.id?null:post.id)} className="text-xs" style={{ color:t.textMuted }}>↗ Share</button>
+                <button onClick={() => toggleCommentsPanel(post.id)} className="flex items-center gap-1 text-xs" style={{ color:openComments===post.id?t.accent:t.textMuted }}>Comment ({commentCount})</button>
+                <button onClick={() => setShowShare(showShare===post.id?null:post.id)} className="text-xs" style={{ color:t.textMuted }}>Share</button>
                 <button onClick={() => { if(confirm('Report this post for inappropriate content?')) alert('Post reported. Our team will review it within 24 hours.'); }} className="flex items-center gap-1 text-xs" style={{ color:t.textMuted }}>
                   <IcoFlag size={12} color={t.textMuted} /> Report
                 </button>
@@ -381,7 +531,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-2"><span className="text-xs font-semibold">{c.user}</span><span className="text-[10px]" style={{ color:t.textMuted }}>{c.time}</span></div>
                         <p className="text-xs mt-0.5" style={{ color:t.textSecondary }}>{renderHashText(c.text, t.accent, router)}</p>
                       </div>
-                      {c.user === (prefs.name||'You') && <button onClick={()=>deleteComment(post.id, c.id)} className="text-[10px] self-start" style={{ color:'#ef4444' }}>✕</button>}
+                      {c.user === userName && <button onClick={()=>handleDeleteComment(post.id, c.id)} className="text-[10px] self-start" style={{ color:'#ef4444' }}>x</button>}
                     </div>
                   ))}
                   <div>
@@ -429,7 +579,7 @@ export default function HomePage() {
               <div key={w.id} onClick={() => router.push(`/worker/${w.id}`)} className="rounded-xl p-3 cursor-pointer" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`, color:t.accent }}>{w.full_name.split(' ').map(n=>n[0]).join('')}</div>
-                  <div><p className="text-xs font-semibold">{w.full_name}</p><p className="text-[10px]" style={{ color:t.textMuted }}>⭐ {w.rating}</p></div>
+                  <div><p className="text-xs font-semibold">{w.full_name}</p><p className="text-[10px]" style={{ color:t.textMuted }}>* {w.rating}</p></div>
                 </div>
                 <div className="flex flex-wrap gap-1">{w.skills.slice(0,2).map(s => <span key={s} className="text-[9px] px-1.5 py-0.5 rounded" style={{ background:t.accentLight, color:t.accent }}>{s}</span>)}</div>
               </div>
@@ -479,15 +629,15 @@ export default function HomePage() {
                 {mediaPreview ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ border:`1px solid ${t.cardBorder}` }}>
                     {postType === 'photo' ? <img src={mediaPreview} alt="Preview" style={{ width:'100%', maxHeight:200, objectFit:'cover', display:'block' }} /> : <video src={mediaPreview} controls style={{ width:'100%', maxHeight:200, display:'block' }} />}
-                    <div className="absolute top-2 right-2"><button onClick={clearMedia} className="px-3 py-1 rounded-lg text-[11px] font-bold text-white" style={{ background:'rgba(0,0,0,0.7)' }}>✕ Remove</button></div>
+                    <div className="absolute top-2 right-2"><button onClick={clearMedia} className="px-3 py-1 rounded-lg text-[11px] font-bold text-white" style={{ background:'rgba(0,0,0,0.7)' }}>x Remove</button></div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => cameraRef.current?.click()} className="h-24 rounded-xl flex flex-col items-center justify-center" style={{ border:`2px dashed ${t.accent}55` }}>
-                      <span className="text-lg mb-1">📷</span><p className="text-xs font-semibold" style={{ color:t.accent }}>Camera</p>
+                      <span className="text-lg mb-1">Camera</span><p className="text-xs font-semibold" style={{ color:t.accent }}>Camera</p>
                     </button>
                     <button onClick={() => (postType==='photo'?photoRef:videoRef).current?.click()} className="h-24 rounded-xl flex flex-col items-center justify-center" style={{ border:`2px dashed ${t.cardBorder}` }}>
-                      <span className="text-lg mb-1">📁</span><p className="text-xs font-semibold" style={{ color:'#8b5cf6' }}>Gallery</p>
+                      <span className="text-lg mb-1">Gallery</span><p className="text-xs font-semibold" style={{ color:'#8b5cf6' }}>Gallery</p>
                     </button>
                   </div>
                 )}
@@ -502,8 +652,8 @@ export default function HomePage() {
 
             {/* Post / Cancel */}
             <div className="flex gap-2">
-              <button onClick={handlePost} disabled={!postText.trim() && !mediaPreview} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>
-                Post to {audienceInfo.label} {audienceInfo.icon}
+              <button onClick={handlePost} disabled={(!postText.trim() && !mediaPreview) || posting} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>
+                {posting ? 'Posting...' : `Post to ${audienceInfo.label} ${audienceInfo.icon}`}
               </button>
               <button onClick={() => { setShowPost(false); clearMedia(); }} className="px-6 py-3 rounded-xl text-sm" style={{ color:t.textMuted, border:`1px solid ${t.cardBorder}` }}>Cancel</button>
             </div>

@@ -54,13 +54,12 @@ export default function CreateJobPage() {
       const { data: { session } } = await getSession();
       if (!session) { router.push('/login'); return; }
       await createJob({
-        poster_id: session.user.id,
-        poster_name: session.user.user_metadata?.full_name || session.user.email,
-        title: form.title, description: `${form.description}${selectedTags.length ? '\n\n' + selectedTags.join(' ') : ''}${form.notes ? '\n\nNotes: ' + form.notes : ''}`,
-        category: cat, urgency: form.urgency, target_date: form.target_date || null,
-        payment_type: form.payment_type, amount: parseFloat(form.amount),
-        currency: 'CAD', location_name: form.location_name || 'Toronto, ON',
-        location_lat: 43.65, location_lng: -79.38, status: 'open',
+        customer_id: session.user.id,
+        category_id: cat,
+        job_description: `${form.title}\n\n${form.description}${selectedTags.length ? '\n\n' + selectedTags.join(' ') : ''}${form.notes ? '\n\nNotes: ' + form.notes : ''}`,
+        scheduled_time: form.target_date || null,
+        agreed_price: parseFloat(form.amount),
+        status: 'open',
       });
       setPosted(true);
       setTimeout(() => router.push('/jobplace'), 2000);

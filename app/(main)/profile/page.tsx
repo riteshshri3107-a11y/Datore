@@ -1,14 +1,12 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
-
-/* BR-101: User Content Ownership -- edit/delete own posts, jobs, products, communities, groups
-   BR-103: Rating Eligibility -- 4.0+ rating AND 10+ friends required to rate others
-   NEW: Multi-avatar system -- separate profile pics for Public, Friends, Buddy+, Professional */
+import { getProfile, getProfileStats, getMyPosts, getMyJobs, getMyListings, getFollowers, updatePost, deletePost as dbDeletePost, uploadAvatar, createReview } from '@/lib/supabase';
 
 type AvatarMode = 'public'|'friends'|'buddy'|'professional';
 const AVATAR_MODES:{key:AvatarMode;label:string;icon:string;color:string}[] = [
@@ -20,79 +18,98 @@ const AVATAR_MODES:{key:AvatarMode;label:string;icon:string;color:string}[] = [
 
 const DEFAULT_AVATARS = ['👨‍💼','👩‍💻','🧑‍🔬','👨‍🎨','👩‍🏫','🧑‍🚀','👨‍🍳','👩‍⚕️','🦸','🧑‍💼','👷','🧑‍🎤'];
 
-interface UserPost { id:string; text:string; time:string; likes:number; audience:string; }
-interface UserJob { id:string; title:string; status:string; applicants:number; posted:string; budget:string; }
-interface UserProduct { id:string; name:string; price:number; status:string; views:number; }
-interface UserCommunity { id:string; name:string; members:number; }
-
-const MY_POSTS:UserPost[] = [
-  {id:'mp1',text:'Just launched AARNAIT AI robotics program in Raipur! 🤖',time:'2h ago',likes:34,audience:'Public'},
-  {id:'mp2',text:'Looking for experienced React developers in Toronto area',time:'1d ago',likes:12,audience:'Professional'},
-  {id:'mp3',text:'Weekend hike with the dog walkers group! 🐕🌿',time:'3d ago',likes:56,audience:'Buddy Group'},
-];
-const MY_JOBS:UserJob[] = [
-  {id:'mj1',title:'House Cleaner Needed -- Brampton',status:'Active',applicants:8,posted:'2d ago',budget:'$35/hr'},
-  {id:'mj2',title:'Math Tutor for Grade 10',status:'Active',applicants:3,posted:'5d ago',budget:'$40/hr'},
-  {id:'mj3',title:'Dog Walker -- Weekend Only',status:'Closed',applicants:12,posted:'2w ago',budget:'$20/hr'},
-];
-const MY_PRODUCTS:UserProduct[] = [
-  {id:'mpd1',name:'Used MacBook Pro 2023',price:1200,status:'Active',views:89},
-  {id:'mpd2',name:'STEM Robot Kit (Educational)',price:149,status:'Active',views:234},
-];
-const MY_COMMUNITIES:UserCommunity[] = [
-  {id:'mc1',name:'Toronto Dog Walkers',members:127},
-  {id:'mc2',name:'AARNAIT AI Community',members:45},
-];
-
 export default function ProfilePage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
+  const { user, profile: authProfile } = useAuthStore();
   const [tab,setTab] = useState<'overview'|'posts'|'jobs'|'products'|'communities'|'ratings'>('overview');
-  const [posts,setPosts] = useState(MY_POSTS);
-  const [jobs,setJobs] = useState(MY_JOBS);
-  const [products,setProducts] = useState(MY_PRODUCTS);
-  const [communities,setCommunities] = useState(MY_COMMUNITIES);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [posts,setPosts] = useState<any[]>([]);
+  const [jobs,setJobs] = useState<any[]>([]);
+  const [products,setProducts] = useState<any[]>([]);
+  const [communities,setCommunities] = useState<any[]>([]);
   const [editingPost,setEditingPost] = useState<string|null>(null);
   const [editText,setEditText] = useState('');
-  const [myRating] = useState(4.6);
-  const [myFriends] = useState(48);
   const [ratingTarget,setRatingTarget] = useState('');
   const [ratingValue,setRatingValue] = useState(5);
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
+  const [loading, setLoading] = useState(true);
   // Avatar system
   const [avatars,setAvatars] = useState<Record<AvatarMode,string|null>>({public:null,friends:null,buddy:null,professional:null});
-  // Load saved avatars from localStorage
-  useState(()=>{try{const s=localStorage.getItem('datore-avatars');if(s)setAvatars(JSON.parse(s));}catch{}});
-  // Save avatars when they change
-  const updateAvatar = (mode:AvatarMode, val:string|null) => {
-    const newA = {...avatars,[mode]:val};
-    setAvatars(newA);
-    try{localStorage.setItem('datore-avatars',JSON.stringify(newA));}catch{}
-  };
   const [activeAvatarMode,setActiveAvatarMode] = useState<AvatarMode>('public');
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
 
-  const handleAvatarUpload = (e:React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => { updateAvatar(activeAvatarMode, ev.target?.result as string); setShowAvatarPicker(false); };
-    reader.readAsDataURL(file);
-  };
-  const setEmojiAvatar = (emoji:string) => { updateAvatar(activeAvatarMode, emoji); setShowAvatarPicker(false); };
-  const currentAvatar = avatars[activeAvatarMode];
+  useEffect(() => {
+    if (!user?.id) { setLoading(false); return; }
+    const load = async () => {
+      try {
+        const [p, s, myPosts, myJobs, myListings, followers] = await Promise.all([
+          getProfile(user.id),
+          getProfileStats(user.id),
+          getMyPosts(user.id),
+          getMyJobs(user.id),
+          getMyListings(user.id),
+          getFollowers(user.id),
+        ]);
+        setProfileData(p);
+        setStats(s);
+        if (myPosts.length > 0) setPosts(myPosts.map((p:any) => ({ id:p.id, text:p.content, time: new Date(p.created_at).toLocaleDateString(), likes:p.likes_count, audience:p.visibility })));
+        else setPosts([{id:'mp1',text:'Welcome to Datore! Create your first post.',time:'Just now',likes:0,audience:'public'}]);
+        if (myJobs.length > 0) setJobs(myJobs.map((j:any) => ({ id:j.id, title:j.job_description||'Job', status:j.status, applicants:0, posted: new Date(j.created_at).toLocaleDateString(), budget:j.agreed_price?`$${j.agreed_price}`:'TBD' })));
+        if (myListings.length > 0) setProducts(myListings.map((l:any) => ({ id:l.id, name:l.title, price:l.price||0, status:l.status, views:l.views_count||0 })));
+      } catch(e) { console.error('Profile load error:', e); }
+      setLoading(false);
+    };
+    load();
+    try{const s=localStorage.getItem('datore-avatars');if(s)setAvatars(JSON.parse(s));}catch{}
+  }, [user?.id]);
 
-  const canRate = myRating >= 4.0 && myFriends >= 10;
+  const myRating = stats?.rating || profileData?.rating || 0;
+  const myFollowers = stats?.followers_count || 0;
+  const userName = profileData?.name || authProfile?.name || 'User';
+
+  const updateAvatarState = (mode:AvatarMode, val:string|null) => {
+    const newA = {...avatars,[mode]:val};
+    setAvatars(newA);
+    try{localStorage.setItem('datore-avatars',JSON.stringify(newA));}catch{}
+  };
+
+  const handleAvatarUpload = async (e:React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if(!file || !user?.id) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { updateAvatarState(activeAvatarMode, ev.target?.result as string); setShowAvatarPicker(false); };
+    reader.readAsDataURL(file);
+    await uploadAvatar(user.id, file, activeAvatarMode);
+  };
+  const setEmojiAvatar = (emoji:string) => { updateAvatarState(activeAvatarMode, emoji); setShowAvatarPicker(false); };
+  const currentAvatar = avatars[activeAvatarMode] || profileData?.avatar_url;
+
+  const canRate = myRating >= 4.0 && myFollowers >= 10;
 
   // BR-103: Rating eligibility check
-  const submitRating = () => {
-    if(!canRate) { setRatingMsg({text:`Cannot rate: You need 4.0+ rating (yours: ${myRating}) AND 10+ friends (yours: ${myFriends}).`,ok:false}); return; }
+  const submitRating = async () => {
+    if(!canRate) { setRatingMsg({text:`Cannot rate: You need 4.0+ rating (yours: ${myRating}) AND 10+ followers (yours: ${myFollowers}).`,ok:false}); return; }
     if(!ratingTarget.trim()) { setRatingMsg({text:'Please enter a name to rate.',ok:false}); return; }
     setRatingMsg({text:`✅ ${ratingValue}-star rating submitted for ${ratingTarget}!`,ok:true});
     setRatingTarget(''); setRatingValue(5);
     setTimeout(()=>setRatingMsg(null),3000);
   };
+
+  const handleDeletePost = async (postId: string) => {
+    await dbDeletePost(postId);
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  const handleSaveEdit = async (postId: string) => {
+    await updatePost(postId, editText);
+    setPosts(prev => prev.map(p => p.id === postId ? {...p, text: editText} : p));
+    setEditingPost(null); setEditText('');
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-2 rounded-full" style={{borderColor:`${t.accent} transparent`}}/></div>;
 
   return (
     <div className="space-y-3 animate-fade-in">
@@ -113,7 +130,7 @@ export default function ProfilePage() {
             )}
             <button onClick={()=>setShowAvatarPicker(true)} className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{background:t.accent,border:`2px solid ${isDark?'#1a1a2e':'#fff'}`}}><IcoCamera size={10} color="white"/></button>
           </div>
-          <div className="flex-1"><h2 className="text-base font-bold">Rajesh S.</h2><p className="text-[10px]" style={{color:t.textMuted}}>CEO & Founder, AARNAIT AI</p><p className="text-[10px]" style={{color:t.textMuted}}>📍 Toronto, ON · Raipur, India</p></div>
+          <div className="flex-1"><h2 className="text-base font-bold">{userName}</h2><p className="text-[10px]" style={{color:t.textMuted}}>{profileData?.bio?.slice(0,50) || 'Set up your profile'}</p><p className="text-[10px]" style={{color:t.textMuted}}>📍 {profileData?.city || 'Set your location'}{profileData?.state ? `, ${profileData.state}` : ''}</p></div>
           <button onClick={()=>router.push('/profile/edit')} className="px-3 py-1 rounded-lg text-[9px] font-semibold" style={{background:t.accent+'15',color:t.accent}}>Edit</button>
         </div>
 
@@ -130,12 +147,12 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-4 gap-2">
-          {[{l:'Rating',v:`⭐ ${myRating}`},{l:'Friends',v:myFriends+''},{l:'Posts',v:posts.length+''},{l:'Jobs',v:jobs.length+''}].map(s=>(<div key={s.l} className="text-center p-1.5 rounded-lg" style={{background:t.bg}}><p className="text-xs font-bold">{s.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s.l}</p></div>))}
+          {[{l:'Rating',v:`⭐ ${myRating}`},{l:'Followers',v:myFollowers+''},{l:'Posts',v:(stats?.posts_count||posts.length)+''},{l:'Jobs',v:jobs.length+''}].map(s=>(<div key={s.l} className="text-center p-1.5 rounded-lg" style={{background:t.bg}}><p className="text-xs font-bold">{s.v}</p><p className="text-[8px]" style={{color:t.textMuted}}>{s.l}</p></div>))}
         </div>
         {/* BR-103: Eligibility Badge */}
         <div className="mt-2 flex items-center gap-2 p-2 rounded-lg" style={{background:canRate?'rgba(34,197,94,0.08)':'rgba(239,68,68,0.08)'}}>
           <IcoShield size={12} color={canRate?'#22c55e':'#ef4444'}/>
-          <span className="text-[9px]" style={{color:canRate?'#22c55e':'#ef4444'}}>{canRate?'✅ Eligible to rate others (4.0+ rating & 10+ friends)':'❌ Not eligible to rate: Need 4.0+ rating AND 10+ friends'}</span>
+          <span className="text-[9px]" style={{color:canRate?'#22c55e':'#ef4444'}}>{canRate?'✅ Eligible to rate others (4.0+ rating & 10+ followers)':'❌ Not eligible to rate: Need 4.0+ rating AND 10+ followers'}</span>
         </div>
       </div>
 
@@ -172,13 +189,13 @@ export default function ProfilePage() {
           {posts.map(p=>(
             <div key={p.id} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               {editingPost===p.id?(
-                <div className="space-y-2"><textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-xs" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/><div className="flex gap-2"><button onClick={()=>{setPosts(pr=>pr.map(x=>x.id===p.id?{...x,text:editText}:x));setEditingPost(null);}} className="px-3 py-1 rounded text-[9px] font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditingPost(null)} className="px-3 py-1 rounded text-[9px]" style={{background:t.cardBorder}}>Cancel</button></div></div>
+                <div className="space-y-2"><textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={2} className="w-full p-2 rounded-lg text-xs" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/><div className="flex gap-2"><button onClick={()=>handleSaveEdit(p.id)} className="px-3 py-1 rounded text-[9px] font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditingPost(null)} className="px-3 py-1 rounded text-[9px]" style={{background:t.cardBorder}}>Cancel</button></div></div>
               ):(
                 <>
                   <p className="text-xs mb-1">{p.text}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex gap-3"><span className="text-[9px]" style={{color:t.textMuted}}>{p.time}</span><span className="text-[9px]" style={{color:t.textMuted}}>❤️ {p.likes}</span><span className="text-[9px] px-1.5 py-0.5 rounded" style={{background:t.accent+'10',color:t.accent}}>{p.audience}</span></div>
-                    <div className="flex gap-1"><button onClick={()=>{setEditingPost(p.id);setEditText(p.text);}} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(59,130,246,0.1)',color:'#3b82f6'}}>Edit</button><button onClick={()=>setPosts(pr=>pr.filter(x=>x.id!==p.id))} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete</button></div>
+                    <div className="flex gap-1"><button onClick={()=>{setEditingPost(p.id);setEditText(p.text);}} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(59,130,246,0.1)',color:'#3b82f6'}}>Edit</button><button onClick={()=>handleDeletePost(p.id)} className="text-[9px] px-2 py-0.5 rounded" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete</button></div>
                   </div>
                 </>
               )}

@@ -1,12 +1,14 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getMyTickets, createTicket } from '@/lib/supabase';
 import { IcoBack } from '@/components/Icons';
 
-const DISPUTES = [
+const DEMO_DISPUTES = [
   { id:'d1', title:'Incomplete cleaning job', against:'Worker: Anita S.', job:'House Cleaning - Feb 20', status:'open', filed:'Feb 22', amount:120 },
   { id:'d2', title:'Worker did not show up', against:'Worker: James B.', job:'Electrical Fix - Feb 15', status:'resolved', filed:'Feb 16', amount:90, resolution:'Full refund issued' },
   { id:'d3', title:'Price disagreement', against:'Client: John D.', job:'Plumbing Repair - Feb 10', status:'in_review', filed:'Feb 11', amount:185 },
@@ -16,13 +18,47 @@ export default function DisputesPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [showFile, setShowFile] = useState(false);
   const [fileText, setFileText] = useState('');
   const [filed, setFiled] = useState(false);
+  const [disputes, setDisputes] = useState(DEMO_DISPUTES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (user?.id) {
+        try {
+          const data = await getMyTickets(user.id);
+          if (data && data.length > 0) {
+            const mapped = data.map((t: any) => ({
+              id: t.id,
+              title: t.subject || t.title || 'Ticket',
+              against: t.against || 'N/A',
+              job: t.related_job || '',
+              status: t.status || 'open',
+              filed: new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              amount: t.amount || 0,
+              resolution: t.resolution,
+            }));
+            setDisputes(mapped.length > 0 ? mapped : DEMO_DISPUTES);
+          }
+        } catch {}
+      }
+      setLoading(false);
+    })();
+  }, [user?.id]);
 
   const statusColor: Record<string,string> = { open:'#f59e0b', resolved:'#22c55e', in_review:'#6366f1', escalated:'#ef4444' };
 
-  const fileDispute = () => { if (fileText.trim().length > 10) { setFiled(true); setTimeout(()=>{setFiled(false);setShowFile(false);setFileText('');},2000); } };
+  const fileDispute = async () => {
+    if (fileText.trim().length > 10) {
+      if (user?.id) {
+        try { await createTicket({ user_id: user.id, subject: fileText.trim().slice(0, 100), description: fileText.trim(), type: 'dispute', status: 'open' }); } catch {}
+      }
+      setFiled(true); setTimeout(()=>{setFiled(false);setShowFile(false);setFileText('');},2000);
+    }
+  };
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -36,7 +72,7 @@ export default function DisputesPage() {
         <p className="text-xs" style={{ color:t.textSecondary }}>Disputes are reviewed within 24-48 hours. Our AI mediation suggests fair resolutions, with human reviewers for complex cases.</p>
       </div>
 
-      {DISPUTES.map(d=>(
+      {disputes.map(d=>(
         <div key={d.id} className="glass-card rounded-xl p-4" style={{ background:t.card, borderColor:t.cardBorder }}>
           <div className="flex justify-between items-start">
             <div><p className="font-semibold text-sm">{d.title}</p><p className="text-[10px]" style={{ color:t.textMuted }}>{d.against} · {d.job}</p><p className="text-[10px]" style={{ color:t.textMuted }}>Filed: {d.filed} · Amount: ${d.amount}</p></div>

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack } from '@/components/Icons';
 
@@ -16,6 +17,7 @@ const PRICING: Record<string,{low:number;avg:number;high:number;demand:string}> 
 export default function PricingAIPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark, glassLevel, accentColor);
   const [category, setCategory] = useState('Cleaning');
   const [hours, setHours] = useState(2);

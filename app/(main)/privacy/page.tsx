@@ -3,16 +3,17 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { CONSENT_PURPOSES, RETENTION_POLICIES, PRIVACY_VERSIONS, recordBatchConsent, getUserConsents, createDSR, generateDataExport, processErasure, getDefaultBannerState, type ConsentPurpose, type RequestType, type DataCategory } from '@/lib/compliance';
 import { IcoBack, IcoCheck, IcoShield } from '@/components/Icons';
 
-const DEMO_USER_ID = 'user_demo_001';
-
 export default function PrivacyCenter() {
   const router = useRouter();
   const { isDark } = useThemeStore();
+  const { user } = useAuthStore();
   const t = getTheme(isDark);
+  const userId = user?.id || 'anonymous';
   const [tab, setTab] = useState<'consent'|'data'|'policy'>('consent');
   const [consents, setConsents] = useState(getDefaultBannerState().preferences);
   const [saved, setSaved] = useState(false);
@@ -23,25 +24,25 @@ export default function PrivacyCenter() {
   const [deleteStep, setDeleteStep] = useState(0);
 
   const handleSaveConsent = () => {
-    recordBatchConsent(DEMO_USER_ID, consents, 'privacy_center');
+    recordBatchConsent(userId, consents, 'privacy_center');
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleDSR = () => {
-    createDSR(DEMO_USER_ID, dsrType, 'pipeda');
+    createDSR(userId, dsrType, 'pipeda');
     setDsrSubmitted(true);
     setTimeout(() => setDsrSubmitted(false), 3000);
   };
 
   const handleExport = () => {
-    generateDataExport(DEMO_USER_ID);
+    generateDataExport(userId);
     setExportReady(true);
   };
 
   const handleDelete = () => {
     if (deleteStep < 2) { setDeleteStep(deleteStep + 1); return; }
-    processErasure(DEMO_USER_ID);
+    processErasure(userId);
     setDeleteConfirm(true);
   };
 

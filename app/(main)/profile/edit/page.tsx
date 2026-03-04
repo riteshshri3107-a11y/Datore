@@ -3,22 +3,22 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getTheme } from '@/lib/theme';
 import { getProfilePrefs, saveProfilePrefs, JOB_DISPLAY_OPTIONS } from '@/lib/demoData';
 import { IcoBack, IcoCamera } from '@/components/Icons';
+import { getProfile, updateProfile, uploadAvatar } from '@/lib/supabase';
 
 const AVATARS = ['👤','👩','👨','👩‍💻','👨‍💻','👩‍🔧','👨‍🔧','👩‍🍳','👨‍🍳','👩‍🏫','👨‍🏫','🧑‍🎨'];
 const CITIES = ['Toronto','Mississauga','Brampton','Scarborough','North York','Etobicoke','Markham','Vaughan','Richmond Hill','Oakville','Burlington','Hamilton'];
 const LANGS = ['English','French','Hindi','Punjabi','Mandarin','Cantonese','Tamil','Urdu','Spanish','Arabic','Portuguese','Tagalog'];
 const DEGREES = ['High School','Diploma','Associate','Bachelor','Master','PhD','Certificate','Other'];
 
-function getFullProfile() { try { return JSON.parse(localStorage.getItem('datore-full-profile')||'{}'); } catch { return {}; } }
-function saveFullProfile(p:any) { try { localStorage.setItem('datore-full-profile', JSON.stringify(p)); } catch {} }
-
 export default function ProfileEditPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -50,45 +50,64 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     const prefs = getProfilePrefs();
-    setName(prefs.name || '');
     setDisplayPref(prefs.displayPref || 'card');
-    const fp = getFullProfile();
-    if (fp.bio) setBio(fp.bio);
-    if (fp.city) setCity(fp.city);
-    if (fp.phone) setPhone(fp.phone);
-    if (fp.skills) setSkills(fp.skills);
-    if (fp.profilePhoto) setProfilePhoto(fp.profilePhoto);
-    if (fp.selectedAvatar) setSelectedAvatar(fp.selectedAvatar);
-    if (fp.street) setStreet(fp.street);
-    if (fp.province) setProvince(fp.province);
-    if (fp.postalCode) setPostalCode(fp.postalCode);
-    if (fp.country) setCountry(fp.country);
-    if (fp.school) setSchool(fp.school);
-    if (fp.degree) setDegree(fp.degree);
-    if (fp.fieldOfStudy) setFieldOfStudy(fp.fieldOfStudy);
-    if (fp.gradYear) setGradYear(fp.gradYear);
-    if (fp.languages) setLanguages(fp.languages);
-    if (fp.emergencyName) setEmergencyName(fp.emergencyName);
-    if (fp.emergencyPhone) setEmergencyPhone(fp.emergencyPhone);
-    if (fp.linkedin) setLinkedin(fp.linkedin);
-    if (fp.instagram) setInstagram(fp.instagram);
-  }, []);
+
+    // Load from Supabase profile
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      const p = await getProfile(user.id);
+      if (p) {
+        setName(p.name || '');
+        setBio(p.bio || '');
+        setCity(p.city || 'Toronto');
+        setPhone(p.phone || '');
+        setProvince(p.state || 'Ontario');
+        if (p.avatar_url) setProfilePhoto(p.avatar_url);
+        if (p.education) {
+          try { const edu = JSON.parse(p.education); setSchool(edu.school||''); setDegree(edu.degree||''); setFieldOfStudy(edu.fieldOfStudy||''); setGradYear(edu.gradYear||''); } catch {}
+        }
+        if (p.links) {
+          try { const links = typeof p.links === 'string' ? JSON.parse(p.links) : p.links; setLinkedin(links.linkedin||''); setInstagram(links.instagram||''); } catch {}
+        }
+        if (p.contact_info) {
+          try { const ci = typeof p.contact_info === 'string' ? JSON.parse(p.contact_info) : p.contact_info; setEmergencyName(ci.emergencyName||''); setEmergencyPhone(ci.emergencyPhone||''); setStreet(ci.street||''); setPostalCode(ci.postalCode||''); setCountry(ci.country||'Canada'); } catch {}
+        }
+      }
+    };
+    loadProfile();
+  }, [user?.id]);
 
   const toggleSkill = (s: string) => setSkills(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleLang = (l: string) => setLanguages(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => { setProfilePhoto(ev.target?.result as string); setSelectedAvatar(null); };
     reader.readAsDataURL(file);
+    if (user?.id) {
+      const result = await uploadAvatar(user.id, file);
+      if (result.url) setProfilePhoto(result.url);
+    }
   };
 
   const selectAvatar = (a: string) => { setSelectedAvatar(a); setProfilePhoto(null); setShowAvatars(false); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     saveProfilePrefs({ displayPref, setupDone: true, name: name || 'Demo User' });
-    saveFullProfile({ bio, city, phone, skills, profilePhoto, selectedAvatar, street, province, postalCode, country, school, degree, fieldOfStudy, gradYear, languages, emergencyName, emergencyPhone, linkedin, instagram });
+    // Save to Supabase
+    if (user?.id) {
+      await updateProfile(user.id, {
+        name: name || 'User',
+        bio,
+        city,
+        state: province,
+        phone,
+        education: JSON.stringify({ school, degree, fieldOfStudy, gradYear }),
+        links: JSON.stringify({ linkedin, instagram }),
+        contact_info: JSON.stringify({ emergencyName, emergencyPhone, street, postalCode, country }),
+      });
+    }
     setSaved(true);
     setTimeout(() => { setSaved(false); router.push('/profile'); }, 1500);
   };

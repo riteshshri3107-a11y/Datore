@@ -4,25 +4,24 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, subscribeToNotifications } from '@/lib/supabase';
 
-const NOTIFS = [
-  // Today
-  { id:'n1', title:'New job match!', msg:'A babysitting job was posted 2km from you in Brampton. $35/hr, needs someone tonight.', type:'job', read:false, time:'5 min ago', group:'Today', link:'/jobplace/job/1', priority:'high', action:'View Job' },
-  { id:'n2', title:'Review received', msg:'Sarah Chen gave you 5 stars! "Amazing babysitter, my kids loved her"', type:'review', read:false, time:'1 hour ago', group:'Today', link:'/profile', priority:'normal', action:'See Review' },
-  { id:'n3', title:'Birthday: Maria Santos', msg:'Your friend Maria Santos turns 28 today! Send her birthday wishes.', type:'birthday', read:false, time:'Today', group:'Today', link:'/friends', priority:'normal', action:'Send Wishes' },
-  { id:'n4', title:'Payment received', msg:'You earned $45.00 CAD for the house cleaning job with Tom Wilson. Tokens added to wallet.', type:'payment', read:false, time:'3 hours ago', group:'Today', link:'/wallet', priority:'normal', action:'View Wallet' },
-  { id:'n5', title:'Safety: Background Check Complete', msg:"James O'Brien's police verification has been completed. Status: CLEAR. Safe to hire.", type:'safety', read:false, time:'4 hours ago', group:'Today', link:'/safety', priority:'high', action:'View Report' },
-  // Yesterday
-  { id:'n6', title:'Community Event Coming', msg:'GTA Community BBQ is happening Mar 15 at High Park. 34 people going. RSVP now!', type:'event', read:true, time:'Yesterday', group:'Yesterday', link:'/events', priority:'normal', action:'RSVP' },
-  { id:'n7', title:'Hire Confirmed', msg:'Priya Sharma accepted your cleaning job request. She will arrive at 10:00 AM tomorrow.', type:'hire', read:true, time:'Yesterday', group:'Yesterday', link:'/chat/3', priority:'high', action:'Message Her' },
-  { id:'n8', title:'Anniversary', msg:"1 year since Rosa Martinez joined Datore! She's completed 45 jobs with a 4.8 rating.", type:'anniversary', read:true, time:'Yesterday', group:'Yesterday', link:'/worker/7', priority:'low', action:'View Profile' },
-  { id:'n9', title:'New friend request', msg:'Aisha Hassan wants to connect with you. She is a pet care specialist in Mississauga.', type:'social', read:true, time:'Yesterday', group:'Yesterday', link:'/friends', priority:'normal', action:'Accept' },
-  // Earlier
-  { id:'n10', title:'QR Verification', msg:'You verified Mike Johnson via QR code scan before the moving job. All checks passed.', type:'qr', read:true, time:'Feb 23', group:'Earlier', link:'/qr-verify', priority:'normal', action:'View Scan' },
-  { id:'n11', title:'Price Drop Alert', msg:'A Samsung TV in the marketplace just dropped from $450 to $350. Seller: David Chen.', type:'marketplace', read:true, time:'Feb 22', group:'Earlier', link:'/marketplace/listing/1', priority:'low', action:'View Item' },
-  { id:'n12', title:'Job completed', msg:'Your tutoring job with David Chen was marked as completed. Please leave a review.', type:'job', read:true, time:'Feb 20', group:'Earlier', link:'/jobplace', priority:'normal', action:'Leave Review' },
-  { id:'n13', title:'Workshop Reminder', msg:'Babysitter Safety Workshop is in 5 days. Mar 20 at Community Center, Brampton.', type:'event', read:true, time:'Feb 20', group:'Earlier', link:'/events', priority:'normal', action:'View Event' },
-  { id:'n14', title:'Trust Score Update', msg:'Your trust score increased from 82 to 87! Great job maintaining positive reviews.', type:'trust', read:true, time:'Feb 18', group:'Earlier', link:'/profile', priority:'normal', action:'View Score' },
+const DEMO_NOTIFS = [
+  { id:'n1', title:'New job match!', msg:'A babysitting job was posted 2km from you in Brampton. $35/hr, needs someone tonight.', type:'job', is_read:false, time:'5 min ago', group:'Today', link:'/jobplace/job/1', priority:'high', action:'View Job' },
+  { id:'n2', title:'Review received', msg:'Sarah Chen gave you 5 stars! "Amazing babysitter, my kids loved her"', type:'review', is_read:false, time:'1 hour ago', group:'Today', link:'/profile', priority:'normal', action:'See Review' },
+  { id:'n3', title:'Birthday: Maria Santos', msg:'Your friend Maria Santos turns 28 today! Send her birthday wishes.', type:'birthday', is_read:false, time:'Today', group:'Today', link:'/friends', priority:'normal', action:'Send Wishes' },
+  { id:'n4', title:'Payment received', msg:'You earned $45.00 CAD for the house cleaning job with Tom Wilson. Tokens added to wallet.', type:'payment', is_read:false, time:'3 hours ago', group:'Today', link:'/wallet', priority:'normal', action:'View Wallet' },
+  { id:'n5', title:'Safety: Background Check Complete', msg:"James O'Brien's police verification has been completed. Status: CLEAR. Safe to hire.", type:'safety', is_read:false, time:'4 hours ago', group:'Today', link:'/safety', priority:'high', action:'View Report' },
+  { id:'n6', title:'Community Event Coming', msg:'GTA Community BBQ is happening Mar 15 at High Park. 34 people going. RSVP now!', type:'event', is_read:true, time:'Yesterday', group:'Yesterday', link:'/events', priority:'normal', action:'RSVP' },
+  { id:'n7', title:'Hire Confirmed', msg:'Priya Sharma accepted your cleaning job request. She will arrive at 10:00 AM tomorrow.', type:'hire', is_read:true, time:'Yesterday', group:'Yesterday', link:'/chat/3', priority:'high', action:'Message Her' },
+  { id:'n8', title:'Anniversary', msg:"1 year since Rosa Martinez joined Datore! She's completed 45 jobs with a 4.8 rating.", type:'anniversary', is_read:true, time:'Yesterday', group:'Yesterday', link:'/worker/7', priority:'low', action:'View Profile' },
+  { id:'n9', title:'New friend request', msg:'Aisha Hassan wants to connect with you. She is a pet care specialist in Mississauga.', type:'social', is_read:true, time:'Yesterday', group:'Yesterday', link:'/friends', priority:'normal', action:'Accept' },
+  { id:'n10', title:'QR Verification', msg:'You verified Mike Johnson via QR code scan before the moving job. All checks passed.', type:'qr', is_read:true, time:'Feb 23', group:'Earlier', link:'/qr-verify', priority:'normal', action:'View Scan' },
+  { id:'n11', title:'Price Drop Alert', msg:'A Samsung TV in the marketplace just dropped from $450 to $350. Seller: David Chen.', type:'marketplace', is_read:true, time:'Feb 22', group:'Earlier', link:'/marketplace/listing/1', priority:'low', action:'View Item' },
+  { id:'n12', title:'Job completed', msg:'Your tutoring job with David Chen was marked as completed. Please leave a review.', type:'job', is_read:true, time:'Feb 20', group:'Earlier', link:'/jobplace', priority:'normal', action:'Leave Review' },
+  { id:'n13', title:'Workshop Reminder', msg:'Babysitter Safety Workshop is in 5 days. Mar 20 at Community Center, Brampton.', type:'event', is_read:true, time:'Feb 20', group:'Earlier', link:'/events', priority:'normal', action:'View Event' },
+  { id:'n14', title:'Trust Score Update', msg:'Your trust score increased from 82 to 87! Great job maintaining positive reviews.', type:'trust', is_read:true, time:'Feb 18', group:'Earlier', link:'/profile', priority:'normal', action:'View Score' },
 ];
 
 const ICONS: Record<string,{bg:string; color:string; label:string}> = {
@@ -38,26 +37,119 @@ const ICONS: Record<string,{bg:string; color:string; label:string}> = {
   social: { bg:'rgba(99,102,241,0.12)', color:'#6366f1', label:'FRD' },
   marketplace: { bg:'rgba(236,72,153,0.12)', color:'#ec4899', label:'MKT' },
   trust: { bg:'rgba(6,182,212,0.12)', color:'#06b6d4', label:'AI' },
+  like: { bg:'rgba(239,68,68,0.12)', color:'#ef4444', label:'LKE' },
+  comment: { bg:'rgba(99,102,241,0.12)', color:'#6366f1', label:'CMT' },
+  follow: { bg:'rgba(34,197,94,0.12)', color:'#22c55e', label:'FLW' },
+  message: { bg:'rgba(59,130,246,0.12)', color:'#3b82f6', label:'MSG' },
 };
+
+function timeAgo(dateStr: string) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function getGroup(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 1) return 'Today';
+  if (days < 2) return 'Yesterday';
+  return 'Earlier';
+}
 
 export default function NotificationsPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const { user } = useAuthStore();
   const [filter, setFilter] = useState('all');
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [readIds, setReadIds] = useState<string[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [showPush, setShowPush] = useState(true);
 
-  // Simulate push notification arrival
+  // Fetch notifications from Supabase
+  useEffect(() => {
+    async function loadNotifications() {
+      if (!user?.id) {
+        setNotifications(DEMO_NOTIFS);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await getNotifications(user.id);
+        if (data && data.length > 0) {
+          setNotifications(data.map((n: any) => ({
+            id: n.id,
+            title: n.title || 'Notification',
+            msg: n.body || n.message || '',
+            type: n.type || 'job',
+            is_read: n.is_read || false,
+            time: timeAgo(n.created_at),
+            group: getGroup(n.created_at),
+            link: n.link || n.action_url || null,
+            priority: n.priority || 'normal',
+            action: n.action_label || 'View',
+          })));
+        } else {
+          // Fallback to demo when DB is empty
+          setNotifications(DEMO_NOTIFS);
+        }
+      } catch {
+        setNotifications(DEMO_NOTIFS);
+      }
+      setLoading(false);
+    }
+    loadNotifications();
+  }, [user?.id]);
+
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = subscribeToNotifications(user.id, (newNotif) => {
+      setNotifications(prev => [{
+        id: newNotif.id,
+        title: newNotif.title || 'New Notification',
+        msg: newNotif.body || newNotif.message || '',
+        type: newNotif.type || 'job',
+        is_read: false,
+        time: 'Just now',
+        group: 'Today',
+        link: newNotif.link || null,
+        priority: newNotif.priority || 'normal',
+        action: newNotif.action_label || 'View',
+      }, ...prev]);
+    });
+    return () => { channel?.unsubscribe(); };
+  }, [user?.id]);
+
+  // Push notification sim timer
   useEffect(() => {
     const timer = setTimeout(() => setShowPush(false), 5000);
     return () => clearTimeout(timer);
   }, []);
 
-  const markRead = (id: string) => { if (!readIds.includes(id)) setReadIds(p => [...p, id]); };
+  const markRead = async (id: string) => {
+    if (!readIds.includes(id)) setReadIds(p => [...p, id]);
+    try { await markNotificationRead(id); } catch {}
+  };
   const dismiss = (id: string) => setDismissed(p => [...p, id]);
-  const markAllRead = () => setReadIds(NOTIFS.map(n => n.id));
+  const handleMarkAllRead = async () => {
+    setReadIds(notifications.map(n => n.id));
+    if (user?.id) {
+      try { await markAllNotificationsRead(user.id); } catch {}
+    }
+  };
 
   const filters = [
     { id:'all', label:'All' },
@@ -68,20 +160,20 @@ export default function NotificationsPage() {
     { id:'event', label:'Events' },
   ];
 
-  const socialTypes = ['birthday','anniversary','social'];
+  const socialTypes = ['birthday','anniversary','social','follow','like','comment'];
   const safetyTypes = ['safety','qr','trust'];
-  const visible = NOTIFS.filter(n => !dismissed.includes(n.id));
+  const visible = notifications.filter(n => !dismissed.includes(n.id));
   const filtered = filter === 'all' ? visible
     : filter === 'social' ? visible.filter(n => socialTypes.includes(n.type))
     : filter === 'safety' ? visible.filter(n => safetyTypes.includes(n.type))
     : visible.filter(n => n.type === filter);
 
-  const unreadCount = visible.filter(n => !n.read && !readIds.includes(n.id)).length;
+  const unreadCount = visible.filter(n => !n.is_read && !readIds.includes(n.id)).length;
   const groups = ['Today','Yesterday','Earlier'];
 
   const getFilterUnread = (f: string) => {
     const list = f === 'all' ? visible : f === 'social' ? visible.filter(n => socialTypes.includes(n.type)) : f === 'safety' ? visible.filter(n => safetyTypes.includes(n.type)) : visible.filter(n => n.type === f);
-    return list.filter(n => !n.read && !readIds.includes(n.id)).length;
+    return list.filter(n => !n.is_read && !readIds.includes(n.id)).length;
   };
 
   return (
@@ -105,7 +197,7 @@ export default function NotificationsPage() {
           <h1 className="text-xl font-bold">Notifications</h1>
           {unreadCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold" style={{ background:'#ef4444' }}>{unreadCount} new</span>}
         </div>
-        <button onClick={markAllRead} className="text-xs font-medium" style={{ color:t.accent }}>Mark all read</button>
+        <button onClick={handleMarkAllRead} className="text-xs font-medium" style={{ color:t.accent }}>Mark all read</button>
       </div>
 
       {/* Filter tabs with unread badges */}
@@ -121,53 +213,62 @@ export default function NotificationsPage() {
         })}
       </div>
 
-      {/* Grouped notifications */}
-      {groups.map(group => {
-        const groupNotifs = filtered.filter(n => n.group === group);
-        if (groupNotifs.length === 0) return null;
-        return (
-          <div key={group}>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2 px-1" style={{ color:t.textMuted }}>{group}</h3>
-            <div className="space-y-2">
-              {groupNotifs.map(n => {
-                const isRead = n.read || readIds.includes(n.id);
-                const ic = ICONS[n.type] || { bg:t.accentLight, color:t.accent, label:'N' };
-                return (
-                  <div key={n.id} className="glass-card rounded-xl p-3.5 transition-all" style={{ background: isRead ? t.card : `${ic.color}06`, borderColor: isRead ? t.cardBorder : `${ic.color}22` }}>
-                    <div className="flex items-start gap-3">
-                      {/* Icon */}
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background:ic.bg, color:ic.color }}>{ic.label}</div>
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm" style={{ fontWeight: isRead ? 500 : 700 }}>{n.title}</p>
-                          {!isRead && <span className="w-2 h-2 rounded-full shrink-0" style={{ background:ic.color }}></span>}
-                          {n.priority === 'high' && <span className="text-[8px] px-1.5 py-0.5 rounded font-bold" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>URGENT</span>}
-                        </div>
-                        <p className="text-xs mt-1 leading-relaxed" style={{ color:t.textSecondary }}>{n.msg}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px]" style={{ color:t.textMuted }}>{n.time}</span>
-                          {/* Action button */}
-                          <button onClick={() => { markRead(n.id); if(n.link) router.push(n.link); }} className="text-[10px] px-2.5 py-1 rounded-lg font-semibold" style={{ background:ic.bg, color:ic.color }}>
-                            {n.action}
-                          </button>
-                          <button onClick={() => dismiss(n.id)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color:t.textMuted }}>Dismiss</button>
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: `${t.accent} transparent ${t.accent} ${t.accent}` }} />
+          <p className="text-xs" style={{ color: t.textMuted }}>Loading notifications...</p>
+        </div>
+      ) : (
+        <>
+          {/* Grouped notifications */}
+          {groups.map(group => {
+            const groupNotifs = filtered.filter(n => n.group === group);
+            if (groupNotifs.length === 0) return null;
+            return (
+              <div key={group}>
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-2 px-1" style={{ color:t.textMuted }}>{group}</h3>
+                <div className="space-y-2">
+                  {groupNotifs.map(n => {
+                    const isRead = n.is_read || readIds.includes(n.id);
+                    const ic = ICONS[n.type] || { bg:t.accentLight, color:t.accent, label:'N' };
+                    return (
+                      <div key={n.id} className="glass-card rounded-xl p-3.5 transition-all" style={{ background: isRead ? t.card : `${ic.color}06`, borderColor: isRead ? t.cardBorder : `${ic.color}22` }}>
+                        <div className="flex items-start gap-3">
+                          {/* Icon */}
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background:ic.bg, color:ic.color }}>{ic.label}</div>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm" style={{ fontWeight: isRead ? 500 : 700 }}>{n.title}</p>
+                              {!isRead && <span className="w-2 h-2 rounded-full shrink-0" style={{ background:ic.color }}></span>}
+                              {n.priority === 'high' && <span className="text-[8px] px-1.5 py-0.5 rounded font-bold" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444' }}>URGENT</span>}
+                            </div>
+                            <p className="text-xs mt-1 leading-relaxed" style={{ color:t.textSecondary }}>{n.msg}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-[10px]" style={{ color:t.textMuted }}>{n.time}</span>
+                              {/* Action button */}
+                              <button onClick={() => { markRead(n.id); if(n.link) router.push(n.link); }} className="text-[10px] px-2.5 py-1 rounded-lg font-semibold" style={{ background:ic.bg, color:ic.color }}>
+                                {n.action}
+                              </button>
+                              <button onClick={() => dismiss(n.id)} className="text-[10px] px-2 py-1 rounded-lg" style={{ color:t.textMuted }}>Dismiss</button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12 glass-card rounded-2xl" style={{ background:t.card, borderColor:t.cardBorder }}>
-          <p className="text-lg font-bold mb-1">All clear!</p>
-          <p className="text-sm" style={{ color:t.textSecondary }}>No {filter !== 'all' ? filter : ''} notifications</p>
-        </div>
+          {filtered.length === 0 && (
+            <div className="text-center py-12 glass-card rounded-2xl" style={{ background:t.card, borderColor:t.cardBorder }}>
+              <p className="text-lg font-bold mb-1">All clear!</p>
+              <p className="text-sm" style={{ color:t.textSecondary }}>No {filter !== 'all' ? filter : ''} notifications</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Settings shortcut */}
