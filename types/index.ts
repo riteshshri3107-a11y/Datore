@@ -63,10 +63,11 @@ export type ThemeMode = 'light' | 'dark';
 export type GlassLevel = 'none' | 'subtle' | 'medium' | 'heavy';
 
 export const JOB_CATEGORIES = [
-  'Babysitting', 'House Cleaning', 'Plumbing', 'Electrical', 'Carpentry',
-  'Painting', 'Gardening', 'Moving', 'Pet Care', 'Tutoring',
-  'Cooking', 'Delivery', 'Personal Training', 'Photography', 'Music Lessons',
-  'Tech Support', 'Auto Repair', 'Beauty & Wellness', 'Event Planning', 'General Labor'
+  'IT & Software', 'Non-IT', 'Management', 'Civil Construction',
+  'Finance & Accounting', 'Healthcare', 'Marketing & Sales', 'Human Resources',
+  'Engineering', 'Design & Creative', 'Education & Training', 'Legal',
+  'Operations & Logistics', 'Customer Service', 'Data & Analytics',
+  'Consulting', 'Manufacturing', 'Retail & Hospitality', 'Government & Public Sector', 'Other'
 ] as const;
 
 export const MARKETPLACE_CATEGORIES = [
