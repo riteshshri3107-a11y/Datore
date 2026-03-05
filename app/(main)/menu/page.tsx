@@ -44,7 +44,7 @@ const CATEGORIES = [
     color: '#22c55e',
     items: [
       { Icon: IcoGlobe,  label: 'Global Shop',      path: '/shopping',  color: '#22c55e' },
-      { Icon: IcoStore,  label: 'NearBy Local',      path: '/nearby',    color: '#f97316' },
+      { Icon: IcoStore,  label: 'NetYard Local',      path: '/nearby',    color: '#f97316' },
       { Icon: IcoMarket, label: 'Marketplace',       path: '/marketplace', color: '#ec4899' },
     ],
   },

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
-import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag } from '@/components/Icons';
+import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag, IcoCommunity, IcoStore } from '@/components/Icons';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
 import { moderateContent as _moderate, isImageSafe, type ModerationResult as _ModResult } from '@/lib/moderation';
@@ -260,6 +260,21 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* ─── Top Navigation Row: NetYard, Social Feed, Community, Discover ─── */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { Icon:IcoStore, label:'NetYard', path:'/nearby', bg:'#f97316' },
+          { Icon:IcoHash, label:'Social Feed', path:'/home', bg:'#6366f1', action:()=>setTab('feed') },
+          { Icon:IcoCommunity, label:'Community', path:'/community', bg:'#06b6d4' },
+          { Icon:IcoGlobe, label:'Discover', path:'/home', bg:'#8b5cf6', action:()=>setTab('discover') },
+        ].map(a => (
+          <button key={a.label} onClick={() => a.action ? a.action() : router.push(a.path)} className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background:`${a.bg}22` }}><a.Icon size={20} color={a.bg} /></div>
+            <span className="text-[10px] font-medium" style={{ color:t.textSecondary }}>{a.label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Search Bar with Voice Mic */}
       <div className="flex items-center gap-2 rounded-2xl px-3 py-2" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
