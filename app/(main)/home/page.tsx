@@ -50,7 +50,7 @@ export default function HomePage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
-  const [tab, setTab] = useState<'feed'|'discover'>('feed');
+  const [tab, setTab] = useState<'feed'|'community'|'discover'>('feed');
   const [showPost, setShowPost] = useState(false);
   const [postText, setPostText] = useState('');
   const [postType, setPostType] = useState<'text'|'photo'|'video'>('text');
@@ -264,7 +264,7 @@ export default function HomePage() {
       {/* ─── Top Navigation Row: NetYard, Social Feed, Community, Discover ─── */}
       <div className="grid grid-cols-4 gap-2">
         {[
-          { Icon:IcoStore, label:'NetYard', path:'/nearby', bg:'#f97316' },
+          { Icon:IcoStore, label:'NetYard', path:'/netyard', bg:'#f97316' },
           { Icon:IcoHash, label:'Social Feed', path:'/home', bg:'#6366f1', action:()=>setTab('feed') },
           { Icon:IcoCommunity, label:'Community', path:'/community', bg:'#06b6d4' },
           { Icon:IcoGlobe, label:'Discover', path:'/home', bg:'#8b5cf6', action:()=>setTab('discover') },
@@ -298,13 +298,42 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Feed / Discover Tabs */}
+      {/* Feed / Community / Discover Tabs */}
       <div className="flex gap-2">
         <button onClick={() => setTab('feed')} className="flex-1 py-2.5 rounded-xl text-xs font-semibold" style={{ background:tab==='feed'?t.accentLight:'transparent', color:tab==='feed'?t.accent:t.textSecondary, border:tab==='feed'?`1px solid ${t.accent}33`:'1px solid transparent' }}>Social Feed</button>
+        <button onClick={() => setTab('community')} className="flex-1 py-2.5 rounded-xl text-xs font-semibold" style={{ background:tab==='community'?'rgba(6,182,212,0.12)':'transparent', color:tab==='community'?'#06b6d4':t.textSecondary, border:tab==='community'?'1px solid rgba(6,182,212,0.3)':'1px solid transparent' }}>Community</button>
         <button onClick={() => setTab('discover')} className="flex-1 py-2.5 rounded-xl text-xs font-semibold" style={{ background:tab==='discover'?t.accentLight:'transparent', color:tab==='discover'?t.accent:t.textSecondary, border:tab==='discover'?`1px solid ${t.accent}33`:'1px solid transparent' }}>Discover</button>
       </div>
 
-      {tab === 'feed' ? (
+      {tab === 'community' ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl p-4" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-sm">Community Groups</h2>
+              <button onClick={() => router.push('/community')} className="text-xs font-semibold" style={{ color:'#06b6d4' }}>View All</button>
+            </div>
+            <div className="space-y-2">
+              {[
+                { name:'Local Neighborhood', members:'2.4K', desc:'Connect with people in your area', icon:'🏘️', color:'#22c55e' },
+                { name:'Tech Professionals', members:'5.1K', desc:'IT & software community discussions', icon:'💻', color:'#3b82f6' },
+                { name:'Job Seekers Network', members:'3.8K', desc:'Share opportunities and career advice', icon:'💼', color:'#8b5cf6' },
+                { name:'Creative Arts Hub', members:'1.9K', desc:'Artists, designers, and creators unite', icon:'🎨', color:'#ec4899' },
+                { name:'Parents & Families', members:'4.2K', desc:'Family life tips and support', icon:'👨‍👩‍👧‍👦', color:'#f59e0b' },
+                { name:'Sports & Fitness', members:'2.7K', desc:'Stay active and competitive', icon:'⚽', color:'#ef4444' },
+              ].map(g => (
+                <div key={g.name} onClick={() => router.push('/community')} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all" style={{ background:isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.02)', border:`1px solid ${t.cardBorder}` }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background:`${g.color}15` }}>{g.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{g.name}</p>
+                    <p className="text-[10px]" style={{ color:t.textMuted }}>{g.members} members &middot; {g.desc}</p>
+                  </div>
+                  <button className="px-3 py-1.5 rounded-lg text-[10px] font-bold" style={{ background:'rgba(6,182,212,0.12)', color:'#06b6d4' }}>Join</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : tab === 'feed' ? (
         <div className="space-y-3">
           {allFeed.map(post => {
             const comments = commentData[post.id] || [];

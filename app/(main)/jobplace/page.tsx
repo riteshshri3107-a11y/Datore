@@ -9,11 +9,13 @@ import { JOB_CATEGORIES, URGENCY_OPTIONS } from '@/types';
 import { formatCurrency, timeAgo } from '@/lib/utils';
 
 const DEMO_JOBS = [
-  { id: '1', title: 'Babysitter Needed', category: 'Babysitting', urgency: 'immediate', payment_type: 'hourly', amount: 25, location_name: 'Toronto, ON', poster_name: 'Sarah M.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-3600000).toISOString(), description: 'Need a babysitter for 2 kids ages 3 and 5. Evening shift 6-10pm.' },
-  { id: '2', title: 'House Deep Clean', category: 'House Cleaning', urgency: 'today', payment_type: 'fixed', amount: 150, location_name: 'Mississauga, ON', poster_name: 'John D.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-7200000).toISOString(), description: '3 bedroom house deep cleaning needed today.' },
-  { id: '3', title: 'Math Tutor Grade 10', category: 'Tutoring', urgency: 'tomorrow', payment_type: 'hourly', amount: 35, location_name: 'Brampton, ON', poster_name: 'Lisa K.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-10800000).toISOString(), description: 'Looking for experienced math tutor for grade 10 student.' },
-  { id: '4', title: 'Fix Leaky Faucet', category: 'Plumbing', urgency: 'no_rush', payment_type: 'fixed', amount: 80, location_name: 'Scarborough, ON', poster_name: 'Mark R.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-86400000).toISOString(), description: 'Kitchen faucet is leaking. Need a plumber to fix it.' },
-  { id: '5', title: 'Dog Walker - Daily', category: 'Pet Care', urgency: 'by_date', payment_type: 'hourly', amount: 18, location_name: 'North York, ON', poster_name: 'Emily W.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-172800000).toISOString(), description: 'Need a daily dog walker for my golden retriever. 30 min walks.' },
+  { id: '1', title: 'Senior React Developer', category: 'IT & Software', urgency: 'immediate', payment_type: 'hourly', amount: 85, location_name: 'Toronto, ON', poster_name: 'TechCorp Inc.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-3600000).toISOString(), description: 'Looking for a senior React developer with 5+ years experience. Full-stack skills preferred.' },
+  { id: '2', title: 'Project Manager - Construction', category: 'Civil Construction', urgency: 'today', payment_type: 'fixed', amount: 95000, location_name: 'Mississauga, ON', poster_name: 'BuildRight Ltd.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-7200000).toISOString(), description: 'Experienced project manager for commercial building construction. PMP certification required.' },
+  { id: '3', title: 'Marketing Manager', category: 'Marketing & Sales', urgency: 'tomorrow', payment_type: 'fixed', amount: 78000, location_name: 'Brampton, ON', poster_name: 'GrowthCo', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-10800000).toISOString(), description: 'Lead marketing campaigns and team of 5. Digital marketing expertise essential.' },
+  { id: '4', title: 'Operations Supervisor', category: 'Management', urgency: 'no_rush', payment_type: 'fixed', amount: 72000, location_name: 'Scarborough, ON', poster_name: 'LogiFlow Inc.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-86400000).toISOString(), description: 'Manage daily operations for warehouse facility. Leadership experience required.' },
+  { id: '5', title: 'Administrative Assistant', category: 'Non-IT', urgency: 'by_date', payment_type: 'hourly', amount: 22, location_name: 'North York, ON', poster_name: 'OfficeHub Corp.', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-172800000).toISOString(), description: 'Administrative support role handling scheduling, correspondence, and office management.' },
+  { id: '6', title: 'Site Engineer - Civil', category: 'Civil Construction', urgency: 'immediate', payment_type: 'fixed', amount: 88000, location_name: 'Vaughan, ON', poster_name: 'InfraBuild Group', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-259200000).toISOString(), description: 'Civil engineer for highway expansion project. AutoCAD and site supervision experience needed.' },
+  { id: '7', title: 'DevOps Engineer', category: 'IT & Software', urgency: 'today', payment_type: 'hourly', amount: 75, location_name: 'Toronto, ON', poster_name: 'CloudScale Tech', poster_avatar: '', status: 'open', created_at: new Date(Date.now()-345600000).toISOString(), description: 'AWS/GCP experience required. CI/CD pipeline setup and Kubernetes management.' },
 ];
 
 export default function JobPlacePage() {
@@ -42,7 +44,7 @@ export default function JobPlacePage() {
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">💼 JobPlace</h1>
+        <h1 className="text-xl font-bold">💼 Professional Jobs</h1>
         <button onClick={() => router.push('/jobplace/create')} className="btn-accent text-xs px-4 py-2 rounded-xl">+ Post Job</button>
       </div>
 
