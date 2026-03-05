@@ -261,16 +261,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Search Bar with Voice Mic */}
-      <div className="flex items-center gap-2 rounded-2xl px-3 py-2" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
-        <IcoSearch size={16} color={t.textMuted} />
-        <input value={searchText} onChange={e=>setSearchText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&searchText.trim()) router.push(`/search?q=${encodeURIComponent(searchText)}`);}} placeholder="Search workers, jobs, items, #hashtags..." className="flex-1 text-sm outline-none bg-transparent" style={{ color:t.text }} />
-        <button onClick={startVoiceSearch} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSearch?'rgba(239,68,68,0.15)':'rgba(139,92,246,0.12)' }}>
-          <IcoMic size={16} color={voiceSearch?'#ef4444':'#8b5cf6'} />
-        </button>
-      </div>
-      {voiceSearch && <p className="text-xs text-center animate-pulse" style={{ color:'#ef4444' }}>🎙️ Listening...</p>}
-
       {/* Create Post Bar */}
       <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowPost(true)}>
