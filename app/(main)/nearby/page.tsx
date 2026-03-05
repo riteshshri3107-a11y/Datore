@@ -174,7 +174,7 @@ export default function NearByPage() {
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center gap-3">
         <button onClick={()=>router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button>
-        <h1 className="text-xl font-bold flex-1">NearBy</h1>
+        <h1 className="text-xl font-bold flex-1">NetYard</h1>
         <button onClick={voiceS} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:voiceSrch?'rgba(239,68,68,0.15)':'rgba(247,151,22,0.12)'}}><IcoMic size={16} color={voiceSrch?'#ef4444':'#f97316'}/></button>
       </div>
       {voiceSrch&&<p className="text-[10px] text-center animate-pulse" style={{color:'#ef4444'}}>🎙️ Listening...</p>}
