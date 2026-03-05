@@ -2,15 +2,15 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoHome, IcoJobs, IcoPlus, IcoChat, IcoGrid } from './Icons';
+import { IcoHome, IcoCommunity, IcoFilm, IcoBell, IcoGrid } from './Icons';
 
-/* ─── Facebook-style mobile bottom nav: 5 items with center Create ─── */
+/* ─── Mobile bottom nav: Home, Community, Reels, Notifications, Menu ─── */
 const NAV = [
-  { label:'Home',     Icon:IcoHome,  path:'/home' },
-  { label:'Jobs',     Icon:IcoJobs,  path:'/jobplace' },
-  { label:'',         Icon:IcoPlus,  path:'/create', isCenter:true },
-  { label:'Messages', Icon:IcoChat,  path:'/inbox', badge:true },
-  { label:'Menu',     Icon:IcoGrid,  path:'/menu' },
+  { label:'Home',          Icon:IcoHome,       path:'/home' },
+  { label:'Community',     Icon:IcoCommunity,  path:'/community' },
+  { label:'Reels',         Icon:IcoFilm,       path:'/reels' },
+  { label:'Notifications', Icon:IcoBell,       path:'/notifications', badge:true },
+  { label:'Menu',          Icon:IcoGrid,       path:'/menu' },
 ];
 
 export default function BottomNav() {
@@ -30,19 +30,6 @@ export default function BottomNav() {
       <div className="flex items-center justify-around max-w-lg mx-auto" style={{height:60,padding:'0 8px'}}>
         {NAV.map(item => {
           const active = pathname?.startsWith(item.path);
-          if (item.isCenter) {
-            return (
-              <button key={item.path} onClick={()=>router.push(item.path)} style={{
-                width:46, height:46, borderRadius:14,
-                background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,
-                border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:`0 4px 16px ${t.accent}40`,
-                transition:'all 0.25s', transform:'translateY(-4px)'
-              }}>
-                <IcoPlus size={22} color="white" />
-              </button>
-            );
-          }
           return (
             <button key={item.path} onClick={()=>router.push(item.path)} className="relative" style={{
               display:'flex', flexDirection:'column', alignItems:'center', gap:2,
