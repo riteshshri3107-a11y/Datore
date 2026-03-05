@@ -46,26 +46,7 @@ export default function TopNav() {
           </button>
         </div>
 
-        {/* ─── Center: Logo ─── */}
-        <div onClick={()=>router.push('/home')} className="flex items-center gap-2.5 cursor-pointer shrink-0">
-          <div style={{
-            width:36, height:36, borderRadius:10,
-            background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            boxShadow:'0 2px 12px rgba(99,102,241,0.35)',
-          }}>
-            <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-              <path d="M15 8.134a1 1 0 010 1.732l-13 7.5A1 1 0 010 16.5v-15A1 1 0 012 .634l13 7.5z" fill="white"/>
-            </svg>
-          </div>
-          <span style={{
-            fontWeight:800, fontSize:19, letterSpacing:-0.5,
-            background:'linear-gradient(135deg,#6366f1,#a78bfa)',
-            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
-          }}>Datore</span>
-        </div>
-
-        {/* ─── Right: Home, Netyard, Reel (wide tabs with active underline) ─── */}
+        {/* ─── Right: Home, Netyard, Reel + Logo ─── */}
         <div className="flex items-center shrink-0" style={{gap:2}}>
           {RIGHT_TABS.map(tab => {
             const active = !!pathname?.startsWith(tab.path);
@@ -107,6 +88,25 @@ export default function TopNav() {
               </button>
             );
           })}
+
+          {/* ─── Logo ─── */}
+          <div onClick={()=>router.push('/home')} className="flex items-center gap-2.5 cursor-pointer ml-4">
+            <div style={{
+              width:36, height:36, borderRadius:10,
+              background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              boxShadow:'0 2px 12px rgba(99,102,241,0.35)',
+            }}>
+              <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
+                <path d="M15 8.134a1 1 0 010 1.732l-13 7.5A1 1 0 010 16.5v-15A1 1 0 012 .634l13 7.5z" fill="white"/>
+              </svg>
+            </div>
+            <span style={{
+              fontWeight:800, fontSize:19, letterSpacing:-0.5,
+              background:'linear-gradient(135deg,#6366f1,#a78bfa)',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
+            }}>Datore</span>
+          </div>
         </div>
       </div>
     </nav>
