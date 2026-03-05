@@ -7,10 +7,6 @@ import { IcoHome, IcoCommunity, IcoFilm, IcoSearch, IcoBell, IcoGrid, IcoUser, I
 /* ─── Core tabs: Home, Professional (Jobs), NetYard, Community, Reels ─── */
 const CORE_TABS = [
   { label:'Home',         Icon:IcoHome,      path:'/home',          color:'#6366f1' },
-  { label:'Professional', Icon:IcoBriefcase, path:'/jobplace',      color:'#3b82f6' },
-  { label:'NetYard',      Icon:IcoStore,     path:'/netyard',       color:'#f97316' },
-  { label:'Community',    Icon:IcoCommunity, path:'/community',     color:'#06b6d4' },
-  { label:'Reels',        Icon:IcoFilm,      path:'/reels',         color:'#ef4444' },
 ];
 
 export default function TopNav() {
