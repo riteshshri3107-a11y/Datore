@@ -264,7 +264,7 @@ export default function HomePage() {
       {/* ─── Top Navigation Row: NetYard, Social Feed, Community, Discover ─── */}
       <div className="grid grid-cols-4 gap-2">
         {[
-          { Icon:IcoStore, label:'NetYard', path:'/nearby', bg:'#f97316' },
+          { Icon:IcoStore, label:'NetYard', path:'/netyard', bg:'#f97316' },
           { Icon:IcoHash, label:'Social Feed', path:'/home', bg:'#6366f1', action:()=>setTab('feed') },
           { Icon:IcoCommunity, label:'Community', path:'/community', bg:'#06b6d4' },
           { Icon:IcoGlobe, label:'Discover', path:'/home', bg:'#8b5cf6', action:()=>setTab('discover') },
