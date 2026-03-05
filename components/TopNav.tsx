@@ -7,6 +7,8 @@ import { IcoHome, IcoCommunity, IcoFilm, IcoSearch, IcoBell, IcoGrid, IcoUser } 
 /* ─── Core tabs: Home, Community (includes NearBy), Reels ─── */
 const CORE_TABS = [
   { label:'Home',      Icon:IcoHome,      path:'/home',          color:'#6366f1' },
+  { label:'Jobs',       Icon:IcoJobs,      path:'/jobplace',      color:'#3b82f6' },
+  { label:'NetYard',    Icon:IcoStore,     path:'/nearby',        color:'#f97316' },
   { label:'Community',  Icon:IcoCommunity, path:'/community',     color:'#06b6d4' },
   { label:'Reels',      Icon:IcoFilm,      path:'/reels',         color:'#ef4444' },
 ];
