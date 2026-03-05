@@ -78,8 +78,27 @@ export default function ChatBot() {
   };
 
   const voiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMsgs(p => [...p, { text:"Sorry, your browser doesn't support speech recognition. Try Chrome or Edge.", fromMe:false, time:getTime() }]);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
     setListening(true);
-    setTimeout(()=>{ setListening(false); send('Find workers'); },2000);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setListening(false);
+      if (transcript) send(transcript);
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      setMsgs(p => [...p, { text:"Couldn't catch that. Please try again or type your question.", fromMe:false, time:getTime() }]);
+    };
+    recognition.onend = () => setListening(false);
+    recognition.start();
   };
 
   const quickBtns = [
@@ -256,7 +275,7 @@ export default function ChatBot() {
                 <IcoSend size={16} color={input.trim()?'white':t.textMuted} />
               </button>
             </div>
-            {listening && <p style={{textAlign:'center',fontSize:10,color:'#ef4444',marginTop:6,fontWeight:600}}>🎙️ Listening...</p>}
+            {listening && <p style={{textAlign:'center',fontSize:10,color:'#ef4444',marginTop:6,fontWeight:600}}>🎙️ Listening... Speak now</p>}
           </div>
         </div>
       )}

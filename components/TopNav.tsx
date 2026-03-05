@@ -2,9 +2,9 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { IcoHome, IcoJobs, IcoStore, IcoCommunity, IcoFilm, IcoSearch, IcoChat, IcoBell, IcoGrid, IcoUser } from './Icons';
+import { IcoHome, IcoCommunity, IcoFilm, IcoSearch, IcoBell, IcoGrid, IcoUser } from './Icons';
 
-/* ─── Facebook-style: Only 5 core tabs + 4 right-side actions ─── */
+/* ─── Core tabs: Home, Community (includes NearBy), Reels ─── */
 const CORE_TABS = [
   { label:'Home',      Icon:IcoHome,      path:'/home',          color:'#6366f1' },
   { label:'Jobs',       Icon:IcoJobs,      path:'/jobplace',      color:'#3b82f6' },
@@ -98,11 +98,9 @@ export default function TopNav() {
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Search */}
           <CircleBtn Icon={IcoSearch} onClick={()=>router.push('/search')} active={!!pathname?.startsWith('/search')} muted={muted} isDark={isDark} />
-          {/* Messenger */}
-          <CircleBtn Icon={IcoChat} onClick={()=>router.push('/inbox')} active={!!pathname?.startsWith('/inbox')} muted={muted} isDark={isDark} badge />
-          {/* Notifications */}
+          {/* Notifications (includes messages alerts) */}
           <CircleBtn Icon={IcoBell} onClick={()=>router.push('/notifications')} active={!!pathname?.startsWith('/notification')} muted={muted} isDark={isDark} badge />
-          {/* Menu Grid (highlighted like Facebook's blue grid icon) */}
+          {/* Menu Grid */}
           <CircleBtn Icon={IcoGrid} onClick={()=>router.push('/menu')} active={!!pathname?.startsWith('/menu')} muted={muted} isDark={isDark} isMenu />
           {/* Profile avatar */}
           <button onClick={()=>router.push('/profile')} style={{

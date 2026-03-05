@@ -1,5 +1,6 @@
 "use client";
 export const dynamic = "force-dynamic";
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
@@ -13,7 +14,7 @@ import {
   IcoGrid, IcoEdit, IcoFlag,
 } from '@/components/Icons';
 
-/* ─── Facebook-style categorized grid ─── */
+/* ─── Facebook-style categorized grid (Admin removed — separate login) ─── */
 const CATEGORIES = [
   {
     title: 'Social',
@@ -97,17 +98,6 @@ const CATEGORIES = [
       { Icon: IcoShield,    label: 'Privacy',          path: '/privacy',    color: '#06b6d4' },
     ],
   },
-  {
-    title: 'Admin',
-    color: '#ef4444',
-    items: [
-      { Icon: IcoShield,    label: 'Moderation',      path: '/admin/moderation',      color: '#ef4444' },
-      { Icon: IcoDashboard, label: 'Observability',    path: '/admin/observability',   color: '#06b6d4' },
-      { Icon: IcoSettings,  label: 'Infrastructure',   path: '/admin/infrastructure',  color: '#8b5cf6' },
-      { Icon: IcoFlag,      label: 'Feature Flags',    path: '/admin/features',        color: '#f59e0b' },
-      { Icon: IcoDashboard, label: 'Audit Log',         path: '/admin/audit',           color: '#f59e0b' },
-    ],
-  },
 ];
 
 export default function MenuPage() {
@@ -116,6 +106,10 @@ export default function MenuPage() {
   const t = getTheme(isDark, glassLevel, accentColor);
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)';
   const cardBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+  // Track collapsed state per category
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggle = (title: string) => setCollapsed(p => ({ ...p, [title]: !p[title] }));
 
   return (
     <div className="space-y-5 animate-fade-in pb-8">
@@ -145,50 +139,65 @@ export default function MenuPage() {
         <span className="text-sm" style={{ color: t.textMuted }}>Search Datore...</span>
       </button>
 
-      {/* ─── Categorized Grid Blocks (Facebook-style) ─── */}
-      {CATEGORIES.map(cat => (
-        <div key={cat.title}>
-          {/* Category header with colored accent */}
-          <div className="flex items-center gap-2 mb-2.5 px-1">
-            <div style={{ width:3, height:16, borderRadius:2, background: cat.color }} />
-            <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: cat.color }}>
-              {cat.title}
-            </h2>
-          </div>
-
-          {/* Icon grid — 3 columns like Facebook */}
-          <div className="grid grid-cols-3 gap-2">
-            {cat.items.map((item, i) => (
-              <button
-                key={`${item.path}-${i}`}
-                onClick={() => router.push(item.path)}
-                className="flex flex-col items-center gap-2 rounded-xl transition-all duration-200"
-                style={{
-                  padding: '16px 8px 12px',
-                  background: cardBg,
-                  border: `1px solid ${cardBorder}`,
-                  cursor:'pointer',
-                }}
+      {/* ─── Categorized Grid Blocks with hide/expand ─── */}
+      {CATEGORIES.map(cat => {
+        const isCollapsed = !!collapsed[cat.title];
+        return (
+          <div key={cat.title}>
+            {/* Category header — clickable to toggle */}
+            <button
+              onClick={() => toggle(cat.title)}
+              className="flex items-center gap-2 mb-2.5 px-1 w-full"
+              style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
+            >
+              <div style={{ width:3, height:16, borderRadius:2, background: cat.color }} />
+              <h2 className="text-xs font-bold uppercase tracking-wider flex-1" style={{ color: cat.color }}>
+                {cat.title}
+              </h2>
+              <svg
+                width={14} height={14} viewBox="0 0 24 24" fill="none"
+                stroke={cat.color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                style={{ transition:'transform 0.25s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
               >
-                {/* Icon circle with colored background */}
-                <div style={{
-                  width:44, height:44, borderRadius:14,
-                  background: `${item.color}15`,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  transition:'all 0.2s',
-                }}>
-                  <item.Icon size={22} color={item.color} />
-                </div>
-                <span className="text-[11px] font-medium text-center leading-tight" style={{ color: t.text }}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
 
-      {/* ─── Sign Out (separate, like Facebook) ─── */}
+            {/* Collapsible grid */}
+            {!isCollapsed && (
+              <div className="grid grid-cols-3 gap-2">
+                {cat.items.map((item, i) => (
+                  <button
+                    key={`${item.path}-${i}`}
+                    onClick={() => router.push(item.path)}
+                    className="flex flex-col items-center gap-2 rounded-xl transition-all duration-200"
+                    style={{
+                      padding: '16px 8px 12px',
+                      background: cardBg,
+                      border: `1px solid ${cardBorder}`,
+                      cursor:'pointer',
+                    }}
+                  >
+                    <div style={{
+                      width:44, height:44, borderRadius:14,
+                      background: `${item.color}15`,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      transition:'all 0.2s',
+                    }}>
+                      <item.Icon size={22} color={item.color} />
+                    </div>
+                    <span className="text-[11px] font-medium text-center leading-tight" style={{ color: t.text }}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* ─── Sign Out ─── */}
       <div className="pt-2">
         <button
           onClick={async () => { await signOut(); router.push('/auth/login'); }}
