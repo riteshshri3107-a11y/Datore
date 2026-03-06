@@ -87,7 +87,19 @@ export default function UniversalSearch() {
           <IcoSearch size={18} color={query?t.accent:t.textMuted} />
           <input ref={inputRef} value={query} onChange={e => handleInputChange(e.target.value)} onKeyDown={e => e.key==='Enter' && doSearch(query)} placeholder="Search workers, jobs, services, communities..." className="flex-1 text-sm outline-none bg-transparent" style={{ color:t.text }} autoFocus />
           {query && <button onClick={() => { setQuery(''); setResults(null); setSuggestions([]); inputRef.current?.focus(); }}><IcoClose size={16} color={t.textMuted} /></button>}
-          <button onClick={() => { setVoiceSrch(true); setTimeout(() => { setVoiceSrch(false); setQuery('plumber'); doSearch('plumber'); }, 2000); }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.06)' }}>
+          <button onClick={() => {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (!SpeechRecognition) { setQuery('plumber'); doSearch('plumber'); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            setVoiceSrch(true);
+            recognition.onresult = (event: any) => { const transcript = event.results[0][0].transcript; setQuery(transcript); doSearch(transcript); };
+            recognition.onerror = () => setVoiceSrch(false);
+            recognition.onend = () => setVoiceSrch(false);
+            recognition.start();
+          }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.06)' }}>
             <IcoMic size={16} color={voiceSrch?'#ef4444':'#8b5cf6'} />
           </button>
         </div>

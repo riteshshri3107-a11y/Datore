@@ -317,7 +317,7 @@ export default function ReelsPage() {
         <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.5)" }} onClick={function() { setShowShare(false); }}>
           <div onClick={function(e) { e.stopPropagation(); }} className="w-full rounded-t-2xl p-5" style={{ background: isDark ? "#1a1a2e" : "#fff" }}>
             <h3 className="text-sm font-bold mb-3">Share Reel</h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
                 { id: "whatsapp", l: "WhatsApp", c: "#25D366" },
                 { id: "facebook", l: "Facebook", c: "#1877F2" },

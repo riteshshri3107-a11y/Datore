@@ -165,7 +165,7 @@ export default function MenuPage() {
 
             {/* Collapsible grid */}
             {!isCollapsed && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {cat.items.map((item, i) => (
                   <button
                     key={`${item.path}-${i}`}
@@ -200,7 +200,7 @@ export default function MenuPage() {
       {/* ─── Sign Out ─── */}
       <div className="pt-2">
         <button
-          onClick={async () => { await signOut(); router.push('/auth/login'); }}
+          onClick={async () => { await signOut(); router.push('/login'); }}
           className="w-full flex items-center justify-center gap-2 rounded-xl"
           style={{
             padding:'14px',

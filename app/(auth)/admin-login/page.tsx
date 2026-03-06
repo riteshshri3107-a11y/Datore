@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
       <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(239,68,68,0.06) 0%, transparent 60%)' }} />
       <div className="relative w-full max-w-md">
         {/* Back to regular login */}
-        <button onClick={() => router.push('/auth/login')} className="flex items-center gap-2 mb-6" style={{ background:'none', border:'none', color:t.textMuted, cursor:'pointer', fontSize:13 }}>
+        <button onClick={() => router.push('/login')} className="flex items-center gap-2 mb-6" style={{ background:'none', border:'none', color:t.textMuted, cursor:'pointer', fontSize:13 }}>
           <IcoBack size={16} color={t.textMuted} /> Back to User Login
         </button>
 

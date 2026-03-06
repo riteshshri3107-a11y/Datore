@@ -78,7 +78,7 @@ export default function TopNav() {
         {/* ─── Right: Search, Notification, Menu, Profile ─── */}
         <div className="flex items-center gap-2 shrink-0">
           <HexBtn Icon={IcoSearch} onClick={()=>router.push('/search')} active={!!pathname?.startsWith('/search')} muted={muted} isDark={isDark} />
-          <HexBtn Icon={IcoBell} onClick={()=>router.push('/notifications')} active={!!pathname?.startsWith('/notification')} muted={muted} isDark={isDark} badge />
+          <HexBtn Icon={IcoBell} onClick={()=>router.push('/notifications')} active={!!pathname?.startsWith('/notifications')} muted={muted} isDark={isDark} badge />
           <HexBtn Icon={IcoGrid} onClick={()=>router.push('/menu')} active={!!pathname?.startsWith('/menu')} muted={muted} isDark={isDark} isMenu />
           <button onClick={()=>router.push('/profile')} style={{
             width:38, height:42,

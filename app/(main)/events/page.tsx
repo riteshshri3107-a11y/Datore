@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { DEMO_EVENTS } from '@/lib/demoData';
+import { IcoBack } from '@/components/Icons';
 
 export default function EventsPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function EventsPage() {
   return (
     <div className="space-y-4 animate-fade-in ">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3"><button onClick={() => router.back()} className="text-lg">{'<-'}</button><h1 className="text-xl font-bold">Events</h1></div>
+        <div className="flex items-center gap-3"><button onClick={() => router.back()} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: t.card }}><IcoBack size={18} color={t.textMuted} /></button><h1 className="text-xl font-bold">Events</h1></div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>+ Create</button>
       </div>
 
