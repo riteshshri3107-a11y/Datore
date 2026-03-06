@@ -1,11 +1,13 @@
 "use client";
 export const dynamic = "force-dynamic";
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { CHAT_CONTACTS } from '@/lib/demoData';
+import { getChatRooms, getSession } from '@/lib/supabase';
 
-const RECENT = [
+const FALLBACK_RECENT = [
   { id:'1', lastMsg:"I'm available this weekend. $22/hr.", time:'2:31 PM', unread:1 },
   { id:'2', lastMsg:"I can come take a look tomorrow.", time:'1:15 PM', unread:0 },
   { id:'5', lastMsg:"I'll take great care of your fur baby!", time:'11:20 AM', unread:2 },
@@ -18,11 +20,31 @@ export default function InboxPage() {
   const router = useRouter();
   const { isDark, glassLevel, accentColor } = useThemeStore();
   const t = getTheme(isDark, glassLevel, accentColor);
+  const [recent, setRecent] = useState(FALLBACK_RECENT);
+
+  useEffect(() => {
+    (async () => {
+      const { data: session } = await getSession();
+      const userId = session?.session?.user?.id;
+      if (!userId) return;
+      const rooms = await getChatRooms(userId);
+      if (rooms.length > 0) {
+        setRecent(rooms.map((r: any) => ({
+          id: r.id,
+          lastMsg: r.last_message || 'Start a conversation',
+          time: r.last_message_at ? new Date(r.last_message_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '',
+          unread: r.unread_count || 0,
+          otherUserId: r.user1_id === userId ? r.user2_id : r.user1_id,
+        })));
+      }
+    })();
+  }, []);
+
   return (
     <div className="space-y-4 animate-fade-in ">
       <h1 className="text-xl font-bold">💬 Messages</h1>
       <div className="space-y-1">
-        {RECENT.map(chat => {
+        {recent.map(chat => {
           const c = CHAT_CONTACTS[chat.id] || { name:'User', status:'offline', skills:'' };
           const initials = c.name.split(' ').map((n:string)=>n[0]).join('');
           return (

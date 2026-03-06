@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { formatCurrency } from '@/lib/utils';
-import { getWalletBalance, getTransactions, getSession } from '@/lib/supabase';
+import { getWalletBalance, getTransactions, getSession, addWalletTokens, withdrawWalletTokens } from '@/lib/supabase';
 
 export default function WalletPage() {
   const router = useRouter();
@@ -41,33 +41,48 @@ export default function WalletPage() {
     })();
   }, []);
 
-  const handleAddTokens = () => {
+  const handleAddTokens = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return alert('Enter a valid amount');
     if (cardNum.length < 16) return alert('Enter a valid card number');
     setProcessing(true);
-    setTimeout(() => {
+    const { data: session } = await getSession();
+    const userId = session?.session?.user?.id;
+    if (userId) {
+      const result = await addWalletTokens(userId, amt);
+      if (result.available !== undefined) setBalance({ available: result.available, escrowed: result.escrowed, pending: result.pending, earned: result.earned });
+      const txnData = await getTransactions(userId);
+      if (txnData.length > 0) setTxns(txnData.map((t: any) => ({ id: t.id, type: t.type || 'purchase', desc: t.description || t.type, amount: t.amount, date: new Date(t.created_at).toLocaleDateString() })));
+    } else {
       setBalance(prev => ({ ...prev, available: prev.available + amt, earned: prev.earned + amt }));
       setTxns(prev => [{ id: Date.now().toString(), type:'purchase', desc:`Token Purchase (+$${amt})`, amount: amt, date: new Date().toLocaleDateString() }, ...prev]);
-      setProcessing(false); setShowAdd(false); setAmount(''); setCardNum(''); setCardExp(''); setCardCvc('');
-      setSuccess(`✅ $${amt.toFixed(2)} added to your wallet!`);
-      setTimeout(() => setSuccess(''), 3000);
-    }, 2000);
+    }
+    setProcessing(false); setShowAdd(false); setAmount(''); setCardNum(''); setCardExp(''); setCardCvc('');
+    setSuccess(`✅ $${amt.toFixed(2)} added to your wallet!`);
+    setTimeout(() => setSuccess(''), 3000);
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return alert('Enter a valid amount');
     if (amt > balance.available) return alert('Insufficient balance');
     if (bankAcc.length < 5) return alert('Enter a valid bank account');
     setProcessing(true);
-    setTimeout(() => {
+    const { data: session } = await getSession();
+    const userId = session?.session?.user?.id;
+    if (userId) {
+      const result = await withdrawWalletTokens(userId, amt);
+      if (result.error) { setProcessing(false); return alert(result.error); }
+      if (result.available !== undefined) setBalance({ available: result.available, escrowed: result.escrowed, pending: result.pending, earned: result.earned });
+      const txnData = await getTransactions(userId);
+      if (txnData.length > 0) setTxns(txnData.map((t: any) => ({ id: t.id, type: t.type || 'purchase', desc: t.description || t.type, amount: t.amount, date: new Date(t.created_at).toLocaleDateString() })));
+    } else {
       setBalance(prev => ({ ...prev, available: prev.available - amt, pending: prev.pending + amt }));
       setTxns(prev => [{ id: Date.now().toString(), type:'withdraw', desc:`Withdrawal to bank`, amount: -amt, date: new Date().toLocaleDateString() }, ...prev]);
-      setProcessing(false); setShowWithdraw(false); setAmount(''); setBankAcc('');
-      setSuccess(`✅ $${amt.toFixed(2)} withdrawal initiated! (2-3 business days)`);
-      setTimeout(() => setSuccess(''), 4000);
-    }, 2000);
+    }
+    setProcessing(false); setShowWithdraw(false); setAmount(''); setBankAcc('');
+    setSuccess(`✅ $${amt.toFixed(2)} withdrawal initiated! (2-3 business days)`);
+    setTimeout(() => setSuccess(''), 4000);
   };
 
   const txnIcon:any = { purchase:'💳', escrow:'🔒', completed:'✅', tip:'🎁', withdraw:'🏦' };
