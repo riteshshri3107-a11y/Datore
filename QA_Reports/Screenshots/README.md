@@ -39,6 +39,8 @@ In a live testing environment, actual browser screenshots would be captured at t
 - `Notifications_BackButton_TextArrow.png` - Uses text "<-" instead of IcoBack
 
 ### Navigation Issues
+- `Menu_SignOut_BrokenLink.png` - Sign out routes to /auth/login (does NOT exist), should be /login
+- `AdminLogin_BackLink_Broken.png` - Back to login routes to /auth/login (does NOT exist), should be /login
 - `TopNav_NotificationActive_Bug.png` - Active state checks /notification vs /notifications
 - `TopNav_NamingConfusion.png` - "Netyard" tab vs /community page naming
 - `Nav_CommunityPath_Inconsistent.png` - TopNav=/netyard, BottomNav=/community

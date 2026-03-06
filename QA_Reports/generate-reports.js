@@ -121,6 +121,10 @@ const functionalTests = [
   // Security Issues
   { id:'TC080', module:'Auth', page:'Admin Login', scenario:'Admin org code validated server-side', expected:'Organization code verified against database', actual:'Organization code stored in sessionStorage but never validated server-side. Any code accepted.', status:'Fail', screenshot:'AdminLogin_OrgCodeNotValidated.png', reason:'Organization code provides no real security - never verified', improvement:'Add server-side org code validation against admin organizations table' },
   { id:'TC081', module:'Middleware', page:'Rate Limiting', scenario:'Rate limiting persists across server restarts', expected:'Rate limit state stored in Redis or persistent store', actual:'Rate limiting uses in-memory Map (globalThis). Resets on server restart. Ineffective in multi-instance deploy.', status:'Fail', screenshot:'Middleware_InMemoryRateLimit.png', reason:'In-memory rate limiting resets on restart and doesnt work across instances', improvement:'Use Redis or similar distributed store for rate limiting' },
+
+  // Broken Navigation Links
+  { id:'TC082', module:'Navigation', page:'Menu', scenario:'Sign out redirects to login page', expected:'User redirected to /login after sign out', actual:'Sign out button routes to /auth/login which does NOT exist as a page. Correct path is /login.', status:'Fail', screenshot:'Menu_SignOut_BrokenLink.png', reason:'Wrong path /auth/login used instead of /login in menu/page.tsx line 203', improvement:'Change router.push path from /auth/login to /login' },
+  { id:'TC083', module:'Navigation', page:'Admin Login', scenario:'Back to login link works', expected:'Link navigates to /login page', actual:'Routes to /auth/login which does NOT exist. admin-login/page.tsx line 49', status:'Fail', screenshot:'AdminLogin_BackLink_Broken.png', reason:'Wrong path /auth/login instead of /login', improvement:'Change href from /auth/login to /login' },
 ];
 
 // ============================================================
@@ -186,6 +190,8 @@ const uiConsistency = [
 // SHEET 3: BROKEN LINKS REPORT
 // ============================================================
 const brokenLinks = [
+  { page:'Menu', button:'Sign Out Button', expected:'Redirects to /login', actual:'Routes to /auth/login which does NOT exist. Correct path is /login. menu/page.tsx line 203', status:'Fail', screenshot:'Menu_SignOut_BrokenLink.png', fix:'Change /auth/login to /login in menu/page.tsx line 203' },
+  { page:'Admin Login', button:'Back to Login link', expected:'Redirects to /login', actual:'Routes to /auth/login which does NOT exist. admin-login/page.tsx line 49', status:'Fail', screenshot:'AdminLogin_BackLink_Broken.png', fix:'Change /auth/login to /login in admin-login/page.tsx line 49' },
   { page:'TopNav', button:'Notification Bell', expected:'/notifications page opens', actual:'Navigates to /notifications correctly, BUT active state check uses /notification (missing s) - never highlights as active', status:'Fail', screenshot:'TopNav_NotificationActive_Bug.png', fix:'Fix pathname check from /notification to /notifications in TopNav.tsx line 81' },
   { page:'TopNav', button:'Netyard Tab', expected:'/netyard or /community page', actual:'Links to /netyard which exists, but /community is a separate page - potential user confusion about which is the main community page', status:'Warning', screenshot:'TopNav_Netyard_Community_Confusion.png', fix:'Consolidate /netyard and /community or clarify naming' },
   { page:'ChatBot', button:'Quick Action - Find Workers', expected:'/jobplace/providers opens', actual:'Navigation link in chatbot response directs to /jobplace/providers correctly', status:'Pass', screenshot:'N/A', fix:'' },
