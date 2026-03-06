@@ -27,26 +27,7 @@ export default function TopNav() {
     }}>
       <div className="max-w-6xl mx-auto px-5 flex items-center justify-between" style={{height:56}}>
 
-        {/* ─── Left: Search, Notification, Menu, Profile ─── */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <CircleBtn Icon={IcoSearch} onClick={()=>router.push('/search')} active={!!pathname?.startsWith('/search')} muted={muted} isDark={isDark} />
-          <CircleBtn Icon={IcoBell} onClick={()=>router.push('/notifications')} active={!!pathname?.startsWith('/notification')} muted={muted} isDark={isDark} badge />
-          <CircleBtn Icon={IcoGrid} onClick={()=>router.push('/menu')} active={!!pathname?.startsWith('/menu')} muted={muted} isDark={isDark} isMenu />
-          <button onClick={()=>router.push('/profile')} style={{
-            width:34, height:34, borderRadius:'50%',
-            background: !!pathname?.startsWith('/profile')
-              ? `linear-gradient(135deg,${accentColor},#8b5cf6)`
-              : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-            border: !!pathname?.startsWith('/profile') ? `2px solid ${accentColor}` : '2px solid transparent',
-            cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            transition:'all 0.2s',
-          }} title="Profile">
-            <IcoUser size={16} color={!!pathname?.startsWith('/profile') ? '#fff' : muted} />
-          </button>
-        </div>
-
-        {/* ─── Right: Home, Netyard, Reel + Logo ─── */}
+        {/* ─── Left: Home, Netyard, Reel + Logo ─── */}
         <div className="flex items-center shrink-0" style={{gap:2}}>
           {RIGHT_TABS.map(tab => {
             const active = !!pathname?.startsWith(tab.path);
@@ -107,6 +88,25 @@ export default function TopNav() {
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
             }}>Datore</span>
           </div>
+        </div>
+
+        {/* ─── Right: Search, Notification, Menu, Profile ─── */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <CircleBtn Icon={IcoSearch} onClick={()=>router.push('/search')} active={!!pathname?.startsWith('/search')} muted={muted} isDark={isDark} />
+          <CircleBtn Icon={IcoBell} onClick={()=>router.push('/notifications')} active={!!pathname?.startsWith('/notification')} muted={muted} isDark={isDark} badge />
+          <CircleBtn Icon={IcoGrid} onClick={()=>router.push('/menu')} active={!!pathname?.startsWith('/menu')} muted={muted} isDark={isDark} isMenu />
+          <button onClick={()=>router.push('/profile')} style={{
+            width:34, height:34, borderRadius:'50%',
+            background: !!pathname?.startsWith('/profile')
+              ? `linear-gradient(135deg,${accentColor},#8b5cf6)`
+              : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            border: !!pathname?.startsWith('/profile') ? `2px solid ${accentColor}` : '2px solid transparent',
+            cursor:'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'all 0.2s',
+          }} title="Profile">
+            <IcoUser size={16} color={!!pathname?.startsWith('/profile') ? '#fff' : muted} />
+          </button>
         </div>
       </div>
     </nav>
