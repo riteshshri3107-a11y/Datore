@@ -72,3 +72,27 @@ In a live testing environment, actual browser screenshots would be captured at t
 
 ### Settings Issues
 - `Settings_2FA_NotImplemented.png` - mfa_enabled field but no enrollment
+
+### API Backend Issues (CRITICAL)
+- `API_Chat_EmptyData.png` - GET /api/chat returns hardcoded empty array, no DB query
+- `API_Jobs_EmptyData.png` - GET /api/jobs returns hardcoded empty array, no DB query
+- `API_Workers_NotImplemented.png` - Workers API is a stub with TODO comments
+- `API_Listings_NotImplemented.png` - Listings API is a stub with TODO comments
+- `API_Bookings_NotImplemented.png` - Bookings API is a stub with TODO comments
+- `API_QRVerify_AlwaysTrue.png` - SECURITY: QR verify always returns true without DB check
+- `API_Payments_MockOnly.png` - Payments returns mock data, no Stripe/Adyen integration
+
+### Data Persistence Issues (CRITICAL)
+- `Profile_AvatarNotPersisted.png` - Avatar stored in localStorage, not Supabase storage
+- `Community_GroupNotSaved.png` - Group creation does not call createCommunity
+- `Community_PostNotSaved.png` - Community posts not saved to database
+- `Friends_RequestsNotPersisted.png` - Friend operations only modify local state
+- `Friends_BlockingClientOnly.png` - Blocking is client-side only via localStorage
+- `Wallet_DummyData.png` - All wallet data is hardcoded mock, not from DB
+- `Chat_MessagesNotPersisted.png` - Chat messages lost on page refresh
+- `Search_DemoDataOnly.png` - Search only queries hardcoded demo data
+- `Search_VoiceSearchFake.png` - Voice search always returns "plumber"
+
+### Security Issues
+- `AdminLogin_OrgCodeNotValidated.png` - Admin org code never validated server-side
+- `Middleware_InMemoryRateLimit.png` - Rate limiting resets on server restart
