@@ -122,7 +122,7 @@ export default function CommunityPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={()=>selGroup?setSelGroup(null):router.back()} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button>
-          <h1 className="text-xl font-bold">{selGroup?sg?.name:'🤝 Buddy Groups'}</h1>
+          <h1 className="text-xl font-bold">{selGroup?sg?.name:'🤝 Community Groups +'}</h1>
         </div>
         <button onClick={()=>setShowSafety(!showSafety)} className="p-2 rounded-xl" style={{background:'rgba(34,197,94,0.1)'}}><IcoShield size={18} color="#22c55e"/></button>
       </div>
@@ -202,7 +202,7 @@ export default function CommunityPage() {
           {(tab==='discover'||tab==='joined')&&(<>
             <div className="flex items-center gap-2 rounded-xl px-3" style={{border:`1px solid ${t.cardBorder}`}}>
               <IcoSearch size={14} color={t.textMuted}/>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search buddy groups..." className="flex-1 text-sm py-2.5 bg-transparent outline-none" style={{color:t.text}}/>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search community groups..." className="flex-1 text-sm py-2.5 bg-transparent outline-none" style={{color:t.text}}/>
               <button onClick={()=>{}} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(139,92,246,0.08)'}}>
                 <IcoMic size={14} color="#8b5cf6"/>
               </button>
@@ -223,7 +223,7 @@ export default function CommunityPage() {
           {tab==='create'&&(
             <div className="space-y-3">
               <div className="glass-card rounded-2xl p-4 space-y-3" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-                <h3 className="font-bold text-sm">Create a Buddy Group</h3>
+                <h3 className="font-bold text-sm">Create a Community Group</h3>
                 <div className="p-3 rounded-xl text-[10px]" style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.15)'}}><div className="flex items-center gap-2 mb-1"><IcoShield size={14} color="#22c55e"/><span className="font-semibold" style={{color:'#22c55e'}}>AI Safety Screening Required</span></div><p style={{color:t.textSecondary}}>All groups screened for hate, terrorism, religious extremism, and anti-social agendas. Prohibited groups auto-blocked.</p></div>
                 <div><label className="text-[10px] font-semibold" style={{color:t.textMuted}}>Group Name</label><input value={newName} onChange={e=>{setNewName(e.target.value);setCreateRes(null);}} className="w-full text-sm py-2.5 px-3 rounded-xl bg-transparent outline-none mt-1" style={{border:`1px solid ${t.cardBorder}`,color:t.text}} placeholder="e.g., Neighborhood Book Club"/></div>
                 <div><label className="text-[10px] font-semibold" style={{color:t.textMuted}}>Description & Purpose</label><textarea value={newDesc} onChange={e=>{setNewDesc(e.target.value);setCreateRes(null);}} rows={3} className="w-full text-sm py-2.5 px-3 rounded-xl bg-transparent outline-none mt-1 resize-none" style={{border:`1px solid ${t.cardBorder}`,color:t.text}} placeholder="Describe what this group is about..."/></div>

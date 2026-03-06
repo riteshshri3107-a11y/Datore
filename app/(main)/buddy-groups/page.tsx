@@ -92,6 +92,11 @@ export default function BuddyGroupsPage() {
   const [showMem,setShowMem] = useState(false);
   const [modLog,setModLog] = useState<ModResult[]>([]);
   const [voiceSrch,setVoiceSrch] = useState(false);
+  const [createError,setCreateError] = useState('');
+  const [showInvite,setShowInvite] = useState(false);
+  const [inviteSearch,setInviteSearch] = useState('');
+  const [invitedFriends,setInvitedFriends] = useState<string[]>([]);
+  const [inviteSent,setInviteSent] = useState<string[]>([]);
 
   const my = groups.filter(g=>g.joined);
   const disc = groups.filter(g=>!g.joined);
@@ -101,12 +106,14 @@ export default function BuddyGroupsPage() {
   });
 
   const createGroup = () => {
+    setCreateError('');
+    if(!nName.trim()) { setCreateError('Please enter a group name'); return; }
+    if(!nCat) { setCreateError('Please select a category'); return; }
     const nc=moderate(nName); const dc=moderate(nDesc);
     if(!nc.safe){setModAlert(nc);setModLog(p=>[nc,...p]);return;}
     if(!dc.safe){setModAlert(dc);setModLog(p=>[dc,...p]);return;}
-    if(!nName.trim()||!nCat) return;
     setGroups(p=>[{id:`g${Date.now()}`,name:nName.trim(),desc:nDesc.trim(),icon:'👥',members:1,memberList:[{id:'me',name:'You',avatar:'ME',role:'admin'}],cat:nCat,isOwner:true,joined:true,risk:0,createdBy:'me',vis:nVis,rules:[]},...p]);
-    setNName('');setNDesc('');setNCat('');setShowCreate(false);
+    setNName('');setNDesc('');setNCat('');setShowCreate(false);setCreateError('');
   };
 
   const addPost = (gid:string) => {
@@ -121,6 +128,14 @@ export default function BuddyGroupsPage() {
   const editGroup = (gid:string) => { const nc=moderate(eName); const dc=moderate(eDesc); if(!nc.safe){setModAlert(nc);return;} if(!dc.safe){setModAlert(dc);return;} setGroups(p=>p.map(g=>g.id===gid?{...g,name:eName||g.name,desc:eDesc||g.desc}:g)); setEditing(null); };
   const delPost = (pid:string) => setPosts(p=>p.filter(po=>po.id!==pid));
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setSearch('home repair');setVoiceSrch(false);},2000); };
+
+  const FRIENDS_LIST = [
+    {id:'f1',name:'Alex Johnson',avatar:'AJ'},{id:'f2',name:'Maria Garcia',avatar:'MG'},{id:'f3',name:'David Kim',avatar:'DK'},
+    {id:'f4',name:'Emma Wilson',avatar:'EW'},{id:'f5',name:'Raj Patel',avatar:'RP'},{id:'f6',name:'Sophia Lee',avatar:'SL'},
+    {id:'f7',name:'Liam Brown',avatar:'LB'},{id:'f8',name:'Olivia Chen',avatar:'OC'},{id:'f9',name:'Noah Davis',avatar:'ND'},
+  ];
+  const filteredFriends = FRIENDS_LIST.filter(f => !inviteSearch || f.name.toLowerCase().includes(inviteSearch.toLowerCase()));
+  const sendInvite = (fid:string) => { setInviteSent(p=>[...p,fid]); };
 
   const rc = (s:number) => s>=70?'#ef4444':s>=40?'#f59e0b':'#22c55e';
   const sb = (s:string) => s==='critical'?'rgba(239,68,68,0.12)':s==='high'?'rgba(249,115,22,0.12)':'rgba(245,158,11,0.12)';
@@ -144,7 +159,10 @@ export default function BuddyGroupsPage() {
             <div className="flex gap-2"><button onClick={()=>editGroup(sg.id)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditing(null)} className="px-4 py-1.5 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
           </div>
         )}
-        <button onClick={()=>setShowMem(!showMem)} className="w-full text-left p-2 rounded-lg text-xs font-medium" style={{background:t.card}}>👥 {showMem?'Hide':'Show'} Members ({sg.memberList.length})</button>
+        <div className="flex gap-2">
+          <button onClick={()=>setShowMem(!showMem)} className="flex-1 text-left p-2 rounded-lg text-xs font-medium" style={{background:t.card}}>👥 {showMem?'Hide':'Show'} Members ({sg.memberList.length})</button>
+          <button onClick={()=>setShowInvite(true)} className="px-3 py-2 rounded-lg text-xs font-medium" style={{background:'rgba(139,92,246,0.15)',color:'#8b5cf6'}}>✉️ Invite</button>
+        </div>
         {showMem && sg.memberList.map(m=>(
           <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg" style={{background:t.card}}><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:t.accent}}>{m.avatar}</div><span className="text-sm flex-1">{m.name}</span><span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:m.role==='admin'?'rgba(239,68,68,0.15)':m.role==='mod'?'rgba(59,130,246,0.15)':'rgba(156,163,175,0.15)',color:m.role==='admin'?'#ef4444':m.role==='mod'?'#3b82f6':t.textMuted}}>{m.role}</span></div>
         ))}
@@ -203,8 +221,10 @@ export default function BuddyGroupsPage() {
           <input value={nName} onChange={e=>setNName(e.target.value)} placeholder="Group name" className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
           <textarea value={nDesc} onChange={e=>setNDesc(e.target.value)} placeholder="Description (AI-scanned)" rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
           <select value={nCat} onChange={e=>setNCat(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}><option value="">Category</option>{CATS.filter(c=>c!=='All').map(c=><option key={c} value={c}>{c}</option>)}</select>
-          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>setNVis(v)} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.cardBorder}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
-          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>setShowCreate(false)} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
+          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>{setNVis(v);if(v==='invite_only')setShowInvite(true);}} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.cardBorder}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
+          {nVis==='invite_only'&&<button onClick={()=>setShowInvite(true)} className="w-full py-1.5 rounded-lg text-xs font-medium" style={{background:'rgba(139,92,246,0.1)',color:'#8b5cf6',border:'1px solid rgba(139,92,246,0.3)'}}>👥 Invite Friends ({invitedFriends.length} selected)</button>}
+          {createError && <p className="text-[10px] font-semibold" style={{color:'#ef4444'}}>⚠️ {createError}</p>}
+          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>{setShowCreate(false);setCreateError('');}} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
         </div>
       )}
       {tab==='safety'&&(
@@ -238,6 +258,42 @@ export default function BuddyGroupsPage() {
               </div>
             </button>
           ))}
+        </div>
+      )}
+      {/* Invite Friends Modal */}
+      {showInvite&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setShowInvite(false)}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-sm rounded-2xl p-4 space-y-3" style={{background:isDark?'#1a1a2e':'#fff',border:`1px solid ${t.cardBorder}`}}>
+            <div className="flex items-center justify-between"><h3 className="font-bold text-sm">Invite Friends</h3><button onClick={()=>setShowInvite(false)} className="text-xs" style={{color:t.textMuted}}>✕</button></div>
+            <div className="flex items-center gap-2 p-2 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)',border:`1px solid ${t.cardBorder}`}}>
+              <IcoSearch size={14} color={t.textMuted}/><input value={inviteSearch} onChange={e=>setInviteSearch(e.target.value)} placeholder="Search friends..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-1">
+              {filteredFriends.map(f=>{
+                const invited=invitedFriends.includes(f.id);
+                const sent=inviteSent.includes(f.id);
+                return(
+                  <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg" style={{background:invited?'rgba(139,92,246,0.08)':'transparent'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:t.accent}}>{f.avatar}</div>
+                    <span className="flex-1 text-sm font-medium">{f.name}</span>
+                    {sent?(
+                      <span className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{color:'#22c55e'}}>✓ Sent</span>
+                    ):(
+                      <button onClick={()=>{if(invited){setInvitedFriends(p=>p.filter(x=>x!==f.id));}else{setInvitedFriends(p=>[...p,f.id]);}}} className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{background:invited?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.15)',color:invited?'#ef4444':'#8b5cf6'}}>{invited?'Remove':'+ Add'}</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {invitedFriends.length>0&&!invitedFriends.every(id=>inviteSent.includes(id))&&(
+              <button onClick={()=>{invitedFriends.forEach(id=>sendInvite(id));}} className="w-full py-2 rounded-xl text-xs font-bold text-white" style={{background:t.accent}}>
+                <IcoSend size={12}/> Send Invites ({invitedFriends.filter(id=>!inviteSent.includes(id)).length})
+              </button>
+            )}
+            {invitedFriends.length>0&&invitedFriends.every(id=>inviteSent.includes(id))&&(
+              <p className="text-center text-xs font-medium" style={{color:'#22c55e'}}>✓ All invites sent!</p>
+            )}
+          </div>
         </div>
       )}
     </div>
