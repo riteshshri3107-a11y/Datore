@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoUser, IcoStar, IcoHeart, IcoShield, IcoSend, IcoMic } from '@/components/Icons';
+import { getUserBuddyGroups, addUserBuddyGroup, deleteUserBuddyGroup, updateUserBuddyGroup, type StoredBuddyGroup } from '@/lib/demoData';
 
 /* BR-96: MULTI-MODAL AI SAFETY ENGINE */
 const TERROR_PAT = [
@@ -54,7 +55,7 @@ function moderate(text:string):ModResult {
 
 type Visibility = 'group_only'|'all_groups'|'friends'|'public'|'professional';
 interface GPost { id:string; author:string; avatar:string; authorId:string; groupId:string; text:string; visibility:Visibility; visibleTo:string[]; likes:number; comments:number; time:string; liked:boolean; }
-interface BGroup { id:string; name:string; desc:string; icon:string; members:number; memberList:{id:string;name:string;avatar:string;role:string}[]; cat:string; isOwner:boolean; joined:boolean; risk:number; createdBy:string; vis:'open'|'closed'|'invite_only'; rules:string[]; }
+interface BGroup { id:string; name:string; desc:string; icon:string; members:number; memberList:{id:string;name:string;avatar:string;role:string}[]; cat:string; isOwner:boolean; joined:boolean; risk:number; createdBy:string; vis:'open'|'closed'|'invite_only'; rules:string[]; createdAt?:string; }
 
 const GROUPS:BGroup[] = [
   {id:'g1',name:'Toronto Dog Walkers',desc:'Connect with local dog walking professionals',icon:'🐕',members:127,memberList:[{id:'u1',name:'Sarah M.',avatar:'SM',role:'admin'},{id:'u2',name:'James K.',avatar:'JK',role:'mod'},{id:'u3',name:'Priya S.',avatar:'PS',role:'member'}],cat:'Pets & Animals',isOwner:true,joined:true,risk:0,createdBy:'me',vis:'open',rules:['Be respectful','No spam']},
@@ -76,7 +77,22 @@ export default function BuddyGroupsPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
-  const [groups,setGroups] = useState<BGroup[]>(GROUPS);
+
+  // BR-BG-001: Load user-created groups from localStorage and merge with defaults
+  const loadGroups = (): BGroup[] => {
+    const stored = getUserBuddyGroups();
+    const userGroups: BGroup[] = stored.map(sg => ({
+      id: sg.id, name: sg.name, desc: sg.desc, icon: sg.icon, members: sg.members,
+      memberList: [{ id: 'me', name: 'You', avatar: 'ME', role: 'admin' }],
+      cat: sg.cat, isOwner: sg.isOwner, joined: sg.joined, risk: 0,
+      createdBy: sg.createdBy, vis: sg.vis, rules: [],
+      createdAt: sg.createdAt,
+    }));
+    // Merge: user-created first, then defaults (avoid duplicates by id)
+    const defaultIds = new Set(GROUPS.map(g => g.id));
+    return [...userGroups.filter(g => !defaultIds.has(g.id)), ...GROUPS];
+  };
+  const [groups,setGroups] = useState<BGroup[]>(loadGroups);
   const [tab,setTab] = useState<'my'|'discover'|'safety'>('my');
   const [sel,setSel] = useState<BGroup|null>(null);
   const [search,setSearch] = useState('');
@@ -112,7 +128,10 @@ export default function BuddyGroupsPage() {
     const nc=moderate(nName); const dc=moderate(nDesc);
     if(!nc.safe){setModAlert(nc);setModLog(p=>[nc,...p]);return;}
     if(!dc.safe){setModAlert(dc);setModLog(p=>[dc,...p]);return;}
-    setGroups(p=>[{id:`g${Date.now()}`,name:nName.trim(),desc:nDesc.trim(),icon:'👥',members:1,memberList:[{id:'me',name:'You',avatar:'ME',role:'admin'}],cat:nCat,isOwner:true,joined:true,risk:0,createdBy:'me',vis:nVis,rules:[]},...p]);
+    // BR-BG-001: Persist to localStorage so group survives refresh and is available for Buddy+ tagging
+    const stored = addUserBuddyGroup({ name:nName.trim(), desc:nDesc.trim(), icon:'👥', cat:nCat, vis:nVis, createdBy:'You' });
+    const newGroup: BGroup = { id:stored.id, name:stored.name, desc:stored.desc, icon:stored.icon, members:1, memberList:[{id:'me',name:'You',avatar:'ME',role:'admin'}], cat:nCat, isOwner:true, joined:true, risk:0, createdBy:'You', vis:nVis, rules:[], createdAt:stored.createdAt };
+    setGroups(p=>[newGroup,...p]);
     setNName('');setNDesc('');setNCat('');setShowCreate(false);setCreateError('');
   };
 
@@ -124,8 +143,8 @@ export default function BuddyGroupsPage() {
     setPostText('');
   };
 
-  const delGroup = (gid:string) => { setGroups(p=>p.filter(g=>g.id!==gid)); setPosts(p=>p.filter(po=>po.groupId!==gid)); setSel(null); };
-  const editGroup = (gid:string) => { const nc=moderate(eName); const dc=moderate(eDesc); if(!nc.safe){setModAlert(nc);return;} if(!dc.safe){setModAlert(dc);return;} setGroups(p=>p.map(g=>g.id===gid?{...g,name:eName||g.name,desc:eDesc||g.desc}:g)); setEditing(null); };
+  const delGroup = (gid:string) => { deleteUserBuddyGroup(gid); setGroups(p=>p.filter(g=>g.id!==gid)); setPosts(p=>p.filter(po=>po.groupId!==gid)); setSel(null); };
+  const editGroup = (gid:string) => { const nc=moderate(eName); const dc=moderate(eDesc); if(!nc.safe){setModAlert(nc);return;} if(!dc.safe){setModAlert(dc);return;} updateUserBuddyGroup(gid,{name:eName||undefined,desc:eDesc||undefined}); setGroups(p=>p.map(g=>g.id===gid?{...g,name:eName||g.name,desc:eDesc||g.desc}:g)); setEditing(null); };
   const delPost = (pid:string) => setPosts(p=>p.filter(po=>po.id!==pid));
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setSearch('home repair');setVoiceSrch(false);},2000); };
 
@@ -252,7 +271,7 @@ export default function BuddyGroupsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1"><p className="text-sm font-semibold truncate">{g.name}</p>{g.isOwner&&<span className="text-[8px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-700">Owner</span>}<span className="text-[8px] px-1 py-0.5 rounded" style={{background:g.vis==='open'?'rgba(34,197,94,0.15)':'rgba(139,92,246,0.15)',color:g.vis==='open'?'#22c55e':'#8b5cf6'}}>{g.vis}</span></div>
                   <p className="text-[10px] truncate" style={{color:t.textMuted}}>{g.desc}</p>
-                  <div className="flex gap-3 mt-1"><span className="text-[9px]" style={{color:t.textMuted}}>👥 {g.members}</span><span className="text-[9px]" style={{color:t.textMuted}}>📁 {g.cat}</span><span className="text-[9px]" style={{color:rc(g.risk)}}>🛡️ {100-g.risk}%</span></div>
+                  <div className="flex gap-3 mt-1"><span className="text-[9px]" style={{color:t.textMuted}}>👥 {g.members}</span><span className="text-[9px]" style={{color:t.textMuted}}>📁 {g.cat}</span><span className="text-[9px]" style={{color:t.textMuted}}>by {g.createdBy}</span>{g.createdAt&&<span className="text-[9px]" style={{color:t.textMuted}}>{new Date(g.createdAt).toLocaleDateString()}</span>}<span className="text-[9px]" style={{color:rc(g.risk)}}>🛡️ {100-g.risk}%</span></div>
                 </div>
                 {!g.joined&&<button onClick={e=>{e.stopPropagation();setGroups(p=>p.map(gr=>gr.id===g.id?{...gr,joined:true,members:gr.members+1}:gr));}} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Join</button>}
               </div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs } from '@/lib/demoData';
+import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs, getAllBuddyGroupsForTagging } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag, IcoCommunity, IcoStore } from '@/components/Icons';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
@@ -35,17 +35,7 @@ const AUDIENCES: { key:Audience; label:string; icon:string; color:string; desc:s
   { key:'professional', label:'Professional', icon:'💼', color:'#3b82f6', desc:'Professional network' },
 ];
 
-/* Buddy Groups available for tagging when posting under Buddy+ */
-const BUDDY_GROUPS_LIST = [
-  { id:'bg1', name:'SchoolFriends', icon:'🎓' },
-  { id:'bg2', name:'Toronto Dog Walkers', icon:'🐕' },
-  { id:'bg3', name:'Brampton Home Repair Hub', icon:'🔧' },
-  { id:'bg4', name:'Mississauga Tutors', icon:'📚' },
-  { id:'bg5', name:'GTA Cleaners Co-op', icon:'🧹' },
-  { id:'bg6', name:'Scarborough Parents', icon:'👨‍👩‍👧‍👦' },
-  { id:'bg7', name:'Work Buddies', icon:'💼' },
-  { id:'bg8', name:'Gym Squad', icon:'💪' },
-];
+/* BR-BG-002: Buddy Groups for tagging — dynamically loaded including user-created groups */
 
 /* Emoji quick picker */
 const EMOJI_SET = ['👍','❤️','😂','😮','😢','😡','🎉','🔥','💯','🙏','👏','💪','✨','🚀','💎','🌟'];
@@ -87,6 +77,7 @@ export default function HomePage() {
   const [selectedBuddyGroups, setSelectedBuddyGroups] = useState<string[]>([]);
   const [buddyTagSearch, setBuddyTagSearch] = useState('');
   const [showBuddyTagPicker, setShowBuddyTagPicker] = useState(false);
+  const [buddyGroupsList, setBuddyGroupsList] = useState<{id:string;name:string;icon:string}[]>([]);
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -111,7 +102,7 @@ export default function HomePage() {
   };
   const userAvatar = getUserAvatarForAudience('public'); // default for composer
 
-  useEffect(() => { setUserPosts(getUserPosts()); }, []);
+  useEffect(() => { setUserPosts(getUserPosts()); setBuddyGroupsList(getAllBuddyGroupsForTagging()); }, []);
 
   /* Display-time re-censor: Always re-run moderation on render to catch posts saved before moderation existed */
   const censorForDisplay = (text: string): string => {
@@ -144,7 +135,7 @@ export default function HomePage() {
     }
     let finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
     if (postAudience === 'buddy' && selectedBuddyGroups.length > 0) {
-      const tags = selectedBuddyGroups.map(id => { const g = BUDDY_GROUPS_LIST.find(bg => bg.id === id); return g ? `#Buddy:${g.name.replace(/\s+/g,'')}` : ''; }).filter(Boolean).join(' ');
+      const tags = selectedBuddyGroups.map(id => { const g = buddyGroupsList.find(bg => bg.id === id); return g ? `#Buddy:${g.name.replace(/\s+/g,'')}` : ''; }).filter(Boolean).join(' ');
       finalText = `${tags} ${finalText}`;
     }
     addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
@@ -282,7 +273,7 @@ export default function HomePage() {
 
       {/* Create Post Bar */}
       <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowPost(true)}>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setShowPost(true); setBuddyGroupsList(getAllBuddyGroupsForTagging()); }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden" style={{ background:`linear-gradient(135deg,${t.accent}44,#8b5cf644)`, color:t.accent }}>
             {userAvatar.type==='image' ? <img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/> : userAvatar.type==='emoji' ? <span className="text-xl">{userAvatar.src}</span> : userAvatar.src}
           </div>
@@ -510,7 +501,7 @@ export default function HomePage() {
                 <p className="text-[10px] font-semibold mb-1.5" style={{ color:t.textMuted }}>TAG BUDDY GROUPS <span style={{ color:'#8b5cf6', fontWeight:400 }}>( use #Buddy:GroupName )</span></p>
                 {selectedBuddyGroups.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {selectedBuddyGroups.map(id => { const g = BUDDY_GROUPS_LIST.find(bg=>bg.id===id); if(!g) return null; return (
+                    {selectedBuddyGroups.map(id => { const g = buddyGroupsList.find(bg=>bg.id===id); if(!g) return null; return (
                       <span key={id} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold" style={{ background:'rgba(139,92,246,0.15)', color:'#8b5cf6', border:'1px solid rgba(139,92,246,0.3)' }}>
                         {g.icon} #Buddy:{g.name.replace(/\s+/g,'')}
                         <button onClick={() => setSelectedBuddyGroups(prev => prev.filter(x=>x!==id))} className="ml-0.5 text-[9px] opacity-70 hover:opacity-100" style={{ color:'#8b5cf6' }}>✕</button>
@@ -524,14 +515,14 @@ export default function HomePage() {
                 </div>
                 {showBuddyTagPicker && (
                   <div className="mt-1.5 max-h-32 overflow-y-auto rounded-xl p-1.5 space-y-0.5" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
-                    {BUDDY_GROUPS_LIST.filter(g => !selectedBuddyGroups.includes(g.id) && (!buddyTagSearch || g.name.toLowerCase().includes(buddyTagSearch.toLowerCase()))).map(g => (
+                    {buddyGroupsList.filter(g => !selectedBuddyGroups.includes(g.id) && (!buddyTagSearch || g.name.toLowerCase().includes(buddyTagSearch.toLowerCase()))).map(g => (
                       <button key={g.id} onClick={() => { setSelectedBuddyGroups(prev => [...prev, g.id]); setBuddyTagSearch(''); setShowBuddyTagPicker(false); }} className="w-full flex items-center gap-2 p-2 rounded-lg text-left text-xs" style={{ color:t.text }} onMouseOver={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.1)')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                         <span>{g.icon}</span>
                         <span className="font-medium">{g.name}</span>
                         <span className="text-[9px] ml-auto" style={{ color:'#8b5cf6' }}>#Buddy:{g.name.replace(/\s+/g,'')}</span>
                       </button>
                     ))}
-                    {BUDDY_GROUPS_LIST.filter(g => !selectedBuddyGroups.includes(g.id) && (!buddyTagSearch || g.name.toLowerCase().includes(buddyTagSearch.toLowerCase()))).length === 0 && (
+                    {buddyGroupsList.filter(g => !selectedBuddyGroups.includes(g.id) && (!buddyTagSearch || g.name.toLowerCase().includes(buddyTagSearch.toLowerCase()))).length === 0 && (
                       <p className="text-[10px] text-center py-2" style={{ color:t.textMuted }}>No matching buddy groups</p>
                     )}
                   </div>
