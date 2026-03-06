@@ -206,3 +206,73 @@ export function setFavorites(ids:string[]) { if(typeof window==='undefined') ret
 export function toggleFavorite(id:string): boolean { const f=getFavorites(); const is=f.includes(id); if(is){setFavorites(f.filter(x=>x!==id));}else{setFavorites([...f,id]);} return !is; }
 export function getJoinedCommunities(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-joined')||'[]');}catch{return[];} }
 export function toggleCommunity(id:string): boolean { const j=getJoinedCommunities(); const is=j.includes(id); const u=is?j.filter(x=>x!==id):[...j,id]; if(typeof window!=='undefined'){try{localStorage.setItem('datore-joined',JSON.stringify(u));}catch{}} return !is; }
+
+// ═══ BUDDY GROUPS (localStorage persistence for BR-BG-001 / BR-BG-002) ═══
+export interface StoredBuddyGroup {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  cat: string;
+  vis: 'open' | 'closed' | 'invite_only';
+  members: number;
+  createdBy: string;
+  createdAt: string;
+  isOwner: boolean;
+  joined: boolean;
+}
+
+const BUDDY_GROUPS_STORAGE_KEY = 'datore-buddy-groups';
+
+export function getUserBuddyGroups(): StoredBuddyGroup[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(BUDDY_GROUPS_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+export function addUserBuddyGroup(group: Omit<StoredBuddyGroup, 'id' | 'createdAt' | 'members' | 'isOwner' | 'joined'>): StoredBuddyGroup {
+  const newGroup: StoredBuddyGroup = {
+    ...group,
+    id: 'ubg' + Date.now(),
+    createdAt: new Date().toISOString(),
+    members: 1,
+    isOwner: true,
+    joined: true,
+  };
+  const groups = getUserBuddyGroups();
+  groups.unshift(newGroup);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+  return newGroup;
+}
+
+export function deleteUserBuddyGroup(id: string) {
+  const groups = getUserBuddyGroups().filter(g => g.id !== id);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+}
+
+export function updateUserBuddyGroup(id: string, updates: Partial<StoredBuddyGroup>) {
+  const groups = getUserBuddyGroups().map(g => g.id === id ? { ...g, ...updates } : g);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+}
+
+export function getAllBuddyGroupsForTagging(): { id: string; name: string; icon: string }[] {
+  const defaults = [
+    { id: 'bg1', name: 'SchoolFriends', icon: '🎓' },
+    { id: 'bg2', name: 'Toronto Dog Walkers', icon: '🐕' },
+    { id: 'bg3', name: 'Brampton Home Repair Hub', icon: '🔧' },
+    { id: 'bg4', name: 'Mississauga Tutors', icon: '📚' },
+    { id: 'bg5', name: 'GTA Cleaners Co-op', icon: '🧹' },
+    { id: 'bg6', name: 'Scarborough Parents', icon: '👨‍👩‍👧‍👦' },
+    { id: 'bg7', name: 'Work Buddies', icon: '💼' },
+    { id: 'bg8', name: 'Gym Squad', icon: '💪' },
+  ];
+  const userGroups = getUserBuddyGroups()
+    .filter(g => g.joined)
+    .map(g => ({ id: g.id, name: g.name, icon: g.icon }));
+  return [...userGroups, ...defaults];
+}
