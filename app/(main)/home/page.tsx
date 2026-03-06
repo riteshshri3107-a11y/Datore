@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
-import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs, getAllBuddyGroupsForTagging } from '@/lib/demoData';
+import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs, getAllBuddyGroupsForTagging, getBuddyGroupPosts } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag, IcoCommunity, IcoStore } from '@/components/Icons';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
@@ -109,7 +109,26 @@ export default function HomePage() {
     const r = _moderate(text, 'post');
     return (r.severity === 'low' || r.severity === 'medium' || r.severity === 'high' || r.severity === 'critical') ? r.cleaned : text;
   };
-  const allFeed = [...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}), ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const}))];
+  // BG-FR-005: Merge buddy group posts into the homepage feed for group members
+  const buddyGroupFeedPosts = getBuddyGroupPosts().map(bgp => ({
+    id: bgp.id,
+    text: censorForDisplay(bgp.text),
+    user: bgp.authorName,
+    avatar: bgp.authorAvatar,
+    avatarType: 'initials' as const,
+    time: bgp.createdAt ? new Date(bgp.createdAt).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : 'Recently',
+    likes: bgp.likes,
+    comments: bgp.comments,
+    type: 'text' as const,
+    isOwn: bgp.authorId === 'me',
+    audience: 'buddy' as Audience,
+    groupSource: `${bgp.groupIcon} ${bgp.groupName}`,
+  }));
+  const allFeed = [
+    ...userPosts.map(p => {const av = getUserAvatarForAudience(p.audience||'public'); return {...p, text: censorForDisplay(p.text), isOwn:true, user: prefs.name || 'You', avatar: av.src, avatarType: av.type};}),
+    ...buddyGroupFeedPosts,
+    ...SOCIAL_FEED.map(p => ({...p, isOwn:false, audience:'public' as Audience, avatarType:'initials' as const})),
+  ];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -334,9 +353,10 @@ export default function HomePage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{post.user}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px]" style={{ color:t.textMuted }}>{post.time}</span>
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background:`${aud.color}15`, color:aud.color }}>{aud.icon} {aud.label}</span>
+                    {(post as any).groupSource && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style={{ background:'rgba(139,92,246,0.12)', color:'#8b5cf6' }}>{(post as any).groupSource}</span>}
                   </div>
                 </div>
                 {/* BR-101: Edit & Delete for own posts */}
