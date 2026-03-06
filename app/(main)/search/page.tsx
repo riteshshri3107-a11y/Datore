@@ -7,6 +7,7 @@ import { getTheme } from '@/lib/theme';
 import { search, indexBulk, suggest, getTrending, recordSearch, getIndexStats, type SearchableType, type SearchFilters } from '@/lib/search';
 import { DEMO_WORKERS, DEMO_JOBS } from '@/lib/demoData';
 import { IcoBack, IcoSearch, IcoMic, IcoClose } from '@/components/Icons';
+import { searchWorkers, getJobs, getListings, getCommunities } from '@/lib/supabase';
 
 const TYPE_COLORS: Record<SearchableType, {color:string;icon:string}> = {
   worker: { color:'#22c55e', icon:'👷' },
@@ -53,6 +54,19 @@ export default function UniversalSearch() {
       ],
     ];
     indexBulk(docs);
+    // Also load real data from Supabase
+    (async () => {
+      try {
+        const [workers, jobs, listings, communities] = await Promise.all([searchWorkers(), getJobs(), getListings(), getCommunities()]);
+        const dbDocs = [
+          ...workers.map((w: any) => ({ id:`dbw_${w.id}`, type:'worker' as SearchableType, title:w.full_name || w.display_name, body:`${w.bio||''} ${(w.skills||[]).join(' ')}`, tags:w.skills||[], category:'Workers', location:w.city, rating:w.rating, metadata:{ path:`/worker/${w.id}` } })),
+          ...jobs.map((j: any) => ({ id:`dbj_${j.id}`, type:'job' as SearchableType, title:j.title, body:j.description||'', tags:[j.category].filter(Boolean), category:j.category||'Jobs', location:j.location, metadata:{ path:`/jobplace/job/${j.id}` } })),
+          ...listings.map((l: any) => ({ id:`dbl_${l.id}`, type:'listing' as SearchableType, title:l.title, body:l.description||'', tags:[l.category].filter(Boolean), category:l.category||'Listings', metadata:{ path:`/marketplace/${l.id}` } })),
+          ...communities.map((c: any) => ({ id:`dbc_${c.id}`, type:'community' as SearchableType, title:c.name, body:c.description||'', tags:[], category:'Communities', metadata:{ path:`/community/${c.id}` } })),
+        ];
+        if (dbDocs.length > 0) indexBulk(dbDocs);
+      } catch {}
+    })();
   }, []);
 
   const doSearch = (q: string) => {

@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { getJoinedCommunities, toggleCommunity } from '@/lib/demoData';
 import { IcoBack, IcoShield, IcoSearch, IcoMic } from '@/components/Icons';
+import { createCommunity, createPost, getSession } from '@/lib/supabase';
 
 /* ─── AI SAFETY ENGINE ─── */
 const THREAT_DB: Record<string,string[]> = {
@@ -113,8 +114,8 @@ export default function CommunityPage() {
   const filtered = GROUPS.filter(c => (!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())) && (typeF==='all'||c.type===typeF) && (tab==='joined'?joined.includes(c.id):true));
   const sg = selGroup ? GROUPS.find(c=>c.id===selGroup) : null;
   const sb = (s:number) => s>=95?{l:'Excellent',c:'#22c55e',bg:'rgba(34,197,94,0.1)'}:s>=80?{l:'Good',c:'#f59e0b',bg:'rgba(245,158,11,0.1)'}:{l:'Review',c:'#ef4444',bg:'rgba(239,68,68,0.1)'};
-  const handleCreate = () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
-  const handlePost = () => { const r=aiScan(postText); setPostRes(r); if(r.safe){setPostText('');setPostRes(null);} };
+  const handleCreate = async () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createCommunity({ name:newName, description:newDesc, created_by:userId, is_public:true, member_count:1 }); setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
+  const handlePost = async () => { const r=aiScan(postText); setPostRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createPost({ text:postText, author_id:userId, author_name:'User', audience:'public' }); setPostText('');setPostRes(null);} };
 
   return (
     <div className="space-y-4 animate-fade-in">

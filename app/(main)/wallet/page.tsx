@@ -1,10 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { formatCurrency } from '@/lib/utils';
+import { getWalletBalance, getTransactions, getSession } from '@/lib/supabase';
 
 export default function WalletPage() {
   const router = useRouter();
@@ -27,6 +28,18 @@ export default function WalletPage() {
     { id:'4', type:'tip', desc:'Tip received', amount:5, date:'2/25/2026' },
     { id:'5', type:'withdraw', desc:'Withdrawal to bank', amount:-50, date:'2/24/2026' },
   ]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: session } = await getSession();
+      const userId = session?.session?.user?.id;
+      if (!userId) return;
+      const walletData = await getWalletBalance(userId);
+      if (walletData?.available !== undefined) setBalance({ available: walletData.available, escrowed: walletData.escrowed || 0, pending: walletData.pending || 0, earned: walletData.available + (walletData.escrowed || 0) });
+      const txnData = await getTransactions(userId);
+      if (txnData.length > 0) setTxns(txnData.map((t: any) => ({ id: t.id, type: t.type || 'purchase', desc: t.description || t.type, amount: t.amount, date: new Date(t.created_at).toLocaleDateString() })));
+    })();
+  }, []);
 
   const handleAddTokens = () => {
     const amt = parseFloat(amount);

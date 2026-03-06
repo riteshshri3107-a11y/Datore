@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
+import { uploadAvatar, getSession } from '@/lib/supabase';
 
 /* BR-101: User Content Ownership -- edit/delete own posts, jobs, products, communities, groups
    BR-103: Rating Eligibility -- 4.0+ rating AND 10+ friends required to rate others
@@ -74,8 +75,15 @@ export default function ProfilePage() {
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
 
-  const handleAvatarUpload = (e:React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e:React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if(!file) return;
+    const { data: session } = await getSession();
+    const userId = session?.session?.user?.id;
+    if (userId) {
+      const { url } = await uploadAvatar(userId, file, activeAvatarMode);
+      if (url) { updateAvatar(activeAvatarMode, url); setShowAvatarPicker(false); return; }
+    }
+    // Fallback to DataURL for unauthenticated preview
     const reader = new FileReader();
     reader.onload = (ev) => { updateAvatar(activeAvatarMode, ev.target?.result as string); setShowAvatarPicker(false); };
     reader.readAsDataURL(file);

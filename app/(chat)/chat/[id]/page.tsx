@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { CHAT_CONTACTS, AUTO_REPLIES } from '@/lib/demoData';
 import { IcoBack, IcoCamera, IcoImage, IcoMic, IcoSend, IcoPlay, IcoStop, IcoVideo } from '@/components/Icons';
+import { sendMessage as persistMessage, getChatMessages, subscribeToMessages, getSession } from '@/lib/supabase';
 
 type Msg = { text:string; fromMe:boolean; time:string; type?:'text'|'image'|'video'|'audio'; media?:string; };
 
@@ -36,6 +37,24 @@ export default function ChatPage() {
 
   useEffect(() => { scrollRef.current?.scrollTo({ top:scrollRef.current.scrollHeight, behavior:'smooth' }); }, [messages, typing]);
 
+  // Load persisted messages and subscribe to realtime updates
+  useEffect(() => {
+    let sub: any;
+    (async () => {
+      const { data: session } = await getSession();
+      const userId = session?.session?.user?.id;
+      if (!userId) return;
+      const saved = await getChatMessages(id);
+      if (saved.length > 0) {
+        setMessages(saved.map((m: any) => ({ text: m.content, fromMe: m.sender_id === userId, time: new Date(m.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), type: 'text' as const })));
+      }
+      sub = subscribeToMessages(id, (msg: any) => {
+        setMessages(p => [...p, { text: msg.content, fromMe: msg.sender_id === userId, time: new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), type: 'text' as const }]);
+      });
+    })();
+    return () => { sub?.unsubscribe?.(); };
+  }, [id]);
+
   const now = () => new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 
   const autoReply = () => {
@@ -49,15 +68,22 @@ export default function ChatPage() {
     }, 1200+Math.random()*1500);
   };
 
-  const send = () => {
+  const send = async () => {
     if (mediaPreview) {
       setMessages(p=>[...p, { text:input.trim()||'', fromMe:true, time:now(), type:mediaPreview.type, media:mediaPreview.url }]);
       setMediaPreview(null); setInput(''); setShowAttach(false);
       autoReply(); return;
     }
     if (!input.trim()) return;
-    setMessages(p=>[...p, { text:input.trim(), fromMe:true, time:now(), type:'text' }]);
-    setInput(''); autoReply();
+    const text = input.trim();
+    setMessages(p=>[...p, { text, fromMe:true, time:now(), type:'text' }]);
+    setInput('');
+    // Persist to Supabase
+    getSession().then(({ data: session }) => {
+      const userId = session?.session?.user?.id;
+      if (userId) persistMessage({ room_id: id, sender_id: userId, sender_name: 'User', content: text });
+    });
+    autoReply();
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>, type:'image'|'video') => {

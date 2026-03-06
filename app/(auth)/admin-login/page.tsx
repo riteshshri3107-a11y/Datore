@@ -7,6 +7,7 @@ import { getTheme } from '@/lib/theme';
 import { secureSignIn } from '@/lib/auth';
 import { validateInput, validators } from '@/lib/security';
 import { IcoShield, IcoBack } from '@/components/Icons';
+import { createClient } from '@supabase/supabase-js';
 
 /* Admin-only credentials are validated server-side via role check */
 export default function AdminLoginPage() {
@@ -29,9 +30,22 @@ export default function AdminLoginPage() {
     try {
       const { data, error: err } = await secureSignIn(email, password);
       if (err) throw err;
-      // Store org code for admin session
+      // Validate org code server-side against admin_organizations table
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
+      const { data: orgData, error: orgErr } = await supabase
+        .from('admin_organizations')
+        .select('id, name')
+        .eq('org_code', orgCode)
+        .eq('is_active', true)
+        .single();
+      if (orgErr || !orgData) throw { message: 'Invalid organization code. Access denied.' };
+      // Store validated org info for admin session
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.setItem('admin_org_code', orgCode);
+        sessionStorage.setItem('admin_org_id', orgData.id);
         sessionStorage.setItem('admin_session', 'true');
       }
       router.push('/admin');
