@@ -71,8 +71,12 @@ export default function ReelsPage() {
   const [reelAudience, setReelAudience] = useState("public");
   const [reelTags, setReelTags] = useState("");
   const videoRef = useRef<HTMLInputElement>(null);
+  const [myReels, setMyReels] = useState<Reel[]>([]);
+  const [editingComment, setEditingComment] = useState<{reelId:string;idx:number}|null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
 
-  const visibleReels = REELS.filter(function(r) { return !blocked.includes(r.user); });
+  var allReels = (myReels as Reel[]).concat(REELS);
+  const visibleReels = allReels.filter(function(r) { return !blocked.includes(r.user); });
   const idx = current % Math.max(visibleReels.length, 1);
   const reel = visibleReels[idx];
   const isLiked = reel ? liked.includes(reel.id) : false;
@@ -115,12 +119,46 @@ export default function ReelsPage() {
   }
 
   function publishReel() {
+    var newReel: Reel = {
+      id: "my-" + Date.now(), user: "You", verified: false, caption: reelCaption || "My new reel",
+      likes: 0, comments: 0, shares: 0, saves: 0, cat: "Lifestyle", duration: reelDuration,
+      music: reelMusic, hashtags: reelTags.split(",").map(function(t) { return t.trim(); }).filter(Boolean),
+      scene: "🎬✨🌟", gradient: "linear-gradient(160deg,#1a1a3e 0%,#3a2a5e 40%,#2a1a4a 100%)", sceneLabel: reelCaption || "My Reel"
+    };
+    setMyReels(function(p) { return [newReel].concat(p); });
     setShowCreate(false);
     setCreateStep("upload");
     setReelCaption("");
     setReelMusic("");
     setReelTags("");
     setReelFilter("None");
+  }
+
+  function deleteMyReel(reelId: string) {
+    setMyReels(function(p) { return p.filter(function(r) { return r.id !== reelId; }); });
+  }
+
+  function deleteMyComment(reelId: string, idx: number) {
+    setComments(function(p) {
+      var next: Record<string, Array<{ user: string; text: string; likes: number; time: string }>> = {};
+      Object.keys(p).forEach(function(k) { next[k] = p[k]; });
+      next[reelId] = (next[reelId] || []).filter(function(_, i) { return i !== idx; });
+      return next;
+    });
+  }
+
+  function saveEditComment() {
+    if (!editingComment || !editCommentText.trim()) return;
+    setComments(function(p) {
+      var next: Record<string, Array<{ user: string; text: string; likes: number; time: string }>> = {};
+      Object.keys(p).forEach(function(k) { next[k] = p[k]; });
+      next[editingComment.reelId] = (next[editingComment.reelId] || []).map(function(c, i) {
+        return i === editingComment.idx ? { ...c, text: editCommentText.trim() } : c;
+      });
+      return next;
+    });
+    setEditingComment(null);
+    setEditCommentText("");
   }
 
   function voiceS() {
@@ -301,7 +339,19 @@ export default function ReelsPage() {
                 <div className="flex-1">
                   <span className="text-xs font-semibold">{c.user}</span>
                   <span style={{ fontSize: 9, color: t.textMuted, marginLeft: 8 }}>{c.time}</span>
-                  <p className="text-xs mt-1">{c.text}</p>
+                  {editingComment && editingComment.reelId === reel.id && editingComment.idx === i ? (
+                    <div className="mt-1 flex gap-1">
+                      <input value={editCommentText} onChange={function(e) { setEditCommentText(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") saveEditComment(); }} className="flex-1 px-2 py-1 rounded-lg text-xs outline-none" style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", border: "1px solid " + t.cardBorder, color: t.text }} />
+                      <button onClick={saveEditComment} className="text-[9px] px-2 py-1 rounded-lg font-bold text-white" style={{ background: t.accent }}>Save</button>
+                      <button onClick={function() { setEditingComment(null); }} className="text-[9px] px-2 py-1 rounded-lg" style={{ color: t.textMuted }}>Cancel</button>
+                    </div>
+                  ) : (
+                    <p className="text-xs mt-1">{c.text}</p>
+                  )}
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={function() { setEditingComment({ reelId: reel.id, idx: i }); setEditCommentText(c.text); }} style={{ fontSize: 9, color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
+                    <button onClick={function() { deleteMyComment(reel.id, i); }} style={{ fontSize: 9, color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>Delete</button>
+                  </div>
                 </div>
               </div>
             );
@@ -343,14 +393,26 @@ export default function ReelsPage() {
         <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.5)" }} onClick={function() { setShowMore(false); }}>
           <div onClick={function(e) { e.stopPropagation(); }} className="w-full rounded-t-2xl p-4" style={{ background: isDark ? "#1a1a2e" : "#fff" }}>
             <div className="w-10 h-1 rounded-full mx-auto mb-3" style={{ background: t.cardBorder }} />
+            {reel.user === "You" && ([
+              { label: "Edit Caption", action: function() { setShowMore(false); setReelCaption(reel.caption); setCreateStep("details"); setShowCreate(true); }, color: "#3b82f6" },
+              { label: "Delete This Reel", action: function() { deleteMyReel(reel.id); goNext(); setShowMore(false); }, color: "#ef4444" },
+            ]).map(function(opt, i) {
+              return (
+                <button key={"own-" + i} onClick={opt.action} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ color: opt.color || t.text, background: "none", border: "none", cursor: "pointer" }}>
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </button>
+              );
+            })}
             {[
               { label: "Mute Audio", action: function() { setShowMore(false); } },
               { label: "Copy Link", action: function() { setShowMore(false); } },
               { label: "Save Video", action: function() { setShowMore(false); } },
               { label: "Duet with this Reel", action: function() { setShowMore(false); setShowCreate(true); } },
               { label: "Not Interested", action: function() { goNext(); setShowMore(false); } },
-              { label: "Block " + reel.user, action: function() { setBlocked(function(p) { return p.concat([reel.user]); }); goNext(); setShowMore(false); }, color: "#ef4444" },
-              { label: "Report Reel", action: function() { setShowMore(false); }, color: "#ef4444" },
+              ...(reel.user !== "You" ? [
+                { label: "Block " + reel.user, action: function() { setBlocked(function(p) { return p.concat([reel.user]); }); goNext(); setShowMore(false); }, color: "#ef4444" },
+                { label: "Report Reel", action: function() { setShowMore(false); }, color: "#ef4444" },
+              ] : []),
             ].map(function(opt, i) {
               return (
                 <button key={i} onClick={opt.action} className="w-full flex items-center gap-3 p-3 rounded-xl text-left" style={{ color: opt.color || t.text, background: "none", border: "none", cursor: "pointer" }}>

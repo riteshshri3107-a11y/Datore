@@ -108,14 +108,29 @@ export default function CommunityPage() {
   const [postVis, setPostVis] = useState<PVis>('group_only');
   const [postRes, setPostRes] = useState<SafetyResult|null>(null);
   const [showSafety, setShowSafety] = useState(false);
+  const [userPosts, setUserPosts] = useState<GPost[]>([]);
+  const [editingPost, setEditingPost] = useState<string|null>(null);
+  const [editPostText, setEditPostText] = useState('');
+  const [userGroups, setUserGroups] = useState<typeof GROUPS>([]);
+  const [editingGroup, setEditingGroup] = useState<string|null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
 
   useEffect(() => { setJoined(getJoinedCommunities()); }, []);
   const toggle = (id:string) => { toggleCommunity(id); setJoined(getJoinedCommunities()); };
-  const filtered = GROUPS.filter(c => (!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())) && (typeF==='all'||c.type===typeF) && (tab==='joined'?joined.includes(c.id):true));
-  const sg = selGroup ? GROUPS.find(c=>c.id===selGroup) : null;
+  const allGroups = [...userGroups, ...GROUPS];
+  const filtered = allGroups.filter(c => (!search||c.name.toLowerCase().includes(search.toLowerCase())||c.desc.toLowerCase().includes(search.toLowerCase())) && (typeF==='all'||c.type===typeF) && (tab==='joined'?joined.includes(c.id):true));
+  const sg = selGroup ? allGroups.find(c=>c.id===selGroup) : null;
+  const isMyGroup = sg ? userGroups.some(g=>g.id===sg.id) : false;
+  const groupUserPosts = sg ? userPosts.filter(()=>true) : [];
   const sb = (s:number) => s>=95?{l:'Excellent',c:'#22c55e',bg:'rgba(34,197,94,0.1)'}:s>=80?{l:'Good',c:'#f59e0b',bg:'rgba(245,158,11,0.1)'}:{l:'Review',c:'#ef4444',bg:'rgba(239,68,68,0.1)'};
-  const handleCreate = async () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createCommunity({ name:newName, description:newDesc, created_by:userId, is_public:true, member_count:1 }); setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
-  const handlePost = async () => { const r=aiScan(postText); setPostRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createPost({ text:postText, author_id:userId, author_name:'User', audience:'public' }); setPostText('');setPostRes(null);} };
+  const handleCreate = async () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createCommunity({ name:newName, description:newDesc, created_by:userId, is_public:true, member_count:1 }); const newGroup = { id:'ug-'+Date.now(), name:newName, desc:newDesc, members:1, emoji:GT[newType].i, type:newType, verified:false, rules:['Be respectful'], admin:'You', vis:newVis, approval:false, safetyScore:100, lastActive:'Just now', posts:[] as GPost[] }; setUserGroups(p=>[newGroup,...p]); setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
+  const handlePost = async () => { const r=aiScan(postText); setPostRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createPost({ text:postText, author_id:userId, author_name:'User', audience:'public' }); const newPost:GPost = { id:'up-'+Date.now(), author:'You', avatar:'Y', content:postText, time:'Just now', likes:0, replies:0, vis:postVis }; setUserPosts(p=>[newPost,...p]); setPostText('');setPostRes(null);} };
+
+  const deleteUserPost = (id:string) => setUserPosts(p=>p.filter(x=>x.id!==id));
+  const saveEditPost = (id:string) => { if(!editPostText.trim()) return; const r=aiScan(editPostText); if(!r.safe){ setPostRes(r); return; } setUserPosts(p=>p.map(x=>x.id===id?{...x,content:editPostText.trim()}:x)); setEditingPost(null); setEditPostText(''); };
+  const deleteUserGroup = (id:string) => { setUserGroups(p=>p.filter(x=>x.id!==id)); if(selGroup===id) setSelGroup(null); };
+  const saveEditGroup = (id:string) => { if(!editGroupName.trim()) return; const r=groupPurposeCheck(editGroupName,editGroupDesc); if(!r.safe){ setCreateRes(r); return; } setUserGroups(p=>p.map(x=>x.id===id?{...x,name:editGroupName.trim(),desc:editGroupDesc.trim()}:x)); setEditingGroup(null); };
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -179,8 +194,47 @@ export default function CommunityPage() {
               <div className="flex justify-end"><button onClick={handlePost} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>🛡️ Scan & Post</button></div>
             </div>)}
           </div>
-          {/* Posts */}
-          {sg.posts.length===0?<div className="text-center py-8 glass-card rounded-2xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><p className="text-2xl mb-2">💬</p><p className="text-sm font-medium" style={{color:t.textSecondary}}>No posts yet</p></div>:sg.posts.map(p=>(
+          {/* Group management for own groups */}
+          {isMyGroup && (
+            <div className="glass-card rounded-2xl p-4" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+              <p className="text-xs font-bold mb-2">Manage Group</p>
+              {editingGroup===sg.id ? (
+                <div className="space-y-2">
+                  <input value={editGroupName} onChange={e=>{setEditGroupName(e.target.value);setCreateRes(null);}} className="w-full text-sm py-2 px-3 rounded-xl bg-transparent outline-none" style={{border:`1px solid ${t.cardBorder}`,color:t.text}} placeholder="Group name"/>
+                  <textarea value={editGroupDesc} onChange={e=>{setEditGroupDesc(e.target.value);setCreateRes(null);}} rows={2} className="w-full text-sm py-2 px-3 rounded-xl bg-transparent outline-none resize-none" style={{border:`1px solid ${t.cardBorder}`,color:t.text}} placeholder="Description"/>
+                  <div className="flex gap-2">
+                    <button onClick={()=>saveEditGroup(sg.id)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button>
+                    <button onClick={()=>setEditingGroup(null)} className="px-4 py-1.5 rounded-lg text-xs" style={{border:`1px solid ${t.cardBorder}`}}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={()=>{setEditingGroup(sg.id);setEditGroupName(sg.name);setEditGroupDesc(sg.desc);}} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold" style={{background:'rgba(59,130,246,0.1)',color:'#3b82f6'}}>Edit Group</button>
+                  <button onClick={()=>deleteUserGroup(sg.id)} className="px-3 py-1.5 rounded-lg text-[10px] font-semibold" style={{background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>Delete Group</button>
+                </div>
+              )}
+            </div>
+          )}
+          {/* User Posts in this group */}
+          {groupUserPosts.map(p=>(
+            <div key={p.id} className="glass-card rounded-2xl p-4" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+              <div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{background:t.accent,color:'#fff'}}>Y</div><div className="flex-1"><p className="text-sm font-semibold">You</p><span className="text-[9px]" style={{color:t.textMuted}}>{p.time}</span></div>
+                <div className="flex gap-1">
+                  <button onClick={()=>{setEditingPost(p.id);setEditPostText(p.content);}} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'rgba(59,130,246,0.1)'}}><span style={{fontSize:10,color:'#3b82f6'}}>✎</span></button>
+                  <button onClick={()=>deleteUserPost(p.id)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'rgba(239,68,68,0.1)'}}><span style={{fontSize:10,color:'#ef4444'}}>✕</span></button>
+                </div>
+              </div>
+              {editingPost===p.id ? (
+                <div className="space-y-2">
+                  <textarea value={editPostText} onChange={e=>setEditPostText(e.target.value)} rows={2} className="w-full p-2 rounded-xl text-sm outline-none resize-none" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.03)',border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  <div className="flex gap-2"><button onClick={()=>saveEditPost(p.id)} className="px-3 py-1 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditingPost(null)} className="px-3 py-1 rounded-lg text-xs" style={{border:`1px solid ${t.cardBorder}`}}>Cancel</button></div>
+                </div>
+              ) : <p className="text-sm" style={{color:t.textSecondary}}>{p.content}</p>}
+              <div className="flex gap-4 mt-2 text-[11px]" style={{color:t.textMuted}}><span>❤️ {p.likes}</span><span>💬 {p.replies}</span><span>↗️ Share</span></div>
+            </div>
+          ))}
+          {/* Demo Posts */}
+          {sg.posts.length===0 && groupUserPosts.length===0?<div className="text-center py-8 glass-card rounded-2xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}><p className="text-2xl mb-2">💬</p><p className="text-sm font-medium" style={{color:t.textSecondary}}>No posts yet</p></div>:sg.posts.map(p=>(
             <div key={p.id} className="glass-card rounded-2xl p-4" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
               <div className="flex items-center gap-2 mb-2"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{background:`linear-gradient(135deg,${t.accent}33,#8b5cf633)`,color:t.accent}}>{p.avatar}</div><div className="flex-1"><p className="text-sm font-semibold">{p.author}</p><div className="flex items-center gap-2"><span className="text-[9px]" style={{color:t.textMuted}}>{p.time}</span><span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:p.vis==='public'?'rgba(34,197,94,0.1)':'rgba(59,130,246,0.1)',color:p.vis==='public'?'#22c55e':'#3b82f6'}}>{p.vis==='public'?'🌍 Public':'👥 Group'}</span></div></div></div>
               <p className="text-sm" style={{color:t.textSecondary}}>{p.content}</p>

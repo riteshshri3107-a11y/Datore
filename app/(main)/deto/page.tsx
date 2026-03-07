@@ -398,7 +398,9 @@ export default function DetoPage() {
           {actionLog.length===0?<p className="text-center text-xs py-8" style={{color:t.textMuted}}>No actions yet. Try: "Create a babysitter job"</p>:
           actionLog.map((a,i)=>(
             <div key={i} className="p-3 rounded-xl" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
-              <div className="flex items-center gap-2 mb-1"><span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:a.status==='executed'?'#22c55e':'#3b82f6'}}>{a.status}</span><span className="text-xs font-semibold">{a.intent.replace(/_/g,' ')}</span></div>
+              <div className="flex items-center gap-2 mb-1"><span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:a.status==='executed'?'#22c55e':'#3b82f6'}}>{a.status}</span><span className="text-xs font-semibold flex-1">{a.intent.replace(/_/g,' ')}</span>
+                <button onClick={()=>setActionLog(p=>p.filter((_,j)=>j!==i))} className="text-[9px] px-2 py-0.5 rounded-lg" style={{color:'#ef4444',background:'rgba(239,68,68,0.1)'}}>Delete</button>
+              </div>
               {Object.entries(a.details).map(([k,v])=>(<p key={k} className="text-[10px]"><span style={{color:t.textMuted}}>{k}:</span> {v}</p>))}
             </div>
           ))}
@@ -418,7 +420,10 @@ export default function DetoPage() {
                 <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:s.status==='active'?'rgba(34,197,94,0.15)':'rgba(245,158,11,0.15)',color:s.status==='active'?'#22c55e':'#f59e0b'}}>{s.status}</span>
               </div>
               <p className="text-[10px]" style={{color:t.textMuted}}>📅 {s.datetime}</p>
-              <button onClick={()=>setSchedules(p=>p.filter((_,j)=>j!==i))} className="text-[9px] mt-1" style={{color:'#ef4444'}}>Delete</button>
+              <div className="flex gap-2 mt-1">
+                <button onClick={()=>{const newTitle=prompt('Edit schedule:',s.title);if(newTitle!==null){setSchedules(p=>p.map((x,j)=>j===i?{...x,title:newTitle}:x));}}} className="text-[9px]" style={{color:'#3b82f6'}}>Edit</button>
+                <button onClick={()=>setSchedules(p=>p.filter((_,j)=>j!==i))} className="text-[9px]" style={{color:'#ef4444'}}>Delete</button>
+              </div>
             </div>
           ))}
         </div>
@@ -434,7 +439,9 @@ export default function DetoPage() {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:p.status==='posted'?'#22c55e':'#8b5cf6'}}>{p.status}</span>
                 <span className="text-[9px] px-2 py-0.5 rounded-full" style={{background:t.accent+'15',color:t.accent}}>{p.audience}</span>
-                <span className="text-[9px]" style={{color:t.textMuted}}>{p.style}</span>
+                <span className="text-[9px] flex-1" style={{color:t.textMuted}}>{p.style}</span>
+                <button onClick={()=>{const newContent=prompt('Edit post content:',p.content);if(newContent!==null){setAutoPostLog(prev=>prev.map((x,j)=>j===i?{...x,content:newContent}:x));}}} className="text-[9px] px-2 py-0.5 rounded-lg" style={{color:'#3b82f6',background:'rgba(59,130,246,0.1)'}}>Edit</button>
+                <button onClick={()=>setAutoPostLog(prev=>prev.filter((_,j)=>j!==i))} className="text-[9px] px-2 py-0.5 rounded-lg" style={{color:'#ef4444',background:'rgba(239,68,68,0.1)'}}>Delete</button>
               </div>
               <p className="text-[10px] mt-1">{p.content}</p>
             </div>

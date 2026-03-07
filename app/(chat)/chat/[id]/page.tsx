@@ -26,6 +26,9 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
+  const [editingMsg, setEditingMsg] = useState<number|null>(null);
+  const [editMsgText, setEditMsgText] = useState('');
+  const [msgMenu, setMsgMenu] = useState<number|null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const replyIdx = useRef(1);
   const photoRef = useRef<HTMLInputElement>(null);
@@ -86,6 +89,24 @@ export default function ChatPage() {
     autoReply();
   };
 
+  const deleteMessage = (idx: number) => {
+    setMessages(p=>p.filter((_,i)=>i!==idx));
+    setMsgMenu(null);
+  };
+
+  const startEditMessage = (idx: number) => {
+    setEditingMsg(idx);
+    setEditMsgText(messages[idx].text);
+    setMsgMenu(null);
+  };
+
+  const saveEditMessage = () => {
+    if (editingMsg === null || !editMsgText.trim()) return;
+    setMessages(p=>p.map((m,i)=>i===editingMsg?{...m,text:editMsgText.trim()}:m));
+    setEditingMsg(null);
+    setEditMsgText('');
+  };
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>, type:'image'|'video') => {
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
@@ -142,18 +163,37 @@ export default function ChatPage() {
       {/* Messages */}
       <div ref={scrollRef} style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:8 }}>
         {messages.map((msg,i)=>(
-          <div key={i} style={{ display:'flex', justifyContent:msg.fromMe?'flex-end':'flex-start' }}>
-            <div style={{ maxWidth:'75%', padding:msg.type==='image'||msg.type==='video'?4:'10px 14px', borderRadius:msg.fromMe?'16px 16px 4px 16px':'16px 16px 16px 4px', background:msg.fromMe?`linear-gradient(135deg,${t.accent},#8b5cf6)`:(isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'), color:msg.fromMe?'white':t.text, fontSize:13, lineHeight:1.5, overflow:'hidden' }}>
-              {msg.type==='image' && msg.media && <img src={msg.media} alt="Shared" style={{ width:'100%', maxHeight:220, objectFit:'cover', borderRadius:12, display:'block' }} />}
-              {msg.type==='video' && msg.media && <video src={msg.media} controls playsInline style={{ width:'100%', maxHeight:220, borderRadius:12, display:'block' }} />}
-              {msg.type==='audio' && msg.media && (
-                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px' }}>
-                  <IcoMic size={16} color={msg.fromMe?'white':t.accent} />
-                  <audio src={msg.media} controls style={{ height:32, maxWidth:200 }} />
+          <div key={i} style={{ display:'flex', justifyContent:msg.fromMe?'flex-end':'flex-start', position:'relative' }}>
+            <div style={{ maxWidth:'75%', position:'relative' }}>
+              {/* Long-press / tap menu for own messages */}
+              {msg.fromMe && (
+                <button onClick={()=>setMsgMenu(msgMenu===i?null:i)} style={{ position:'absolute', top:-2, [msg.fromMe?'left':'right']:-24, width:20, height:20, borderRadius:'50%', background:'none', border:'none', cursor:'pointer', fontSize:10, color:t.textMuted, display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>...</button>
+              )}
+              {msgMenu===i && msg.fromMe && (
+                <div style={{ position:'absolute', top:-4, [msg.fromMe?'left':'right']:-100, background:isDark?'#1a1a2e':'#fff', borderRadius:10, padding:4, boxShadow:'0 2px 12px rgba(0,0,0,0.15)', border:`1px solid ${t.cardBorder}`, zIndex:10, display:'flex', gap:2 }}>
+                  {msg.type==='text' && <button onClick={()=>startEditMessage(i)} style={{ padding:'4px 10px', borderRadius:8, background:'rgba(59,130,246,0.1)', color:'#3b82f6', border:'none', fontSize:10, fontWeight:600, cursor:'pointer' }}>Edit</button>}
+                  <button onClick={()=>deleteMessage(i)} style={{ padding:'4px 10px', borderRadius:8, background:'rgba(239,68,68,0.1)', color:'#ef4444', border:'none', fontSize:10, fontWeight:600, cursor:'pointer' }}>Delete</button>
+                  <button onClick={()=>setMsgMenu(null)} style={{ padding:'4px 6px', borderRadius:8, background:'none', border:'none', fontSize:10, color:t.textMuted, cursor:'pointer' }}>x</button>
                 </div>
               )}
-              {msg.text && <p style={{ margin:msg.type!=='text'?'6px 10px 2px':'0', fontSize:13 }}>{msg.text}</p>}
-              <p style={{ margin:'4px 10px 2px', fontSize:10, opacity:0.6, textAlign:'right' }}>{msg.time}</p>
+              <div style={{ padding:msg.type==='image'||msg.type==='video'?4:'10px 14px', borderRadius:msg.fromMe?'16px 16px 4px 16px':'16px 16px 16px 4px', background:msg.fromMe?`linear-gradient(135deg,${t.accent},#8b5cf6)`:(isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.05)'), color:msg.fromMe?'white':t.text, fontSize:13, lineHeight:1.5, overflow:'hidden' }}>
+                {msg.type==='image' && msg.media && <img src={msg.media} alt="Shared" style={{ width:'100%', maxHeight:220, objectFit:'cover', borderRadius:12, display:'block' }} />}
+                {msg.type==='video' && msg.media && <video src={msg.media} controls playsInline style={{ width:'100%', maxHeight:220, borderRadius:12, display:'block' }} />}
+                {msg.type==='audio' && msg.media && (
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px' }}>
+                    <IcoMic size={16} color={msg.fromMe?'white':t.accent} />
+                    <audio src={msg.media} controls style={{ height:32, maxWidth:200 }} />
+                  </div>
+                )}
+                {editingMsg===i ? (
+                  <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                    <input value={editMsgText} onChange={e=>setEditMsgText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveEditMessage()} style={{ flex:1, padding:'4px 8px', borderRadius:8, border:'1px solid rgba(255,255,255,0.3)', background:'rgba(255,255,255,0.15)', color:'#fff', fontSize:12, outline:'none' }} />
+                    <button onClick={saveEditMessage} style={{ padding:'4px 8px', borderRadius:6, background:'rgba(255,255,255,0.25)', color:'#fff', border:'none', fontSize:10, fontWeight:600, cursor:'pointer' }}>Save</button>
+                    <button onClick={()=>setEditingMsg(null)} style={{ padding:'4px 6px', borderRadius:6, background:'none', border:'none', color:'rgba(255,255,255,0.7)', fontSize:10, cursor:'pointer' }}>x</button>
+                  </div>
+                ) : msg.text ? <p style={{ margin:msg.type!=='text'?'6px 10px 2px':'0', fontSize:13 }}>{msg.text}</p> : null}
+                <p style={{ margin:'4px 10px 2px', fontSize:10, opacity:0.6, textAlign:'right' }}>{msg.time}</p>
+              </div>
             </div>
           </div>
         ))}

@@ -290,6 +290,31 @@ export default function HomePage() {
     setShowAddStatus(false);
   };
 
+  const deleteMyStatus = (idx: number) => {
+    const updated = myStatuses.filter((_,i) => i !== idx);
+    setMyStatuses(updated);
+    try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
+    setViewingStatus(null);
+  };
+
+  const [editingStatusIdx, setEditingStatusIdx] = useState<number|null>(null);
+  const [editStatusText, setEditStatusText] = useState('');
+
+  const startEditStatus = (idx: number) => {
+    setEditingStatusIdx(idx);
+    setEditStatusText(myStatuses[idx].text);
+    setViewingStatus(null);
+  };
+
+  const saveEditStatus = () => {
+    if (editingStatusIdx === null || !editStatusText.trim()) return;
+    const updated = myStatuses.map((s,i) => i === editingStatusIdx ? {...s, text: editStatusText.trim()} : s);
+    setMyStatuses(updated);
+    try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
+    setEditingStatusIdx(null);
+    setEditStatusText('');
+  };
+
   /* ═══ Reels preview for home page ═══ */
   const REEL_PREVIEWS = [
     { id:'r1', user:'Anita S.', scene:'🧹✨', label:'Cleaning Tips', gradient:'linear-gradient(160deg,#0a2e1a,#134e2e)', likes:'2.3K' },
@@ -386,9 +411,30 @@ export default function HomePage() {
             <div style={{ marginTop:80 }}>
               <p style={{ fontSize:22, fontWeight:700, color:'#fff', lineHeight:1.4, textShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>{viewingStatus.text}</p>
             </div>
+            {/* Edit/Delete for own statuses */}
+            {viewingStatus.user === 'You' && (
+              <div style={{ marginTop:32, display:'flex', gap:12, justifyContent:'center' }}>
+                <button onClick={()=>{ const idx = myStatuses.findIndex(s=>s.text===viewingStatus.text); if(idx>=0) startEditStatus(idx); }} style={{ padding:'8px 20px', borderRadius:12, background:'rgba(255,255,255,0.2)', backdropFilter:'blur(8px)', color:'#fff', border:'1px solid rgba(255,255,255,0.3)', fontSize:12, fontWeight:600, cursor:'pointer' }}>Edit</button>
+                <button onClick={()=>{ const idx = myStatuses.findIndex(s=>s.text===viewingStatus.text); if(idx>=0) deleteMyStatus(idx); }} style={{ padding:'8px 20px', borderRadius:12, background:'rgba(239,68,68,0.3)', backdropFilter:'blur(8px)', color:'#fff', border:'1px solid rgba(239,68,68,0.4)', fontSize:12, fontWeight:600, cursor:'pointer' }}>Delete</button>
+              </div>
+            )}
             {/* Progress bar */}
             <div style={{ position:'absolute', top:8, left:16, right:16, height:3, borderRadius:2, background:'rgba(255,255,255,0.3)', overflow:'hidden' }}>
               <div style={{ width:'100%', height:'100%', borderRadius:2, background:'#fff', animation:'statusProgress 5s linear forwards' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Edit Status Modal ═══ */}
+      {editingStatusIdx !== null && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={()=>setEditingStatusIdx(null)}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-sm rounded-2xl p-5 space-y-4" style={{ background:isDark?'#1a1a2e':'#fff' }}>
+            <h3 className="font-bold text-base">Edit Status</h3>
+            <textarea value={editStatusText} onChange={e=>setEditStatusText(e.target.value)} rows={3} placeholder="Update your status..." className="w-full p-3 rounded-xl text-sm outline-none resize-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+            <div className="flex gap-2">
+              <button onClick={saveEditStatus} disabled={!editStatusText.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>Save</button>
+              <button onClick={()=>setEditingStatusIdx(null)} className="px-4 py-2.5 rounded-xl text-sm" style={{ color:t.textMuted, border:`1px solid ${t.cardBorder}` }}>Cancel</button>
             </div>
           </div>
         </div>
