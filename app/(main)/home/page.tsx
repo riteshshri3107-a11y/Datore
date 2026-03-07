@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { DEMO_WORKERS, DEMO_JOBS, SOCIAL_FEED, HASHTAGS, getUserPosts, addUserPost, getProfilePrefs, getAllBuddyGroupsForTagging, getBuddyGroupPosts } from '@/lib/demoData';
 import { IcoJobs, IcoUser, IcoMap, IcoMarket, IcoWallet, IcoFriends, IcoQR, IcoShield, IcoHeart, IcoSend, IcoHash, IcoEdit, IcoTrash, IcoEmoji, IcoMic, IcoClose, IcoGlobe, IcoBriefcase, IcoGrad, IcoSearch, IcoFlag, IcoCommunity, IcoStore } from '@/components/Icons';
+import { createPost as dbCreatePost, deletePost as dbDeletePost, updatePost as dbUpdatePost, getSession, createStatus as dbCreateStatus, deleteStatus as dbDeleteStatus, updateStatus as dbUpdateStatus } from '@/lib/supabase';
 
 /* ═══ Content Moderation — Uses centralized engine ═══ */
 import { moderateContent as _moderate, isImageSafe, type ModerationResult as _ModResult } from '@/lib/moderation';
@@ -144,13 +145,13 @@ export default function HomePage() {
   };
   const clearMedia = () => { setMediaPreview(null); setMediaName(''); };
 
-  /* AI-moderated post submission */
-  const handlePost = () => {
+  /* AI-moderated post submission — saves to both localStorage AND Supabase DB */
+  const handlePost = async () => {
     if (!postText.trim() && !mediaPreview) return;
     const modResult = moderatePost(postText);
     if (modResult.severity === 'severe') {
       setModerationAlert(modResult);
-      return; // Block severe content
+      return;
     }
     let finalText = (modResult.severity === 'mild' || modResult.severity === 'moderate') ? modResult.cleaned : postText.trim();
     if (postAudience === 'buddy' && selectedBuddyGroups.length > 0) {
@@ -159,24 +160,35 @@ export default function HomePage() {
     }
     addUserPost({ text: finalText, type: postType, media: mediaPreview || undefined, audience: postAudience });
     setUserPosts(getUserPosts());
+    // Persist to Supabase DB
+    try {
+      const { data: session } = await getSession();
+      const userId = session?.session?.user?.id;
+      if (userId) await dbCreatePost({ author_id: userId, author_name: prefs.name || 'User', text: finalText, audience: postAudience, type: postType });
+    } catch {}
     setPostText(''); setShowPost(false); setPostType('text'); setPostAudience('public'); clearMedia(); setSelectedBuddyGroups([]); setBuddyTagSearch(''); setShowBuddyTagPicker(false);
-    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult); // Warn for censored
+    if (modResult.severity === 'mild' || modResult.severity === 'moderate') setModerationAlert(modResult);
   };
 
   const handleLike = (id: string) => setLikedPosts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
-  /* BR-101: Edit own post */
-  const saveEdit = (postId: string) => {
+  /* BR-101: Edit own post — saves to localStorage + Supabase DB */
+  const saveEdit = async (postId: string) => {
     const modResult = moderatePost(editText);
     if (modResult.severity === 'severe') { setModerationAlert(modResult); return; }
-    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText} : p));
+    const finalText = (modResult.severity==='mild'||modResult.severity==='moderate')?modResult.cleaned:editText;
+    setUserPosts(prev => prev.map(p => p.id === postId ? {...p, text: finalText} : p));
     setEditingPost(null); setEditText('');
+    // Persist to DB
+    try { await dbUpdatePost(postId, finalText); } catch {}
   };
 
-  /* BR-101: Delete own post */
-  const deletePost = (postId: string) => {
+  /* BR-101: Delete own post — removes from localStorage + Supabase DB */
+  const deletePost = async (postId: string) => {
     setUserPosts(prev => prev.filter(p => p.id !== postId));
     try { const all = getUserPosts().filter((p:any) => p.id !== postId); localStorage.setItem('datore-user-posts', JSON.stringify(all)); } catch {}
+    // Persist to DB
+    try { await dbDeletePost(postId); } catch {}
   };
 
   /* Emoji reaction */
@@ -280,7 +292,7 @@ export default function HomePage() {
     { user:'Tom R.', avatar:'TR', text:'Cooking tacos tonight! Who wants the recipe? 🌮', time:'5h ago', bg:'linear-gradient(135deg,#ef4444,#f97316)' },
   ];
 
-  const addMyStatus = () => {
+  const addMyStatus = async () => {
     if (!myStatusText.trim()) return;
     const s = { text: myStatusText.trim(), time: 'Just now', bg: STATUS_BG[myStatuses.length % STATUS_BG.length] };
     const updated = [s, ...myStatuses];
@@ -288,13 +300,18 @@ export default function HomePage() {
     try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
     setMyStatusText('');
     setShowAddStatus(false);
+    // Persist to DB
+    try { const { data: session } = await getSession(); const userId = session?.session?.user?.id; if (userId) await dbCreateStatus({ author_id: userId, text: s.text, background: s.bg }); } catch {}
   };
 
-  const deleteMyStatus = (idx: number) => {
+  const deleteMyStatus = async (idx: number) => {
+    const status = myStatuses[idx];
     const updated = myStatuses.filter((_,i) => i !== idx);
     setMyStatuses(updated);
     try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
     setViewingStatus(null);
+    // Persist to DB
+    try { if ((status as any).dbId) await dbDeleteStatus((status as any).dbId); } catch {}
   };
 
   const [editingStatusIdx, setEditingStatusIdx] = useState<number|null>(null);
@@ -306,13 +323,16 @@ export default function HomePage() {
     setViewingStatus(null);
   };
 
-  const saveEditStatus = () => {
+  const saveEditStatus = async () => {
     if (editingStatusIdx === null || !editStatusText.trim()) return;
+    const status = myStatuses[editingStatusIdx];
     const updated = myStatuses.map((s,i) => i === editingStatusIdx ? {...s, text: editStatusText.trim()} : s);
     setMyStatuses(updated);
     try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
     setEditingStatusIdx(null);
     setEditStatusText('');
+    // Persist to DB
+    try { if ((status as any).dbId) await dbUpdateStatus((status as any).dbId, editStatusText.trim()); } catch {}
   };
 
   /* ═══ Reels preview for home page ═══ */

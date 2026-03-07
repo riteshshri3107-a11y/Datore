@@ -70,6 +70,10 @@ export async function getComments(postId: string) {
 export async function createComment(comment: { post_id: string; author_id: string; author_name: string; text: string }) {
   return supabase.from('comments').insert(comment).select().single();
 }
+export async function deleteComment(commentId: string) { return supabase.from('comments').delete().eq('id', commentId); }
+export async function updateComment(commentId: string, text: string) {
+  return supabase.from('comments').update({ text }).eq('id', commentId);
+}
 
 // ═══ JOBS ═══
 export async function createJob(job: any) { return supabase.from('jobs').insert(job).select().single(); }
@@ -109,6 +113,43 @@ export async function getMyListings(userId: string) {
   return data || [];
 }
 export async function deleteListing(id: string) { return supabase.from('listings').delete().eq('id', id); }
+export async function updateListing(id: string, updates: any) {
+  return supabase.from('listings').update(updates).eq('id', id);
+}
+
+// ═══ REELS ═══
+export async function createReel(reel: { author_id: string; author_name: string; caption: string; duration?: string; filter?: string; music?: string; hashtags?: string[]; audience?: string; media_url?: string }) {
+  return supabase.from('reels').insert({ audience: 'public', ...reel }).select().single();
+}
+export async function getReels(limit: number = 50) {
+  const { data } = await supabase.from('reels').select('*').order('created_at', { ascending: false }).limit(limit);
+  return data || [];
+}
+export async function getMyReels(userId: string) {
+  const { data } = await supabase.from('reels').select('*').eq('author_id', userId).order('created_at', { ascending: false });
+  return data || [];
+}
+export async function deleteReel(id: string) { return supabase.from('reels').delete().eq('id', id); }
+export async function updateReel(id: string, updates: { caption?: string }) {
+  return supabase.from('reels').update(updates).eq('id', id);
+}
+
+// ═══ STATUSES ═══
+export async function createStatus(status: { author_id: string; text: string; background?: string }) {
+  return supabase.from('statuses').insert(status).select().single();
+}
+export async function getStatuses(limit: number = 50) {
+  const { data } = await supabase.from('statuses').select('*').order('created_at', { ascending: false }).limit(limit);
+  return data || [];
+}
+export async function getMyStatuses(userId: string) {
+  const { data } = await supabase.from('statuses').select('*').eq('author_id', userId).order('created_at', { ascending: false });
+  return data || [];
+}
+export async function deleteStatus(id: string) { return supabase.from('statuses').delete().eq('id', id); }
+export async function updateStatus(id: string, text: string) {
+  return supabase.from('statuses').update({ text }).eq('id', id);
+}
 
 // ═══ WORKERS ═══
 export async function searchWorkers(filters: any = {}) {
@@ -157,6 +198,10 @@ export async function createChatRoom(user1Id: string, user2Id: string, jobId?: s
   if (existing) return existing;
   const { data } = await supabase.from('chat_rooms').insert({ user1_id: user1Id, user2_id: user2Id, job_id: jobId }).select().single();
   return data;
+}
+export async function deleteMessage(messageId: string) { return supabase.from('messages').delete().eq('id', messageId); }
+export async function updateMessage(messageId: string, content: string) {
+  return supabase.from('messages').update({ content, edited: true }).eq('id', messageId);
 }
 export function subscribeToMessages(roomId: string, callback: (msg: any) => void) {
   return supabase.channel('room-' + roomId)
@@ -255,6 +300,9 @@ export async function getCommunities() {
 }
 export async function createCommunity(community: any) { return supabase.from('communities').insert(community).select().single(); }
 export async function deleteCommunity(id: string) { return supabase.from('communities').delete().eq('id', id); }
+export async function updateCommunity(id: string, updates: { name?: string; description?: string }) {
+  return supabase.from('communities').update(updates).eq('id', id);
+}
 
 // ═══ BUDDY GROUPS ═══
 export async function getBuddyGroups(userId: string) {

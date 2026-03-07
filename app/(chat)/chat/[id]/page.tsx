@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { CHAT_CONTACTS, AUTO_REPLIES } from '@/lib/demoData';
 import { IcoBack, IcoCamera, IcoImage, IcoMic, IcoSend, IcoPlay, IcoStop, IcoVideo } from '@/components/Icons';
-import { sendMessage as persistMessage, getChatMessages, subscribeToMessages, getSession } from '@/lib/supabase';
+import { sendMessage as persistMessage, getChatMessages, subscribeToMessages, getSession, deleteMessage as dbDeleteMessage, updateMessage as dbUpdateMessage } from '@/lib/supabase';
 
 type Msg = { text:string; fromMe:boolean; time:string; type?:'text'|'image'|'video'|'audio'; media?:string; };
 
@@ -89,9 +89,12 @@ export default function ChatPage() {
     autoReply();
   };
 
-  const deleteMessage = (idx: number) => {
+  const deleteMessage = async (idx: number) => {
+    const msg = messages[idx];
     setMessages(p=>p.filter((_,i)=>i!==idx));
     setMsgMenu(null);
+    // Persist to DB
+    try { if (msg.dbId) await dbDeleteMessage(msg.dbId); } catch {}
   };
 
   const startEditMessage = (idx: number) => {
@@ -100,11 +103,14 @@ export default function ChatPage() {
     setMsgMenu(null);
   };
 
-  const saveEditMessage = () => {
+  const saveEditMessage = async () => {
     if (editingMsg === null || !editMsgText.trim()) return;
+    const msg = messages[editingMsg];
     setMessages(p=>p.map((m,i)=>i===editingMsg?{...m,text:editMsgText.trim()}:m));
     setEditingMsg(null);
     setEditMsgText('');
+    // Persist to DB
+    try { if (msg.dbId) await dbUpdateMessage(msg.dbId, editMsgText.trim()); } catch {}
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>, type:'image'|'video') => {

@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { getJoinedCommunities, toggleCommunity } from '@/lib/demoData';
 import { IcoBack, IcoShield, IcoSearch, IcoMic } from '@/components/Icons';
-import { createCommunity, createPost, getSession } from '@/lib/supabase';
+import { createCommunity, createPost, getSession, deleteCommunity as dbDeleteCommunity, updateCommunity as dbUpdateCommunity, deletePost as dbDeletePost, updatePost as dbUpdatePost } from '@/lib/supabase';
 
 /* ─── AI SAFETY ENGINE ─── */
 const THREAT_DB: Record<string,string[]> = {
@@ -127,10 +127,10 @@ export default function CommunityPage() {
   const handleCreate = async () => { const r=groupPurposeCheck(newName,newDesc); setCreateRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createCommunity({ name:newName, description:newDesc, created_by:userId, is_public:true, member_count:1 }); const newGroup = { id:'ug-'+Date.now(), name:newName, desc:newDesc, members:1, emoji:GT[newType].i, type:newType, verified:false, rules:['Be respectful'], admin:'You', vis:newVis, approval:false, safetyScore:100, lastActive:'Just now', posts:[] as GPost[] }; setUserGroups(p=>[newGroup,...p]); setNewName('');setNewDesc('');setCreateRes(null);setTab('discover');} };
   const handlePost = async () => { const r=aiScan(postText); setPostRes(r); if(r.safe){ const { data: session } = await getSession(); const userId = session?.session?.user?.id || 'anonymous'; await createPost({ text:postText, author_id:userId, author_name:'User', audience:'public' }); const newPost:GPost = { id:'up-'+Date.now(), author:'You', avatar:'Y', content:postText, time:'Just now', likes:0, replies:0, vis:postVis }; setUserPosts(p=>[newPost,...p]); setPostText('');setPostRes(null);} };
 
-  const deleteUserPost = (id:string) => setUserPosts(p=>p.filter(x=>x.id!==id));
-  const saveEditPost = (id:string) => { if(!editPostText.trim()) return; const r=aiScan(editPostText); if(!r.safe){ setPostRes(r); return; } setUserPosts(p=>p.map(x=>x.id===id?{...x,content:editPostText.trim()}:x)); setEditingPost(null); setEditPostText(''); };
-  const deleteUserGroup = (id:string) => { setUserGroups(p=>p.filter(x=>x.id!==id)); if(selGroup===id) setSelGroup(null); };
-  const saveEditGroup = (id:string) => { if(!editGroupName.trim()) return; const r=groupPurposeCheck(editGroupName,editGroupDesc); if(!r.safe){ setCreateRes(r); return; } setUserGroups(p=>p.map(x=>x.id===id?{...x,name:editGroupName.trim(),desc:editGroupDesc.trim()}:x)); setEditingGroup(null); };
+  const deleteUserPost = async (id:string) => { setUserPosts(p=>p.filter(x=>x.id!==id)); try { await dbDeletePost(id); } catch {} };
+  const saveEditPost = async (id:string) => { if(!editPostText.trim()) return; const r=aiScan(editPostText); if(!r.safe){ setPostRes(r); return; } setUserPosts(p=>p.map(x=>x.id===id?{...x,content:editPostText.trim()}:x)); setEditingPost(null); setEditPostText(''); try { await dbUpdatePost(id, editPostText.trim()); } catch {} };
+  const deleteUserGroup = async (id:string) => { setUserGroups(p=>p.filter(x=>x.id!==id)); if(selGroup===id) setSelGroup(null); try { await dbDeleteCommunity(id); } catch {} };
+  const saveEditGroup = async (id:string) => { if(!editGroupName.trim()) return; const r=groupPurposeCheck(editGroupName,editGroupDesc); if(!r.safe){ setCreateRes(r); return; } setUserGroups(p=>p.map(x=>x.id===id?{...x,name:editGroupName.trim(),desc:editGroupDesc.trim()}:x)); setEditingGroup(null); try { await dbUpdateCommunity(id, {name:editGroupName.trim(),description:editGroupDesc.trim()}); } catch {} };
 
   return (
     <div className="space-y-4 animate-fade-in">

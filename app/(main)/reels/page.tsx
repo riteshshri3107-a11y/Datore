@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useThemeStore } from "@/store/useThemeStore";
 import { getTheme } from "@/lib/theme";
 import { IcoBack, IcoHeart, IcoChat, IcoSend, IcoUser, IcoBookmark, IcoMusic, IcoMic, IcoClose } from "@/components/Icons";
+import { createReel as dbCreateReel, deleteReel as dbDeleteReel, getSession } from "@/lib/supabase";
 
 interface Reel {
   id: string;
@@ -118,7 +119,7 @@ export default function ReelsPage() {
     setShowShare(false);
   }
 
-  function publishReel() {
+  async function publishReel() {
     var newReel: Reel = {
       id: "my-" + Date.now(), user: "You", verified: false, caption: reelCaption || "My new reel",
       likes: 0, comments: 0, shares: 0, saves: 0, cat: "Lifestyle", duration: reelDuration,
@@ -132,10 +133,18 @@ export default function ReelsPage() {
     setReelMusic("");
     setReelTags("");
     setReelFilter("None");
+    // Persist to DB
+    try {
+      var sess = await getSession();
+      var userId = sess?.data?.session?.user?.id;
+      if (userId) await dbCreateReel({ author_id: userId, author_name: "You", caption: newReel.caption, duration: newReel.duration, music: newReel.music, hashtags: newReel.hashtags, audience: reelAudience });
+    } catch(e) {}
   }
 
-  function deleteMyReel(reelId: string) {
+  async function deleteMyReel(reelId: string) {
     setMyReels(function(p) { return p.filter(function(r) { return r.id !== reelId; }); });
+    // Persist to DB
+    try { await dbDeleteReel(reelId); } catch(e) {}
   }
 
   function deleteMyComment(reelId: string, idx: number) {
