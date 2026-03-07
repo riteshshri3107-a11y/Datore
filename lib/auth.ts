@@ -108,17 +108,17 @@ export async function secureSignUp(email: string, password: string, full_name: s
   });
 
   if (data?.user && !error) {
-    // Create profile with default trust score
+    // Create profile (trigger handle_new_user already creates it, upsert as fallback)
     await supabase.from('profiles').upsert({
       id: data.user.id,
       email,
-      full_name,
-      role: 'user',
-      trust_score: 50,
-      is_verified: false,
-      mfa_enabled: false,
+      name: full_name,
+      role: 'buyer',
+      status: 'active',
+      verified: false,
+      member_since: new Date().getFullYear().toString(),
       created_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'id' });
     await logAuthEvent(data.user.id, 'sign_up', { device:generateDeviceFingerprint().hash });
   }
 
@@ -175,11 +175,11 @@ export async function getValidatedSession(): Promise<AuthSession> {
     const authUser: AuthUser = {
       id: session.user.id,
       email: session.user.email || '',
-      full_name: profile?.full_name || session.user.user_metadata?.full_name || '',
-      role: profile?.role || 'user',
-      trust_score: profile?.trust_score || 50,
-      is_verified: profile?.is_verified || false,
-      mfa_enabled: profile?.mfa_enabled || false,
+      full_name: profile?.name || session.user.user_metadata?.full_name || '',
+      role: (profile?.role as UserRole) || 'user',
+      trust_score: profile?.rating || 50,
+      is_verified: profile?.verified || false,
+      mfa_enabled: false,
       avatar_url: profile?.avatar_url,
       created_at: profile?.created_at || session.user.created_at,
       last_sign_in: new Date().toISOString(),
