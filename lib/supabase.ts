@@ -33,10 +33,18 @@ export async function updateProfile(userId: string, updates: any) {
 
 // ═══ POSTS (replaces localStorage datore-user-posts) ═══
 export async function createPost(post: { author_id: string; author_name: string; text: string; text_cleaned?: string; audience?: string; type?: string; media_url?: string }) {
-  return supabase.from('posts').insert({ audience: 'public', type: 'text', ...post }).select().single();
+  const { author_id, author_name, text, text_cleaned, audience, type, media_url, ...rest } = post;
+  return supabase.from('posts').insert({
+    user_id: author_id,
+    content: text,
+    visibility: audience || 'public',
+    post_type: type || 'regular',
+    media_urls: media_url ? [media_url] : [],
+    ...rest
+  }).select().single();
 }
 export async function getPosts(audience: string = 'public', limit: number = 50) {
-  const { data } = await supabase.from('posts').select('*').eq('audience', audience)
+  const { data } = await supabase.from('posts').select('*').eq('visibility', audience)
     .order('created_at', { ascending: false }).limit(limit);
   return data || [];
 }
@@ -46,33 +54,34 @@ export async function getAllFeedPosts(limit: number = 50) {
   return data || [];
 }
 export async function getMyPosts(userId: string) {
-  const { data } = await supabase.from('posts').select('*').eq('author_id', userId)
+  const { data } = await supabase.from('posts').select('*').eq('user_id', userId)
     .order('created_at', { ascending: false });
   return data || [];
 }
 export async function deletePost(postId: string) { return supabase.from('posts').delete().eq('id', postId); }
 export async function updatePost(postId: string, text: string, textCleaned?: string) {
-  return supabase.from('posts').update({ text, text_cleaned: textCleaned || text }).eq('id', postId);
+  return supabase.from('posts').update({ content: text, updated_at: new Date().toISOString() }).eq('id', postId);
 }
 
 // ═══ LIKES ═══
 export async function toggleLike(userId: string, postId: string) {
-  const { data: existing } = await supabase.from('likes').select('id').eq('user_id', userId).eq('post_id', postId).single();
+  const { data: existing } = await supabase.from('likes').select('id').eq('user_id', userId).eq('target_id', postId).single();
   if (existing) { await supabase.from('likes').delete().eq('id', existing.id); return false; }
-  else { await supabase.from('likes').insert({ user_id: userId, post_id: postId }); return true; }
+  else { await supabase.from('likes').insert({ user_id: userId, target_id: postId, target_type: 'post' }); return true; }
 }
 
 // ═══ COMMENTS (replaces localStorage datore-comments-*) ═══
 export async function getComments(postId: string) {
-  const { data } = await supabase.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+  const { data } = await supabase.from('comments').select('*').eq('target_id', postId).order('created_at', { ascending: true });
   return data || [];
 }
 export async function createComment(comment: { post_id: string; author_id: string; author_name: string; text: string }) {
-  return supabase.from('comments').insert(comment).select().single();
+  const { post_id, author_id, author_name, text } = comment;
+  return supabase.from('comments').insert({ target_id: post_id, target_type: 'post', user_id: author_id, content: text }).select().single();
 }
 export async function deleteComment(commentId: string) { return supabase.from('comments').delete().eq('id', commentId); }
 export async function updateComment(commentId: string, text: string) {
-  return supabase.from('comments').update({ text }).eq('id', commentId);
+  return supabase.from('comments').update({ content: text, updated_at: new Date().toISOString() }).eq('id', commentId);
 }
 
 // ═══ JOBS ═══
@@ -119,14 +128,15 @@ export async function updateListing(id: string, updates: any) {
 
 // ═══ REELS ═══
 export async function createReel(reel: { author_id: string; author_name: string; caption: string; duration?: string; filter?: string; music?: string; hashtags?: string[]; audience?: string; media_url?: string }) {
-  return supabase.from('reels').insert({ audience: 'public', ...reel }).select().single();
+  const { author_id, media_url, duration, ...rest } = reel;
+  return supabase.from('reels').insert({ user_id: author_id, video_url: media_url || '', duration_seconds: duration ? parseInt(duration) || 0 : 0, audience: 'public', ...rest }).select().single();
 }
 export async function getReels(limit: number = 50) {
   const { data } = await supabase.from('reels').select('*').order('created_at', { ascending: false }).limit(limit);
   return data || [];
 }
 export async function getMyReels(userId: string) {
-  const { data } = await supabase.from('reels').select('*').eq('author_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('reels').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return data || [];
 }
 export async function deleteReel(id: string) { return supabase.from('reels').delete().eq('id', id); }
@@ -184,12 +194,13 @@ export async function getChatRooms(userId: string) {
   return data || [];
 }
 export async function getChatMessages(roomId: string) {
-  const { data } = await supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true });
+  const { data } = await supabase.from('messages').select('*').eq('chat_room_id', roomId).order('created_at', { ascending: true });
   return data || [];
 }
 export async function sendMessage(msg: { room_id: string; sender_id: string; sender_name: string; content: string }) {
-  const { data } = await supabase.from('messages').insert(msg).select().single();
-  await supabase.from('chat_rooms').update({ last_message: msg.content, last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', msg.room_id);
+  const { room_id, ...rest } = msg;
+  const { data } = await supabase.from('messages').insert({ chat_room_id: room_id, ...rest }).select().single();
+  await supabase.from('chat_rooms').update({ last_message: msg.content, last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', room_id);
   return data;
 }
 export async function createChatRoom(user1Id: string, user2Id: string, jobId?: string) {
@@ -205,7 +216,7 @@ export async function updateMessage(messageId: string, content: string) {
 }
 export function subscribeToMessages(roomId: string, callback: (msg: any) => void) {
   return supabase.channel('room-' + roomId)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'room_id=eq.' + roomId }, (payload: any) => callback(payload.new))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'chat_room_id=eq.' + roomId }, (payload: any) => callback(payload.new))
     .subscribe();
 }
 
