@@ -88,16 +88,24 @@ export default function ChatBot() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     setListening(true);
+    // Auto-stop after 10s to prevent hanging on mobile
+    const timeout = setTimeout(() => {
+      try { recognition.stop(); } catch {}
+      setListening(false);
+      setMsgs(p => [...p, { text:"Didn't hear anything. Tap the mic to try again.", fromMe:false, time:getTime() }]);
+    }, 10000);
     recognition.onresult = (event: any) => {
+      clearTimeout(timeout);
       const transcript = event.results[0][0].transcript;
       setListening(false);
       if (transcript) send(transcript);
     };
     recognition.onerror = () => {
+      clearTimeout(timeout);
       setListening(false);
       setMsgs(p => [...p, { text:"Couldn't catch that. Please try again or type your question.", fromMe:false, time:getTime() }]);
     };
-    recognition.onend = () => setListening(false);
+    recognition.onend = () => { clearTimeout(timeout); setListening(false); };
     recognition.start();
   };
 
