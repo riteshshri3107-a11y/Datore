@@ -20,6 +20,39 @@ export default function TopNav() {
   const muted = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
 
   return (
+    <>
+    {/* ─── Mobile top bar (portrait) ─── */}
+    <div className="sticky top-0 z-50 md:hidden" style={{
+      background: isDark ? 'rgba(12,12,22,0.92)' : 'rgba(255,255,255,0.95)',
+      backdropFilter: 'blur(24px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+      borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+    }}>
+      <div className="flex items-center justify-between px-4" style={{height:48}}>
+        <div onClick={()=>router.push('/home')} className="flex items-center gap-2 cursor-pointer">
+          <img src="/logo-128.png" alt="Datore" style={{ width:32, height:32, borderRadius:8, boxShadow:'0 2px 8px rgba(99,102,241,0.3)' }} />
+          <span style={{
+            fontWeight:800, fontSize:17, letterSpacing:-0.5,
+            background:'linear-gradient(135deg,#6366f1,#a78bfa)',
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'
+          }}>Datore</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={()=>router.push('/search')} style={{width:34,height:34,borderRadius:10,background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <IcoSearch size={18} color={!!pathname?.startsWith('/search') ? '#6366f1' : muted} />
+          </button>
+          <button onClick={()=>router.push('/notifications')} className="relative" style={{width:34,height:34,borderRadius:10,background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <IcoBell size={18} color={!!pathname?.startsWith('/notifications') ? '#6366f1' : muted} />
+            <span style={{position:'absolute',top:4,right:4,width:7,height:7,borderRadius:'50%',background:'#ef4444',border:`2px solid ${isDark?'rgba(12,12,22,0.92)':'#fff'}`}} />
+          </button>
+          <button onClick={()=>router.push('/profile')} style={{width:34,height:34,borderRadius:10,background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <IcoUser size={18} color={!!pathname?.startsWith('/profile') ? '#6366f1' : muted} />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* ─── Desktop top nav ─── */}
     <nav className="sticky top-0 z-50 hidden md:block" style={{
       background: isDark ? 'rgba(12,12,22,0.92)' : 'rgba(255,255,255,0.95)',
       backdropFilter: 'blur(24px) saturate(180%)',
@@ -32,17 +65,7 @@ export default function TopNav() {
         <div className="flex items-center gap-3 shrink-0">
           {/* Logo */}
           <div onClick={()=>router.push('/home')} className="flex items-center gap-2.5 cursor-pointer mr-2">
-            <div style={{
-              width:36, height:36,
-              clipPath: hexClip,
-              background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              boxShadow:'0 2px 12px rgba(99,102,241,0.35)',
-            }}>
-              <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
-                <path d="M15 8.134a1 1 0 010 1.732l-13 7.5A1 1 0 010 16.5v-15A1 1 0 012 .634l13 7.5z" fill="white"/>
-              </svg>
-            </div>
+            <img src="/logo-128.png" alt="Datore" style={{ width:36, height:36, borderRadius:10, boxShadow:'0 2px 12px rgba(99,102,241,0.35)' }} />
             <span style={{
               fontWeight:800, fontSize:19, letterSpacing:-0.5,
               background:'linear-gradient(135deg,#6366f1,#a78bfa)',
@@ -95,6 +118,7 @@ export default function TopNav() {
         </div>
       </div>
     </nav>
+    </>
   );
 }
 

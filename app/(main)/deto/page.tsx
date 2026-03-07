@@ -255,8 +255,35 @@ export default function DetoPage() {
   const cancelPost = () => { if(pendingPost) { addMsg('deto','Post discarded. I can draft a new one anytime! 📝'); setPendingPost(null); } };
 
   const toggleVoice = () => {
-    if(isListening) { setIsListening(false); sendMessage('Hey Deto, create a babysitter job for tomorrow at 3pm, budget $50'); }
-    else { setIsListening(true); setTimeout(()=>{ setIsListening(false); sendMessage('Set an alarm for tomorrow at 8:35 AM for my doctor appointment'); },3000); }
+    if(isListening) { setIsListening(false); return; }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      addMsg('deto',"Sorry, your browser doesn't support speech recognition. Try Chrome or Edge.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    setIsListening(true);
+    const timeout = setTimeout(() => {
+      try { recognition.stop(); } catch {}
+      setIsListening(false);
+      addMsg('deto',"Didn't hear anything. Tap the mic to try again.");
+    }, 10000);
+    recognition.onresult = (event: any) => {
+      clearTimeout(timeout);
+      const transcript = event.results[0][0].transcript;
+      setIsListening(false);
+      if (transcript) sendMessage(transcript);
+    };
+    recognition.onerror = () => {
+      clearTimeout(timeout);
+      setIsListening(false);
+      addMsg('deto',"Couldn't catch that. Please try again or type your message.");
+    };
+    recognition.onend = () => { clearTimeout(timeout); setIsListening(false); };
+    recognition.start();
   };
 
   return (

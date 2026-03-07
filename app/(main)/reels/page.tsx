@@ -156,7 +156,10 @@ export default function ReelsPage() {
             );
           })}
         </div>
-        <button onClick={voiceS} style={{ background: voiceSrch ? "rgba(239,68,68,0.15)" : "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8 }}>
+        <button onClick={function() { setShowCreate(true); }} style={{ padding: "5px 12px", borderRadius: 10, background: "linear-gradient(135deg," + t.accent + ",#ef4444)", color: "white", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" as const, flexShrink: 0 }}>
+          + Create
+        </button>
+        <button onClick={voiceS} style={{ background: voiceSrch ? "rgba(239,68,68,0.15)" : "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8, flexShrink: 0 }}>
           <IcoMic size={16} color={voiceSrch ? "#ef4444" : t.textMuted} />
         </button>
       </div>
