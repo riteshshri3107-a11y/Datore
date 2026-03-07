@@ -7,6 +7,7 @@ import { getTheme } from '@/lib/theme';
 import { search, indexBulk, suggest, getTrending, recordSearch, getIndexStats, type SearchableType, type SearchFilters } from '@/lib/search';
 import { DEMO_WORKERS, DEMO_JOBS } from '@/lib/demoData';
 import { IcoBack, IcoSearch, IcoMic, IcoClose } from '@/components/Icons';
+import { searchWorkers, getJobs, getListings, getCommunities } from '@/lib/supabase';
 
 const TYPE_COLORS: Record<SearchableType, {color:string;icon:string}> = {
   worker: { color:'#22c55e', icon:'👷' },
@@ -53,6 +54,19 @@ export default function UniversalSearch() {
       ],
     ];
     indexBulk(docs);
+    // Also load real data from Supabase
+    (async () => {
+      try {
+        const [workers, jobs, listings, communities] = await Promise.all([searchWorkers(), getJobs(), getListings(), getCommunities()]);
+        const dbDocs = [
+          ...workers.map((w: any) => ({ id:`dbw_${w.id}`, type:'worker' as SearchableType, title:w.full_name || w.display_name, body:`${w.bio||''} ${(w.skills||[]).join(' ')}`, tags:w.skills||[], category:'Workers', location:w.city, rating:w.rating, metadata:{ path:`/worker/${w.id}` } })),
+          ...jobs.map((j: any) => ({ id:`dbj_${j.id}`, type:'job' as SearchableType, title:j.title, body:j.description||'', tags:[j.category].filter(Boolean), category:j.category||'Jobs', location:j.location, metadata:{ path:`/jobplace/job/${j.id}` } })),
+          ...listings.map((l: any) => ({ id:`dbl_${l.id}`, type:'listing' as SearchableType, title:l.title, body:l.description||'', tags:[l.category].filter(Boolean), category:l.category||'Listings', metadata:{ path:`/marketplace/${l.id}` } })),
+          ...communities.map((c: any) => ({ id:`dbc_${c.id}`, type:'community' as SearchableType, title:c.name, body:c.description||'', tags:[], category:'Communities', metadata:{ path:`/community/${c.id}` } })),
+        ];
+        if (dbDocs.length > 0) indexBulk(dbDocs);
+      } catch {}
+    })();
   }, []);
 
   const doSearch = (q: string) => {
@@ -87,7 +101,19 @@ export default function UniversalSearch() {
           <IcoSearch size={18} color={query?t.accent:t.textMuted} />
           <input ref={inputRef} value={query} onChange={e => handleInputChange(e.target.value)} onKeyDown={e => e.key==='Enter' && doSearch(query)} placeholder="Search workers, jobs, services, communities..." className="flex-1 text-sm outline-none bg-transparent" style={{ color:t.text }} autoFocus />
           {query && <button onClick={() => { setQuery(''); setResults(null); setSuggestions([]); inputRef.current?.focus(); }}><IcoClose size={16} color={t.textMuted} /></button>}
-          <button onClick={() => { setVoiceSrch(true); setTimeout(() => { setVoiceSrch(false); setQuery('plumber'); doSearch('plumber'); }, 2000); }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.06)' }}>
+          <button onClick={() => {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            if (!SpeechRecognition) { setQuery('plumber'); doSearch('plumber'); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            setVoiceSrch(true);
+            recognition.onresult = (event: any) => { const transcript = event.results[0][0].transcript; setQuery(transcript); doSearch(transcript); };
+            recognition.onerror = () => setVoiceSrch(false);
+            recognition.onend = () => setVoiceSrch(false);
+            recognition.start();
+          }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:voiceSrch?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.06)' }}>
             <IcoMic size={16} color={voiceSrch?'#ef4444':'#8b5cf6'} />
           </button>
         </div>

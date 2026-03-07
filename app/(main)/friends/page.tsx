@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { DEMO_WORKERS, getFriends, toggleFriend, getBlockedUsers, toggleBlock } from '@/lib/demoData';
+import { sendFriendRequest, respondFriendRequest, getSession } from '@/lib/supabase';
 import { IcoBack, IcoSearch, IcoShield, IcoUser, IcoChat, IcoMic } from '@/components/Icons';
 
 /* FRIENDS PAGE — Privacy-First Discovery
@@ -96,10 +97,10 @@ export default function FriendsPage() {
 
   const handleToggleFriend = (id:string) => { toggleFriend(id); setFriendIds(getFriends()); };
   const handleToggleBlock = (id:string) => { toggleBlock(id); setBlockedIds(getBlockedUsers()); };
-  const sendRequest = (id:string) => setSentRequests(p=>[...p,id]);
+  const sendRequest = async (id:string) => { setSentRequests(p=>[...p,id]); const { data: session } = await getSession(); const userId = session?.session?.user?.id; if (userId) await sendFriendRequest(userId, id); };
   const cancelRequest = (id:string) => setSentRequests(p=>p.filter(x=>x!==id));
-  const acceptRequest = (id:string) => setAcceptedRequests(p=>[...p,id]);
-  const declineRequest = (id:string) => setDeclinedRequests(p=>[...p,id]);
+  const acceptRequest = async (id:string) => { setAcceptedRequests(p=>[...p,id]); await respondFriendRequest(id, true); };
+  const declineRequest = async (id:string) => { setDeclinedRequests(p=>[...p,id]); await respondFriendRequest(id, false); };
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setVoiceSrch(false);setSearch('tutoring');},2000); };
 
   const pendingIn = incomingRequests.filter(r=>!acceptedRequests.includes(r.id)&&!declinedRequests.includes(r.id));

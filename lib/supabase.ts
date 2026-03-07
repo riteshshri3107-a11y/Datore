@@ -214,6 +214,22 @@ export async function getTransactions(userId: string) {
   const { data } = await supabase.from('wallet_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   return data || [];
 }
+export async function addWalletTokens(userId: string, amount: number) {
+  const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', userId).single();
+  const newAvailable = (wallet?.available || 0) + amount;
+  await supabase.from('wallets').upsert({ user_id: userId, available: newAvailable, escrowed: wallet?.escrowed || 0, pending: wallet?.pending || 0 }, { onConflict: 'user_id' });
+  await supabase.from('wallet_transactions').insert({ user_id: userId, type: 'purchase', description: `Token Purchase (+$${amount})`, amount });
+  return { available: newAvailable, escrowed: wallet?.escrowed || 0, pending: wallet?.pending || 0, earned: newAvailable + (wallet?.escrowed || 0) };
+}
+export async function withdrawWalletTokens(userId: string, amount: number) {
+  const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', userId).single();
+  if (!wallet || wallet.available < amount) return { error: 'Insufficient balance' };
+  const newAvailable = wallet.available - amount;
+  const newPending = (wallet.pending || 0) + amount;
+  await supabase.from('wallets').update({ available: newAvailable, pending: newPending }).eq('user_id', userId);
+  await supabase.from('wallet_transactions').insert({ user_id: userId, type: 'withdraw', description: 'Withdrawal to bank', amount: -amount });
+  return { available: newAvailable, escrowed: wallet.escrowed || 0, pending: newPending, earned: newAvailable + (wallet.escrowed || 0) };
+}
 
 // ═══ FRIENDS ═══
 export async function sendFriendRequest(fromId: string, toId: string) {

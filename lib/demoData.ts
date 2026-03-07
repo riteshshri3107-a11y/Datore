@@ -206,3 +206,211 @@ export function setFavorites(ids:string[]) { if(typeof window==='undefined') ret
 export function toggleFavorite(id:string): boolean { const f=getFavorites(); const is=f.includes(id); if(is){setFavorites(f.filter(x=>x!==id));}else{setFavorites([...f,id]);} return !is; }
 export function getJoinedCommunities(): string[] { if(typeof window==='undefined') return[]; try{return JSON.parse(localStorage.getItem('datore-joined')||'[]');}catch{return[];} }
 export function toggleCommunity(id:string): boolean { const j=getJoinedCommunities(); const is=j.includes(id); const u=is?j.filter(x=>x!==id):[...j,id]; if(typeof window!=='undefined'){try{localStorage.setItem('datore-joined',JSON.stringify(u));}catch{}} return !is; }
+
+// ═══ BUDDY GROUPS (localStorage persistence for BR-BG-001 / BR-BG-002) ═══
+export interface BuddyGroupMember {
+  id: string;
+  name: string;
+  avatar: string;
+  role: 'admin' | 'member';
+  joinedAt: string;
+}
+
+export interface StoredBuddyGroup {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  cat: string;
+  vis: 'open' | 'closed' | 'invite_only';
+  memberList: BuddyGroupMember[];
+  createdBy: string;
+  createdAt: string;
+  isOwner: boolean;
+  joined: boolean;
+}
+
+export interface BuddyGroupInvite {
+  id: string;
+  groupId: string;
+  groupName: string;
+  invitedUserId: string;
+  invitedUserName: string;
+  invitedBy: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+}
+
+export interface BuddyGroupPost {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupIcon: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  text: string;
+  visibility: string;
+  createdAt: string;
+  likes: number;
+  comments: number;
+}
+
+const BUDDY_GROUPS_STORAGE_KEY = 'datore-buddy-groups';
+const BUDDY_INVITES_STORAGE_KEY = 'datore-buddy-invites';
+const BUDDY_POSTS_STORAGE_KEY = 'datore-buddy-posts';
+
+export function getUserBuddyGroups(): StoredBuddyGroup[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(BUDDY_GROUPS_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+export function addUserBuddyGroup(group: Omit<StoredBuddyGroup, 'id' | 'createdAt' | 'memberList' | 'isOwner' | 'joined'>): StoredBuddyGroup {
+  const now = new Date().toISOString();
+  const newGroup: StoredBuddyGroup = {
+    ...group,
+    id: 'ubg' + Date.now(),
+    createdAt: now,
+    memberList: [{ id: 'me', name: group.createdBy || 'You', avatar: 'ME', role: 'admin', joinedAt: now }],
+    isOwner: true,
+    joined: true,
+  };
+  const groups = getUserBuddyGroups();
+  groups.unshift(newGroup);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+  return newGroup;
+}
+
+export function deleteUserBuddyGroup(id: string) {
+  const groups = getUserBuddyGroups().filter(g => g.id !== id);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+  // Also clean up posts for this group
+  const posts = getBuddyGroupPosts().filter(p => p.groupId !== id);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_POSTS_STORAGE_KEY, JSON.stringify(posts)); } catch {}
+  }
+}
+
+export function updateUserBuddyGroup(id: string, updates: Partial<StoredBuddyGroup>) {
+  const groups = getUserBuddyGroups().map(g => g.id === id ? { ...g, ...updates } : g);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+}
+
+// BG-FR-003: Add member to group and update count dynamically
+export function addMemberToBuddyGroup(groupId: string, member: Omit<BuddyGroupMember, 'joinedAt'>): boolean {
+  const groups = getUserBuddyGroups();
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return false;
+  if (group.memberList.some(m => m.id === member.id)) return false; // already a member
+  group.memberList.push({ ...member, joinedAt: new Date().toISOString() });
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+  return true;
+}
+
+export function removeMemberFromBuddyGroup(groupId: string, memberId: string): boolean {
+  const groups = getUserBuddyGroups();
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return false;
+  group.memberList = group.memberList.filter(m => m.id !== memberId);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_GROUPS_STORAGE_KEY, JSON.stringify(groups)); } catch {}
+  }
+  return true;
+}
+
+// BG-FR-004: Invite system
+export function getBuddyGroupInvites(): BuddyGroupInvite[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(BUDDY_INVITES_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+export function createBuddyGroupInvite(invite: Omit<BuddyGroupInvite, 'id' | 'createdAt' | 'status'>): BuddyGroupInvite {
+  const newInvite: BuddyGroupInvite = {
+    ...invite,
+    id: 'inv' + Date.now() + Math.random().toString(36).slice(2, 6),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+  const invites = getBuddyGroupInvites();
+  invites.unshift(newInvite);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_INVITES_STORAGE_KEY, JSON.stringify(invites)); } catch {}
+  }
+  return newInvite;
+}
+
+export function acceptBuddyGroupInvite(inviteId: string): boolean {
+  const invites = getBuddyGroupInvites();
+  const invite = invites.find(i => i.id === inviteId);
+  if (!invite || invite.status !== 'pending') return false;
+  invite.status = 'accepted';
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_INVITES_STORAGE_KEY, JSON.stringify(invites)); } catch {}
+  }
+  // Add the user as a member
+  addMemberToBuddyGroup(invite.groupId, {
+    id: invite.invitedUserId,
+    name: invite.invitedUserName,
+    avatar: invite.invitedUserName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+    role: 'member',
+  });
+  return true;
+}
+
+export function generateInviteLink(groupId: string): string {
+  return `https://datore.vercel.app/buddy-groups/invite/${groupId}`;
+}
+
+// BG-FR-005: Buddy group posts persistence
+export function getBuddyGroupPosts(): BuddyGroupPost[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(BUDDY_POSTS_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+export function addBuddyGroupPost(post: Omit<BuddyGroupPost, 'id' | 'createdAt' | 'likes' | 'comments'>): BuddyGroupPost {
+  const newPost: BuddyGroupPost = {
+    ...post,
+    id: 'bgp' + Date.now(),
+    createdAt: new Date().toISOString(),
+    likes: 0,
+    comments: 0,
+  };
+  const posts = getBuddyGroupPosts();
+  posts.unshift(newPost);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_POSTS_STORAGE_KEY, JSON.stringify(posts)); } catch {}
+  }
+  return newPost;
+}
+
+export function deleteBuddyGroupPost(postId: string) {
+  const posts = getBuddyGroupPosts().filter(p => p.id !== postId);
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(BUDDY_POSTS_STORAGE_KEY, JSON.stringify(posts)); } catch {}
+  }
+}
+
+export function getAllBuddyGroupsForTagging(): { id: string; name: string; icon: string }[] {
+  const defaults = [
+    { id: 'bg1', name: 'SchoolFriends', icon: '🎓' },
+    { id: 'bg2', name: 'Toronto Dog Walkers', icon: '🐕' },
+    { id: 'bg3', name: 'Brampton Home Repair Hub', icon: '🔧' },
+    { id: 'bg4', name: 'Mississauga Tutors', icon: '📚' },
+    { id: 'bg5', name: 'GTA Cleaners Co-op', icon: '🧹' },
+    { id: 'bg6', name: 'Scarborough Parents', icon: '👨‍👩‍👧‍👦' },
+    { id: 'bg7', name: 'Work Buddies', icon: '💼' },
+    { id: 'bg8', name: 'Gym Squad', icon: '💪' },
+  ];
+  const userGroups = getUserBuddyGroups()
+    .filter(g => g.joined)
+    .map(g => ({ id: g.id, name: g.name, icon: g.icon }));
+  return [...userGroups, ...defaults];
+}

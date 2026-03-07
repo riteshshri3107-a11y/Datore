@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiGuard, schemas } from '@/lib/apiGuard';
 import { track, trackTiming } from '@/lib/observability';
+import { searchWorkers } from '@/lib/supabase';
 
 export const GET = withApiGuard(async (req, ctx) => {
   const start = Date.now();
@@ -11,11 +12,10 @@ export const GET = withApiGuard(async (req, ctx) => {
   const page = parseInt(url.searchParams.get('page') || '1');
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
 
-  // TODO: Replace with real Supabase query
-  const data: any[] = [];
-  
+  const data = await searchWorkers({ category: category || undefined, skill: search || undefined });
+
   trackTiming('api_workers_latency', Date.now() - start, { method:'GET' });
-  return NextResponse.json({ data, page, limit, total:0 });
+  return NextResponse.json({ data, page, limit, total: data.length });
 }, { requireAuth: true, rateLimit: 60 });
 
 export const POST = withApiGuard(async (req, ctx) => {

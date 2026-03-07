@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoSearch, IcoUser, IcoStar, IcoHeart, IcoShield, IcoSend, IcoMic } from '@/components/Icons';
+import { getUserBuddyGroups, addUserBuddyGroup, deleteUserBuddyGroup, updateUserBuddyGroup, addMemberToBuddyGroup, removeMemberFromBuddyGroup, createBuddyGroupInvite, acceptBuddyGroupInvite, getBuddyGroupInvites, generateInviteLink, addBuddyGroupPost, getBuddyGroupPosts, deleteBuddyGroupPost, getProfilePrefs, type StoredBuddyGroup, type BuddyGroupMember } from '@/lib/demoData';
 
 /* BR-96: MULTI-MODAL AI SAFETY ENGINE */
 const TERROR_PAT = [
@@ -54,14 +55,14 @@ function moderate(text:string):ModResult {
 
 type Visibility = 'group_only'|'all_groups'|'friends'|'public'|'professional';
 interface GPost { id:string; author:string; avatar:string; authorId:string; groupId:string; text:string; visibility:Visibility; visibleTo:string[]; likes:number; comments:number; time:string; liked:boolean; }
-interface BGroup { id:string; name:string; desc:string; icon:string; members:number; memberList:{id:string;name:string;avatar:string;role:string}[]; cat:string; isOwner:boolean; joined:boolean; risk:number; createdBy:string; vis:'open'|'closed'|'invite_only'; rules:string[]; }
+interface BGroup { id:string; name:string; desc:string; icon:string; memberList:{id:string;name:string;avatar:string;role:string;joinedAt?:string}[]; cat:string; isOwner:boolean; joined:boolean; risk:number; createdBy:string; vis:'open'|'closed'|'invite_only'; rules:string[]; createdAt?:string; }
 
 const GROUPS:BGroup[] = [
-  {id:'g1',name:'Toronto Dog Walkers',desc:'Connect with local dog walking professionals',icon:'🐕',members:127,memberList:[{id:'u1',name:'Sarah M.',avatar:'SM',role:'admin'},{id:'u2',name:'James K.',avatar:'JK',role:'mod'},{id:'u3',name:'Priya S.',avatar:'PS',role:'member'}],cat:'Pets & Animals',isOwner:true,joined:true,risk:0,createdBy:'me',vis:'open',rules:['Be respectful','No spam']},
-  {id:'g2',name:'Brampton Home Repair Hub',desc:'DIY and professional home tips',icon:'🔧',members:89,memberList:[{id:'u5',name:'Mike D.',avatar:'MD',role:'admin'}],cat:'Home Services',isOwner:false,joined:true,risk:0,createdBy:'Mike D.',vis:'open',rules:['Verified pros only']},
-  {id:'g3',name:'Mississauga Tutors',desc:'K-12 tutoring professionals',icon:'📚',members:64,memberList:[{id:'u7',name:'Aisha R.',avatar:'AR',role:'admin'}],cat:'Education',isOwner:false,joined:true,risk:0,createdBy:'Aisha R.',vis:'closed',rules:['Education focused']},
-  {id:'g4',name:'GTA Cleaners Co-op',desc:'House cleaners cooperative',icon:'🧹',members:156,memberList:[{id:'u9',name:'Rosa L.',avatar:'RL',role:'admin'}],cat:'Cleaning',isOwner:false,joined:false,risk:0,createdBy:'Rosa L.',vis:'open',rules:['Fair pricing']},
-  {id:'g5',name:'Scarborough Parents',desc:'Parents network for childcare & events',icon:'👨‍👩‍👧‍👦',members:234,memberList:[{id:'u11',name:'Kim P.',avatar:'KP',role:'admin'}],cat:'Family',isOwner:false,joined:false,risk:0,createdBy:'Kim P.',vis:'closed',rules:['Family friendly']},
+  {id:'g1',name:'Toronto Dog Walkers',desc:'Connect with local dog walking professionals',icon:'🐕',memberList:[{id:'u1',name:'Sarah M.',avatar:'SM',role:'admin',joinedAt:'2024-01-15T10:00:00Z'},{id:'u2',name:'James K.',avatar:'JK',role:'member',joinedAt:'2024-02-01T10:00:00Z'},{id:'u3',name:'Priya S.',avatar:'PS',role:'member',joinedAt:'2024-02-20T10:00:00Z'},{id:'me',name:'You',avatar:'ME',role:'member',joinedAt:'2024-03-01T10:00:00Z'}],cat:'Pets & Animals',isOwner:false,joined:true,risk:0,createdBy:'Sarah M.',vis:'open',rules:['Be respectful','No spam']},
+  {id:'g2',name:'Brampton Home Repair Hub',desc:'DIY and professional home tips',icon:'🔧',memberList:[{id:'u5',name:'Mike D.',avatar:'MD',role:'admin',joinedAt:'2024-01-10T10:00:00Z'},{id:'u6',name:'Tom B.',avatar:'TB',role:'member',joinedAt:'2024-02-15T10:00:00Z'},{id:'me',name:'You',avatar:'ME',role:'member',joinedAt:'2024-03-05T10:00:00Z'}],cat:'Home Services',isOwner:false,joined:true,risk:0,createdBy:'Mike D.',vis:'open',rules:['Verified pros only']},
+  {id:'g3',name:'Mississauga Tutors',desc:'K-12 tutoring professionals',icon:'📚',memberList:[{id:'u7',name:'Aisha R.',avatar:'AR',role:'admin',joinedAt:'2024-01-20T10:00:00Z'},{id:'u8',name:'David C.',avatar:'DC',role:'member',joinedAt:'2024-02-10T10:00:00Z'},{id:'me',name:'You',avatar:'ME',role:'member',joinedAt:'2024-03-10T10:00:00Z'}],cat:'Education',isOwner:false,joined:true,risk:0,createdBy:'Aisha R.',vis:'closed',rules:['Education focused']},
+  {id:'g4',name:'GTA Cleaners Co-op',desc:'House cleaners cooperative',icon:'🧹',memberList:[{id:'u9',name:'Rosa L.',avatar:'RL',role:'admin',joinedAt:'2024-01-05T10:00:00Z'},{id:'u10',name:'Elena V.',avatar:'EV',role:'member',joinedAt:'2024-02-25T10:00:00Z'}],cat:'Cleaning',isOwner:false,joined:false,risk:0,createdBy:'Rosa L.',vis:'open',rules:['Fair pricing']},
+  {id:'g5',name:'Scarborough Parents',desc:'Parents network for childcare & events',icon:'👨‍👩‍👧‍👦',memberList:[{id:'u11',name:'Kim P.',avatar:'KP',role:'admin',joinedAt:'2024-01-01T10:00:00Z'},{id:'u12',name:'Lisa W.',avatar:'LW',role:'member',joinedAt:'2024-02-05T10:00:00Z'},{id:'u13',name:'Amy T.',avatar:'AT',role:'member',joinedAt:'2024-03-01T10:00:00Z'}],cat:'Family',isOwner:false,joined:false,risk:0,createdBy:'Kim P.',vis:'closed',rules:['Family friendly']},
 ];
 
 const POSTS:GPost[] = [
@@ -76,7 +77,21 @@ export default function BuddyGroupsPage() {
   const router = useRouter();
   const {isDark,glassLevel,accentColor} = useThemeStore();
   const t = getTheme(isDark,glassLevel,accentColor);
-  const [groups,setGroups] = useState<BGroup[]>(GROUPS);
+
+  // BR-BG-001: Load user-created groups from localStorage and merge with defaults
+  const loadGroups = (): BGroup[] => {
+    const stored = getUserBuddyGroups();
+    const userGroups: BGroup[] = stored.map(sg => ({
+      id: sg.id, name: sg.name, desc: sg.desc, icon: sg.icon,
+      memberList: sg.memberList || [{ id: 'me', name: sg.createdBy || 'You', avatar: 'ME', role: 'admin' as const, joinedAt: sg.createdAt }],
+      cat: sg.cat, isOwner: sg.isOwner, joined: sg.joined, risk: 0,
+      createdBy: sg.createdBy, vis: sg.vis, rules: [],
+      createdAt: sg.createdAt,
+    }));
+    const defaultIds = new Set(GROUPS.map(g => g.id));
+    return [...userGroups.filter(g => !defaultIds.has(g.id)), ...GROUPS];
+  };
+  const [groups,setGroups] = useState<BGroup[]>(loadGroups);
   const [tab,setTab] = useState<'my'|'discover'|'safety'>('my');
   const [sel,setSel] = useState<BGroup|null>(null);
   const [search,setSearch] = useState('');
@@ -92,6 +107,13 @@ export default function BuddyGroupsPage() {
   const [showMem,setShowMem] = useState(false);
   const [modLog,setModLog] = useState<ModResult[]>([]);
   const [voiceSrch,setVoiceSrch] = useState(false);
+  const [createError,setCreateError] = useState('');
+  const [showInvite,setShowInvite] = useState(false);
+  const [inviteSearch,setInviteSearch] = useState('');
+  const [invitedFriends,setInvitedFriends] = useState<string[]>([]);
+  const [inviteSent,setInviteSent] = useState<string[]>([]);
+  const [inviteLink, setInviteLink] = useState('');
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
 
   const my = groups.filter(g=>g.joined);
   const disc = groups.filter(g=>!g.joined);
@@ -101,26 +123,69 @@ export default function BuddyGroupsPage() {
   });
 
   const createGroup = () => {
+    setCreateError('');
+    if(!nName.trim()) { setCreateError('Please enter a group name'); return; }
+    if(!nCat) { setCreateError('Please select a category'); return; }
     const nc=moderate(nName); const dc=moderate(nDesc);
     if(!nc.safe){setModAlert(nc);setModLog(p=>[nc,...p]);return;}
     if(!dc.safe){setModAlert(dc);setModLog(p=>[dc,...p]);return;}
-    if(!nName.trim()||!nCat) return;
-    setGroups(p=>[{id:`g${Date.now()}`,name:nName.trim(),desc:nDesc.trim(),icon:'👥',members:1,memberList:[{id:'me',name:'You',avatar:'ME',role:'admin'}],cat:nCat,isOwner:true,joined:true,risk:0,createdBy:'me',vis:nVis,rules:[]},...p]);
-    setNName('');setNDesc('');setNCat('');setShowCreate(false);
+    // BR-BG-001: Persist to localStorage so group survives refresh and is available for Buddy+ tagging
+    const prefs = getProfilePrefs();
+    const creatorName = prefs.name || 'You';
+    const stored = addUserBuddyGroup({ name:nName.trim(), desc:nDesc.trim(), icon:'👥', cat:nCat, vis:nVis, createdBy:creatorName });
+    const newGroup: BGroup = { id:stored.id, name:stored.name, desc:stored.desc, icon:stored.icon, memberList:stored.memberList.map(m=>({...m})), cat:nCat, isOwner:true, joined:true, risk:0, createdBy:creatorName, vis:nVis, rules:[], createdAt:stored.createdAt };
+    setGroups(p=>[newGroup,...p]);
+    setNName('');setNDesc('');setNCat('');setShowCreate(false);setCreateError('');
   };
 
   const addPost = (gid:string) => {
     if(!postText.trim()) return;
     const c=moderate(postText);
     if(!c.safe){setModAlert(c);setModLog(p=>[c,...p]);return;}
-    setPosts(p=>[{id:`p${Date.now()}`,author:'You',avatar:'ME',authorId:'me',groupId:gid,text:postText.trim(),visibility:postVis,visibleTo:postVis==='group_only'?[gid]:postVis==='all_groups'?my.map(g=>g.id):[],likes:0,comments:0,time:'Just now',liked:false},...p]);
+    const grp = groups.find(g=>g.id===gid);
+    const prefs = getProfilePrefs();
+    const authorName = prefs.name || 'You';
+    // BG-FR-005: Persist post to localStorage so it appears on homepage feed
+    addBuddyGroupPost({ groupId:gid, groupName:grp?.name||'', groupIcon:grp?.icon||'👥', authorId:'me', authorName, authorAvatar:'ME', text:postText.trim(), visibility:postVis });
+    setPosts(p=>[{id:`p${Date.now()}`,author:authorName,avatar:'ME',authorId:'me',groupId:gid,text:postText.trim(),visibility:postVis,visibleTo:postVis==='group_only'?[gid]:postVis==='all_groups'?my.map(g=>g.id):[],likes:0,comments:0,time:'Just now',liked:false},...p]);
     setPostText('');
   };
 
-  const delGroup = (gid:string) => { setGroups(p=>p.filter(g=>g.id!==gid)); setPosts(p=>p.filter(po=>po.groupId!==gid)); setSel(null); };
-  const editGroup = (gid:string) => { const nc=moderate(eName); const dc=moderate(eDesc); if(!nc.safe){setModAlert(nc);return;} if(!dc.safe){setModAlert(dc);return;} setGroups(p=>p.map(g=>g.id===gid?{...g,name:eName||g.name,desc:eDesc||g.desc}:g)); setEditing(null); };
-  const delPost = (pid:string) => setPosts(p=>p.filter(po=>po.id!==pid));
+  const delGroup = (gid:string) => { deleteUserBuddyGroup(gid); setGroups(p=>p.filter(g=>g.id!==gid)); setPosts(p=>p.filter(po=>po.groupId!==gid)); setSel(null); };
+  const editGroup = (gid:string) => { const nc=moderate(eName); const dc=moderate(eDesc); if(!nc.safe){setModAlert(nc);return;} if(!dc.safe){setModAlert(dc);return;} updateUserBuddyGroup(gid,{name:eName||undefined,desc:eDesc||undefined}); setGroups(p=>p.map(g=>g.id===gid?{...g,name:eName||g.name,desc:eDesc||g.desc}:g)); setEditing(null); };
+  const delPost = (pid:string) => { deleteBuddyGroupPost(pid); setPosts(p=>p.filter(po=>po.id!==pid)); };
   const voiceS = () => { setVoiceSrch(true); setTimeout(()=>{setSearch('home repair');setVoiceSrch(false);},2000); };
+
+  const FRIENDS_LIST = [
+    {id:'f1',name:'Alex Johnson',avatar:'AJ'},{id:'f2',name:'Maria Garcia',avatar:'MG'},{id:'f3',name:'David Kim',avatar:'DK'},
+    {id:'f4',name:'Emma Wilson',avatar:'EW'},{id:'f5',name:'Raj Patel',avatar:'RP'},{id:'f6',name:'Sophia Lee',avatar:'SL'},
+    {id:'f7',name:'Liam Brown',avatar:'LB'},{id:'f8',name:'Olivia Chen',avatar:'OC'},{id:'f9',name:'Noah Davis',avatar:'ND'},
+  ];
+  const filteredFriends = FRIENDS_LIST.filter(f => !inviteSearch || f.name.toLowerCase().includes(inviteSearch.toLowerCase()));
+
+  // BG-FR-004: Send invite, create persistent invite record, and auto-accept to add member
+  const sendInvite = (fid:string, targetGroup?:BGroup) => {
+    const friend = FRIENDS_LIST.find(f=>f.id===fid);
+    const grp = targetGroup || sel || groups[0];
+    if(!friend||!grp) return;
+    // Create persistent invite
+    createBuddyGroupInvite({ groupId:grp.id, groupName:grp.name, invitedUserId:friend.id, invitedUserName:friend.name, invitedBy:'You' });
+    setInviteSent(p=>[...p,fid]);
+    // Auto-accept for demo: add member to group immediately
+    const newMember = { id:friend.id, name:friend.name, avatar:friend.avatar, role:'member' as const, joinedAt:new Date().toISOString() };
+    setGroups(p=>p.map(g=>g.id===grp.id?{...g,memberList:[...g.memberList.filter(m=>m.id!==friend.id),newMember]}:g));
+    // Also persist to localStorage for user-created groups
+    addMemberToBuddyGroup(grp.id, { id:friend.id, name:friend.name, avatar:friend.avatar, role:'member' });
+  };
+
+  const genInviteLink = (groupId:string) => {
+    const link = generateInviteLink(groupId);
+    setInviteLink(link);
+    setInviteLinkCopied(false);
+  };
+  const copyInviteLink = () => {
+    if (inviteLink) { navigator.clipboard?.writeText(inviteLink); setInviteLinkCopied(true); }
+  };
 
   const rc = (s:number) => s>=70?'#ef4444':s>=40?'#f59e0b':'#22c55e';
   const sb = (s:string) => s==='critical'?'rgba(239,68,68,0.12)':s==='high'?'rgba(249,115,22,0.12)':'rgba(245,158,11,0.12)';
@@ -133,7 +198,7 @@ export default function BuddyGroupsPage() {
       <div className="space-y-3 animate-fade-in">
         <div className="flex items-center gap-3">
           <button onClick={()=>{setSel(null);setShowMem(false);setEditing(null);}} style={{background:'none',border:'none',color:t.text,cursor:'pointer'}}><IcoBack size={20}/></button>
-          <div className="flex-1"><h1 className="text-lg font-bold">{sg.icon} {sg.name}</h1><p className="text-[10px]" style={{color:t.textMuted}}>{sg.members} members · {sg.cat} · {sg.vis}</p></div>
+          <div className="flex-1"><h1 className="text-lg font-bold">{sg.icon} {sg.name}</h1><p className="text-[10px]" style={{color:t.textMuted}}>{sg.memberList.length} {sg.memberList.length===1?'member':'members'} · {sg.cat} · {sg.vis}</p></div>
           {sg.isOwner && <div className="flex gap-1"><button onClick={()=>{setEditing(sg.id);setEName(sg.name);setEDesc(sg.desc);}} className="px-2 py-1 rounded text-[10px] font-medium" style={{background:'rgba(59,130,246,0.15)',color:'#3b82f6'}}>Edit</button><button onClick={()=>delGroup(sg.id)} className="px-2 py-1 rounded text-[10px] font-medium" style={{background:'rgba(239,68,68,0.15)',color:'#ef4444'}}>Delete</button></div>}
         </div>
         <div className="flex items-center gap-2 p-2 rounded-lg" style={{background:rc(sg.risk)+'15'}}><IcoShield size={14} color={rc(sg.risk)}/><span className="text-[10px] font-medium" style={{color:rc(sg.risk)}}>Safety: {100-sg.risk}/100 · AI-monitored</span></div>
@@ -144,10 +209,33 @@ export default function BuddyGroupsPage() {
             <div className="flex gap-2"><button onClick={()=>editGroup(sg.id)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Save</button><button onClick={()=>setEditing(null)} className="px-4 py-1.5 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
           </div>
         )}
-        <button onClick={()=>setShowMem(!showMem)} className="w-full text-left p-2 rounded-lg text-xs font-medium" style={{background:t.card}}>👥 {showMem?'Hide':'Show'} Members ({sg.memberList.length})</button>
-        {showMem && sg.memberList.map(m=>(
-          <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg" style={{background:t.card}}><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:t.accent}}>{m.avatar}</div><span className="text-sm flex-1">{m.name}</span><span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{background:m.role==='admin'?'rgba(239,68,68,0.15)':m.role==='mod'?'rgba(59,130,246,0.15)':'rgba(156,163,175,0.15)',color:m.role==='admin'?'#ef4444':m.role==='mod'?'#3b82f6':t.textMuted}}>{m.role}</span></div>
-        ))}
+        {/* BG-FR-003: Member list with accurate count, profile pics, names, roles */}
+        <div className="flex gap-2">
+          <button onClick={()=>setShowMem(!showMem)} className="flex-1 text-left p-2.5 rounded-lg text-xs font-medium flex items-center gap-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+            <span>👥</span>
+            <span className="flex-1">{showMem?'Hide':'Show'} Members ({sg.memberList.length})</span>
+            <div className="flex -space-x-1.5">{sg.memberList.slice(0,4).map(m=>(<div key={m.id} className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold text-white border border-white/20" style={{background:m.role==='admin'?'#ef4444':t.accent}}>{m.avatar}</div>))}{sg.memberList.length>4&&<div className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold" style={{background:t.cardBorder,color:t.textMuted}}>+{sg.memberList.length-4}</div>}</div>
+          </button>
+          <button onClick={()=>setShowInvite(true)} className="px-3 py-2 rounded-lg text-xs font-medium" style={{background:'rgba(139,92,246,0.15)',color:'#8b5cf6',border:'1px solid rgba(139,92,246,0.3)'}}>✉️ Invite</button>
+        </div>
+        {showMem && (
+          <div className="rounded-xl overflow-hidden" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
+            <div className="p-2.5 flex items-center justify-between" style={{borderBottom:`1px solid ${t.cardBorder}`}}>
+              <span className="text-[10px] font-semibold" style={{color:t.textMuted}}>MEMBERS ({sg.memberList.length})</span>
+              <span className="text-[9px]" style={{color:t.textMuted}}>Admin: {sg.memberList.filter(m=>m.role==='admin').map(m=>m.name).join(', ')||'None'}</span>
+            </div>
+            {sg.memberList.map(m=>(
+              <div key={m.id} className="flex items-center gap-3 p-2.5" style={{borderBottom:`1px solid ${t.cardBorder}22`}}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0" style={{background:m.role==='admin'?'linear-gradient(135deg,#ef4444,#f97316)':m.role==='mod'?'linear-gradient(135deg,#3b82f6,#06b6d4)':`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>{m.avatar}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{m.name}</p>
+                  <p className="text-[9px]" style={{color:t.textMuted}}>{m.joinedAt ? `Joined ${new Date(m.joinedAt).toLocaleDateString()}` : 'Member'}</p>
+                </div>
+                <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{background:m.role==='admin'?'rgba(239,68,68,0.12)':'rgba(156,163,175,0.12)',color:m.role==='admin'?'#ef4444':t.textMuted}}>{m.role==='admin'?'Admin':'Member'}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {/* BR-97: Post with visibility */}
         <div className="p-3 rounded-xl space-y-2" style={{background:t.card,border:`1px solid ${t.cardBorder}`}}>
           <textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder="Share with this group..." rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
@@ -203,8 +291,10 @@ export default function BuddyGroupsPage() {
           <input value={nName} onChange={e=>setNName(e.target.value)} placeholder="Group name" className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
           <textarea value={nDesc} onChange={e=>setNDesc(e.target.value)} placeholder="Description (AI-scanned)" rows={2} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}/>
           <select value={nCat} onChange={e=>setNCat(e.target.value)} className="w-full p-2 rounded-lg text-sm" style={{background:t.bg,color:t.text,border:`1px solid ${t.cardBorder}`}}><option value="">Category</option>{CATS.filter(c=>c!=='All').map(c=><option key={c} value={c}>{c}</option>)}</select>
-          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>setNVis(v)} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.cardBorder}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
-          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>setShowCreate(false)} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
+          <div className="flex gap-2">{(['open','closed','invite_only'] as const).map(v=>(<button key={v} onClick={()=>{setNVis(v);if(v==='invite_only')setShowInvite(true);}} className="px-3 py-1 rounded-lg text-xs font-medium" style={{background:nVis===v?t.accent+'20':'transparent',color:nVis===v?t.accent:t.textMuted,border:`1px solid ${nVis===v?t.accent:t.cardBorder}`}}>{v==='open'?'🌐 Open':v==='closed'?'🔒 Closed':'✉️ Invite'}</button>))}</div>
+          {nVis==='invite_only'&&<button onClick={()=>setShowInvite(true)} className="w-full py-1.5 rounded-lg text-xs font-medium" style={{background:'rgba(139,92,246,0.1)',color:'#8b5cf6',border:'1px solid rgba(139,92,246,0.3)'}}>👥 Invite Friends ({invitedFriends.length} selected)</button>}
+          {createError && <p className="text-[10px] font-semibold" style={{color:'#ef4444'}}>⚠️ {createError}</p>}
+          <div className="flex gap-2"><button onClick={createGroup} className="flex-1 py-2 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Create</button><button onClick={()=>{setShowCreate(false);setCreateError('');}} className="px-4 py-2 rounded-lg text-xs" style={{background:t.cardBorder}}>Cancel</button></div>
         </div>
       )}
       {tab==='safety'&&(
@@ -232,12 +322,62 @@ export default function BuddyGroupsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1"><p className="text-sm font-semibold truncate">{g.name}</p>{g.isOwner&&<span className="text-[8px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-700">Owner</span>}<span className="text-[8px] px-1 py-0.5 rounded" style={{background:g.vis==='open'?'rgba(34,197,94,0.15)':'rgba(139,92,246,0.15)',color:g.vis==='open'?'#22c55e':'#8b5cf6'}}>{g.vis}</span></div>
                   <p className="text-[10px] truncate" style={{color:t.textMuted}}>{g.desc}</p>
-                  <div className="flex gap-3 mt-1"><span className="text-[9px]" style={{color:t.textMuted}}>👥 {g.members}</span><span className="text-[9px]" style={{color:t.textMuted}}>📁 {g.cat}</span><span className="text-[9px]" style={{color:rc(g.risk)}}>🛡️ {100-g.risk}%</span></div>
+                  <div className="flex gap-3 mt-1"><span className="text-[9px]" style={{color:t.textMuted}}>👥 {g.memberList.length}</span><span className="text-[9px]" style={{color:t.textMuted}}>📁 {g.cat}</span><span className="text-[9px]" style={{color:t.textMuted}}>by {g.createdBy}</span>{g.createdAt&&<span className="text-[9px]" style={{color:t.textMuted}}>{new Date(g.createdAt).toLocaleDateString()}</span>}<span className="text-[9px]" style={{color:rc(g.risk)}}>🛡️ {100-g.risk}%</span></div>
                 </div>
-                {!g.joined&&<button onClick={e=>{e.stopPropagation();setGroups(p=>p.map(gr=>gr.id===g.id?{...gr,joined:true,members:gr.members+1}:gr));}} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Join</button>}
+                {!g.joined&&<button onClick={e=>{e.stopPropagation();setGroups(p=>p.map(gr=>gr.id===g.id?{...gr,joined:true,memberList:[...gr.memberList,{id:'me',name:getProfilePrefs().name||'You',avatar:'ME',role:'member',joinedAt:new Date().toISOString()}]}:gr));}} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:t.accent}}>Join</button>}
               </div>
             </button>
           ))}
+        </div>
+      )}
+      {/* BG-FR-004: Invite Friends Modal — functional with invite link */}
+      {showInvite&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>{setShowInvite(false);setInviteLink('');setInviteLinkCopied(false);}}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-sm rounded-2xl p-4 space-y-3" style={{background:isDark?'#1a1a2e':'#fff',border:`1px solid ${t.cardBorder}`}}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm">Invite Members</h3>
+              <button onClick={()=>{setShowInvite(false);setInviteLink('');setInviteLinkCopied(false);}} className="text-xs" style={{color:t.textMuted}}>✕</button>
+            </div>
+            {sel&&<p className="text-[10px]" style={{color:t.textMuted}}>Inviting to: <span className="font-semibold" style={{color:t.text}}>{sel.icon} {sel.name}</span></p>}
+            <div className="flex items-center gap-2 p-2 rounded-xl" style={{background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)',border:`1px solid ${t.cardBorder}`}}>
+              <IcoSearch size={14} color={t.textMuted}/><input value={inviteSearch} onChange={e=>setInviteSearch(e.target.value)} placeholder="Search friends by name..." className="flex-1 text-sm bg-transparent outline-none" style={{color:t.text}}/>
+            </div>
+            <p className="text-[9px] font-semibold" style={{color:t.textMuted}}>SUGGESTED FRIENDS</p>
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {filteredFriends.map(f=>{
+                const isAlreadyMember = sel ? sel.memberList.some(m=>m.id===f.id) : false;
+                const sent=inviteSent.includes(f.id);
+                return(
+                  <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg" style={{background:sent?'rgba(34,197,94,0.06)':'transparent'}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`}}>{f.avatar}</div>
+                    <span className="flex-1 text-sm font-medium">{f.name}</span>
+                    {isAlreadyMember?(
+                      <span className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{color:t.textMuted}}>Already in group</span>
+                    ):sent?(
+                      <span className="text-[10px] px-2 py-1 rounded-lg font-medium" style={{color:'#22c55e',background:'rgba(34,197,94,0.1)'}}>✓ Invited & Joined</span>
+                    ):(
+                      <button onClick={()=>sendInvite(f.id, sel||undefined)} className="text-[10px] px-3 py-1 rounded-lg font-semibold" style={{background:'rgba(139,92,246,0.15)',color:'#8b5cf6'}}>Invite</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Invite Link */}
+            <div className="pt-2" style={{borderTop:`1px solid ${t.cardBorder}`}}>
+              <p className="text-[9px] font-semibold mb-1.5" style={{color:t.textMuted}}>OR SHARE INVITE LINK</p>
+              {!inviteLink?(
+                <button onClick={()=>sel&&genInviteLink(sel.id)} className="w-full py-2 rounded-xl text-xs font-semibold" style={{background:'rgba(59,130,246,0.1)',color:'#3b82f6',border:'1px solid rgba(59,130,246,0.3)'}}>🔗 Generate Invite Link</button>
+              ):(
+                <div className="flex items-center gap-2">
+                  <input readOnly value={inviteLink} className="flex-1 p-2 rounded-lg text-[10px] bg-transparent outline-none" style={{border:`1px solid ${t.cardBorder}`,color:t.text}}/>
+                  <button onClick={copyInviteLink} className="px-3 py-2 rounded-lg text-[10px] font-bold text-white" style={{background:inviteLinkCopied?'#22c55e':t.accent}}>{inviteLinkCopied?'✓ Copied':'Copy'}</button>
+                </div>
+              )}
+            </div>
+            {inviteSent.length>0&&(
+              <p className="text-center text-[10px] font-medium" style={{color:'#22c55e'}}>✓ {inviteSent.length} invite{inviteSent.length>1?'s':''} sent! Members added to group.</p>
+            )}
+          </div>
         </div>
       )}
     </div>

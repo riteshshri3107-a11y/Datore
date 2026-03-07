@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
+import { IcoBack } from '@/components/Icons';
 
 const NOTIFS = [
   // Today
@@ -101,7 +102,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-lg">{'<-'}</button>
+          <button onClick={() => router.back()} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: t.card }}><IcoBack size={18} color={t.textMuted} /></button>
           <h1 className="text-xl font-bold">Notifications</h1>
           {unreadCount > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold" style={{ background:'#ef4444' }}>{unreadCount} new</span>}
         </div>

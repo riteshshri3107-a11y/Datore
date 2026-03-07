@@ -1,10 +1,11 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/useThemeStore';
 import { getTheme } from '@/lib/theme';
 import { IcoBack, IcoStar, IcoUser, IcoHeart, IcoShield, IcoEdit, IcoCamera } from '@/components/Icons';
+import { uploadAvatar, getSession, getProfile } from '@/lib/supabase';
 
 /* BR-101: User Content Ownership -- edit/delete own posts, jobs, products, communities, groups
    BR-103: Rating Eligibility -- 4.0+ rating AND 10+ friends required to rate others
@@ -62,20 +63,39 @@ export default function ProfilePage() {
   const [ratingMsg,setRatingMsg] = useState<{text:string;ok:boolean}|null>(null);
   // Avatar system
   const [avatars,setAvatars] = useState<Record<AvatarMode,string|null>>({public:null,friends:null,buddy:null,professional:null});
-  // Load saved avatars from localStorage
-  useState(()=>{try{const s=localStorage.getItem('datore-avatars');if(s)setAvatars(JSON.parse(s));}catch{}});
-  // Save avatars when they change
+  // Load saved avatars from Supabase profile
+  useEffect(() => {
+    (async () => {
+      const { data: session } = await getSession();
+      const userId = session?.session?.user?.id;
+      if (!userId) return;
+      const profile = await getProfile(userId);
+      if (profile) {
+        setAvatars({
+          public: profile.avatar_public || profile.avatar_url || null,
+          friends: profile.avatar_friends || null,
+          buddy: profile.avatar_buddy || null,
+          professional: profile.avatar_professional || null,
+        });
+      }
+    })();
+  }, []);
   const updateAvatar = (mode:AvatarMode, val:string|null) => {
-    const newA = {...avatars,[mode]:val};
-    setAvatars(newA);
-    try{localStorage.setItem('datore-avatars',JSON.stringify(newA));}catch{}
+    setAvatars(prev => ({...prev,[mode]:val}));
   };
   const [activeAvatarMode,setActiveAvatarMode] = useState<AvatarMode>('public');
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
 
-  const handleAvatarUpload = (e:React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e:React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if(!file) return;
+    const { data: session } = await getSession();
+    const userId = session?.session?.user?.id;
+    if (userId) {
+      const { url } = await uploadAvatar(userId, file, activeAvatarMode);
+      if (url) { updateAvatar(activeAvatarMode, url); setShowAvatarPicker(false); return; }
+    }
+    // Fallback to DataURL for unauthenticated preview
     const reader = new FileReader();
     reader.onload = (ev) => { updateAvatar(activeAvatarMode, ev.target?.result as string); setShowAvatarPicker(false); };
     reader.readAsDataURL(file);
@@ -104,7 +124,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3 mb-3">
           {/* Avatar with edit overlay */}
           <div className="relative">
-            {currentAvatar && currentAvatar.startsWith('data:image') ? (
+            {currentAvatar && (currentAvatar.startsWith('data:image') || currentAvatar.startsWith('http')) ? (
               <img src={currentAvatar} alt="Avatar" className="w-14 h-14 rounded-full object-cover" style={{border:`2px solid ${t.accent}`}}/>
             ) : currentAvatar && currentAvatar.length <= 4 ? (
               <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{background:`linear-gradient(135deg,${t.accent},#8b5cf6)`,border:`2px solid ${t.accent}`}}>{currentAvatar}</div>

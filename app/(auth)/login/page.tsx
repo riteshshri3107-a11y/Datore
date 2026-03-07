@@ -51,6 +51,14 @@ export default function LoginPage() {
     return Object.keys(errs).length === 0;
   };
 
+  const validateField = (field: string) => {
+    let err = '';
+    if (field === 'email') err = validateInput(email, validators.email) || '';
+    else if (field === 'password') err = validateInput(password, validators.password) || '';
+    else if (field === 'name') err = validateInput(name, validators.displayName) || '';
+    setFieldErrors(prev => err ? { ...prev, [field]: err } : (({ [field]: _, ...rest }) => rest)(prev));
+  };
+
   const handleSubmit = async () => {
     setError('');
     if (isLockedOut) { setError(`Too many attempts. Try again in ${Math.ceil((lockoutUntil - Date.now())/1000)}s`); return; }
@@ -115,20 +123,20 @@ export default function LoginPage() {
           {/* Signup: Name */}
           {mode === 'signup' && (
             <div className="mb-3">
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Full Name" className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background:t.input, color:t.text, borderColor:fieldErrors.name ? '#ef4444' : t.inputBorder }} />
+              <input value={name} onChange={e => setName(e.target.value)} onBlur={() => validateField('name')} placeholder="Full Name" className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background:t.input, color:t.text, borderColor:fieldErrors.name ? '#ef4444' : t.inputBorder }} />
               {fieldErrors.name && <p className="text-[10px] mt-1" style={{ color:'#ef4444' }}>⚠ {fieldErrors.name}</p>}
             </div>
           )}
 
           {/* Email */}
           <div className="mb-3">
-            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email" autoComplete="email" className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background:t.input, color:t.text, borderColor:fieldErrors.email ? '#ef4444' : t.inputBorder }} />
+            <input value={email} onChange={e => setEmail(e.target.value)} onBlur={() => validateField('email')} type="email" placeholder="Email" autoComplete="email" className="glass-input w-full px-4 py-3 rounded-xl text-sm" style={{ background:t.input, color:t.text, borderColor:fieldErrors.email ? '#ef4444' : t.inputBorder }} />
             {fieldErrors.email && <p className="text-[10px] mt-1" style={{ color:'#ef4444' }}>⚠ {fieldErrors.email}</p>}
           </div>
 
           {/* Password with show/hide */}
           <div className="mb-1 relative">
-            <input value={password} onChange={e => setPassword(e.target.value)} type={showPw ? 'text' : 'password'} placeholder="Password" autoComplete={mode==='login'?'current-password':'new-password'} className="glass-input w-full px-4 py-3 rounded-xl text-sm pr-12" style={{ background:t.input, color:t.text, borderColor:fieldErrors.password ? '#ef4444' : t.inputBorder }} onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
+            <input value={password} onChange={e => setPassword(e.target.value)} onBlur={() => validateField('password')} type={showPw ? 'text' : 'password'} placeholder="Password" autoComplete={mode==='login'?'current-password':'new-password'} className="glass-input w-full px-4 py-3 rounded-xl text-sm pr-12" style={{ background:t.input, color:t.text, borderColor:fieldErrors.password ? '#ef4444' : t.inputBorder }} onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
             <button onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color:t.textMuted }}>{showPw ? '🙈' : '👁️'}</button>
           </div>
           {fieldErrors.password && <p className="text-[10px] mt-1 mb-2" style={{ color:'#ef4444' }}>⚠ {fieldErrors.password}</p>}
