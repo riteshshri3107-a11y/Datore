@@ -261,11 +261,152 @@ export default function HomePage() {
 
   const audienceInfo = AUDIENCES.find(a => a.key === postAudience) || AUDIENCES[0];
 
+  /* ═══ Status / Stories Data ═══ */
+  const [viewingStatus, setViewingStatus] = useState<{user:string;avatar:string;text:string;time:string;bg:string}|null>(null);
+  const [myStatusText, setMyStatusText] = useState('');
+  const [showAddStatus, setShowAddStatus] = useState(false);
+  const [myStatuses, setMyStatuses] = useState<{text:string;time:string;bg:string}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('datore-my-statuses')||'[]'); } catch { return []; }
+  });
+
+  const STATUS_BG = ['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#ec4899,#f43f5e)','linear-gradient(135deg,#22c55e,#06b6d4)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#3b82f6,#8b5cf6)'];
+
+  const othersStatuses = [
+    { user:'Sarah Chen', avatar:'SC', text:'Just finished a 5K run! Feeling great today! 🏃‍♀️', time:'2h ago', bg:'linear-gradient(135deg,#ec4899,#f43f5e)' },
+    { user:'Mike Johnson', avatar:'MJ', text:'New plumbing project completed. Another happy client! 🔧', time:'4h ago', bg:'linear-gradient(135deg,#3b82f6,#8b5cf6)' },
+    { user:'Priya K.', avatar:'PK', text:'Teaching math online today. Join my session! 📐', time:'1h ago', bg:'linear-gradient(135deg,#22c55e,#06b6d4)' },
+    { user:'David L.', avatar:'DL', text:'Beautiful sunset from my garden 🌅🌻', time:'30m ago', bg:'linear-gradient(135deg,#f59e0b,#ef4444)' },
+    { user:'Lisa Park', avatar:'LP', text:'Morning yoga complete. Namaste! 🧘‍♀️', time:'3h ago', bg:'linear-gradient(135deg,#6366f1,#a78bfa)' },
+    { user:'Tom R.', avatar:'TR', text:'Cooking tacos tonight! Who wants the recipe? 🌮', time:'5h ago', bg:'linear-gradient(135deg,#ef4444,#f97316)' },
+  ];
+
+  const addMyStatus = () => {
+    if (!myStatusText.trim()) return;
+    const s = { text: myStatusText.trim(), time: 'Just now', bg: STATUS_BG[myStatuses.length % STATUS_BG.length] };
+    const updated = [s, ...myStatuses];
+    setMyStatuses(updated);
+    try { localStorage.setItem('datore-my-statuses', JSON.stringify(updated)); } catch {}
+    setMyStatusText('');
+    setShowAddStatus(false);
+  };
+
+  /* ═══ Reels preview for home page ═══ */
+  const REEL_PREVIEWS = [
+    { id:'r1', user:'Anita S.', scene:'🧹✨', label:'Cleaning Tips', gradient:'linear-gradient(160deg,#0a2e1a,#134e2e)', likes:'2.3K' },
+    { id:'r2', user:'Mike C.', scene:'🔧💧', label:'DIY Plumbing', gradient:'linear-gradient(160deg,#1a1a3e,#2a2a5e)', likes:'8.9K' },
+    { id:'r3', user:'Priya K.', scene:'📐✏️', label:'Math Tricks', gradient:'linear-gradient(160deg,#2e1a3e,#4a2a6e)', likes:'12K' },
+    { id:'r5', user:'Sarah C.', scene:'💼🌟', label:'Day In Life', gradient:'linear-gradient(160deg,#1a1a2e,#3a2a4a)', likes:'21K' },
+    { id:'r7', user:'Lisa P.', scene:'💪⚡', label:'Workout', gradient:'linear-gradient(160deg,#0a1a2e,#1a3e5e)', likes:'15K' },
+  ];
+
   return (
     <div className="space-y-4 animate-fade-in">
       <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileSelect(e, 'photo')} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFileSelect(e, 'photo')} />
       <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => handleFileSelect(e, 'video')} />
+
+      {/* ═══ Status / Stories Bar ═══ */}
+      <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-sm">Status</h2>
+          <button onClick={()=>router.push('/reels')} className="text-[10px] font-semibold" style={{ color:t.accent }}>See all</button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth:'none' }}>
+          {/* My Status */}
+          <button onClick={()=>myStatuses.length > 0 ? setViewingStatus({ user:'You', avatar: (prefs.name||'You').split(' ').map((n:string)=>n[0]).join('').slice(0,2), text:myStatuses[0].text, time:myStatuses[0].time, bg:myStatuses[0].bg }) : setShowAddStatus(true)} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ background:'none', border:'none', cursor:'pointer', width:62 }}>
+            <div className="relative">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold" style={{
+                background: myStatuses.length > 0 ? 'none' : `linear-gradient(135deg,${t.accent}33,#8b5cf633)`,
+                border: myStatuses.length > 0 ? `2.5px solid ${t.accent}` : `2.5px dashed ${t.textMuted}`,
+                color: t.accent,
+              }}>
+                {userAvatar.type==='image' ? <img src={userAvatar.src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/> : userAvatar.type==='emoji' ? <span className="text-xl">{userAvatar.src}</span> : userAvatar.src}
+              </div>
+              <div onClick={(e)=>{e.stopPropagation();setShowAddStatus(true);}} className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background:t.accent, border:`2px solid ${isDark?'#1a1a2e':'#fff'}` }}>+</div>
+            </div>
+            <span className="text-[9px] font-medium truncate w-full text-center" style={{ color:myStatuses.length > 0 ? t.text : t.textMuted }}>{myStatuses.length > 0 ? 'Your Status' : 'Add Status'}</span>
+          </button>
+
+          {/* Others' Statuses */}
+          {othersStatuses.map((s, i) => (
+            <button key={i} onClick={()=>setViewingStatus(s)} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ background:'none', border:'none', cursor:'pointer', width:62 }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-xs font-bold" style={{
+                background:`linear-gradient(135deg,${t.accent}22,#8b5cf622)`,
+                border:`2.5px solid ${['#ec4899','#3b82f6','#22c55e','#f59e0b','#6366f1','#ef4444'][i % 6]}`,
+                color: t.accent,
+              }}>
+                {s.avatar}
+              </div>
+              <span className="text-[9px] font-medium truncate w-full text-center" style={{ color:t.text }}>{s.user.split(' ')[0]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ Reels Preview Strip ═══ */}
+      <div className="rounded-2xl p-3" style={{ background:t.card, border:`1px solid ${t.cardBorder}` }}>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-sm">Reels</h2>
+          <button onClick={()=>router.push('/reels')} className="text-[10px] font-semibold" style={{ color:'#ec4899' }}>Watch all</button>
+        </div>
+        <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth:'none' }}>
+          {/* Create Reel */}
+          <button onClick={()=>router.push('/reels')} className="flex-shrink-0" style={{ width:90, height:130, borderRadius:14, background:`linear-gradient(135deg,${t.accent}22,#ec489922)`, border:`2px dashed ${t.accent}44`, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6, cursor:'pointer' }}>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background:'linear-gradient(135deg,#ec4899,#6366f1)' }}>+</div>
+            <span className="text-[9px] font-semibold" style={{ color:t.accent }}>Create Reel</span>
+          </button>
+          {REEL_PREVIEWS.map(reel => (
+            <button key={reel.id} onClick={()=>router.push('/reels')} className="flex-shrink-0 relative overflow-hidden" style={{ width:90, height:130, borderRadius:14, background:reel.gradient, cursor:'pointer', border:'none' }}>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:8 }}>
+                <span style={{ fontSize:28, marginBottom:4 }}>{reel.scene}</span>
+                <span style={{ fontSize:8, color:'rgba(255,255,255,0.9)', fontWeight:700, textAlign:'center' }}>{reel.label}</span>
+              </div>
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'6px 8px', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}>
+                <p style={{ fontSize:8, color:'#fff', fontWeight:600 }}>{reel.user}</p>
+                <p style={{ fontSize:7, color:'rgba(255,255,255,0.7)' }}>{reel.likes} likes</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ View Status Modal ═══ */}
+      {viewingStatus && (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={()=>setViewingStatus(null)}>
+          <div style={{ position:'absolute', inset:0, background:viewingStatus.bg }} />
+          <div onClick={e=>e.stopPropagation()} style={{ position:'relative', zIndex:1, width:'100%', maxWidth:400, padding:24, textAlign:'center' }}>
+            <div style={{ position:'absolute', top:16, left:16, right:16, display:'flex', alignItems:'center', gap:10 }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background:'rgba(255,255,255,0.2)', color:'#fff' }}>{viewingStatus.avatar}</div>
+              <div style={{ textAlign:'left' }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{viewingStatus.user}</p>
+                <p style={{ fontSize:10, color:'rgba(255,255,255,0.7)' }}>{viewingStatus.time}</p>
+              </div>
+              <button onClick={()=>setViewingStatus(null)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#fff', fontSize:20 }}>x</button>
+            </div>
+            <div style={{ marginTop:80 }}>
+              <p style={{ fontSize:22, fontWeight:700, color:'#fff', lineHeight:1.4, textShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>{viewingStatus.text}</p>
+            </div>
+            {/* Progress bar */}
+            <div style={{ position:'absolute', top:8, left:16, right:16, height:3, borderRadius:2, background:'rgba(255,255,255,0.3)', overflow:'hidden' }}>
+              <div style={{ width:'100%', height:'100%', borderRadius:2, background:'#fff', animation:'statusProgress 5s linear forwards' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Add Status Modal ═══ */}
+      {showAddStatus && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={()=>setShowAddStatus(false)}>
+          <div onClick={e=>e.stopPropagation()} className="w-full max-w-sm rounded-2xl p-5 space-y-4" style={{ background:isDark?'#1a1a2e':'#fff' }}>
+            <h3 className="font-bold text-base">Add Status</h3>
+            <textarea value={myStatusText} onChange={e=>setMyStatusText(e.target.value)} rows={3} placeholder="What's on your mind? Share a quick update..." className="w-full p-3 rounded-xl text-sm outline-none resize-none" style={{ background:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)', border:`1px solid ${t.cardBorder}`, color:t.text }} />
+            <div className="flex gap-2">
+              <button onClick={addMyStatus} disabled={!myStatusText.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background:`linear-gradient(135deg,${t.accent},#8b5cf6)` }}>Share Status</button>
+              <button onClick={()=>setShowAddStatus(false)} className="px-4 py-2.5 rounded-xl text-sm" style={{ color:t.textMuted, border:`1px solid ${t.cardBorder}` }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Moderation Alert */}
       {moderationAlert && (

@@ -46,6 +46,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.2); } 50% { box-shadow: 0 0 24px rgba(99,102,241,0.5); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes statusProgress { from { width: 0; } to { width: 100%; } }
 
 .animate-fade-in { animation: fadeIn 0.4s var(--ease-smooth) forwards; }
 .animate-slide-up { animation: slideUp 0.45s var(--ease-smooth) forwards; }
